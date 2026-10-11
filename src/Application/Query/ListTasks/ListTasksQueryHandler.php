@@ -28,10 +28,11 @@ final readonly class ListTasksQueryHandler implements QueryHandlerInterface
             $filters['priority'] = TaskPriority::fromString($request->getPriority())->value;
         }
 
-        $tasks = empty($filters)
-            ? $this->taskRepository->findAll()
-            : $this->taskRepository->findByFilters($filters, $request->getPage(), $request->getLimit());
-
-        return new ListTasksResponse($tasks, $request->getPage(), $request->getLimit());
+        return new ListTasksResponse(
+            $this->taskRepository->findByFilters($filters, $request->getPage(), $request->getLimit()),
+            $this->taskRepository->countByFilters($filters),
+            $request->getPage(),
+            $request->getLimit(),
+        );
     }
 }

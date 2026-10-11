@@ -7,6 +7,7 @@ namespace App\Application\Command\UpdateTask;
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
+use App\Domain\Model\Task;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
@@ -48,7 +49,10 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
             $task->changePriority(TaskPriority::fromString($request->getPriority()));
         }
 
-        if (null !== $request->getDueDate()) {
+        if ($request->shouldClearDueDate()) {
+            $task->changeDueDate(null);
+        } elseif (null !== $request->getDueDate() && !$this->isCurrentDueDate($task, $request->getDueDate())) {
+            // Re-sending the due date the task already has is a no-op, even if it is in the past by now.
             $task->changeDueDate(TaskDueDate::fromDate($request->getDueDate()));
         }
 
@@ -65,5 +69,10 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
         $this->logger->info('Task Updated', ['task_id' => $task->getId()->value()]);
 
         return new UpdateTaskResponse($task);
+    }
+
+    private function isCurrentDueDate(Task $task, \DateTimeImmutable $dueDate): bool
+    {
+        return $task->getDueDate()?->value()->getTimestamp() === $dueDate->getTimestamp();
     }
 }

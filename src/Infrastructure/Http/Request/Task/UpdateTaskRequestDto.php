@@ -32,6 +32,6 @@ final class UpdateTaskRequestDto
     public $priority;
 
     #[Assert\Type(type: 'string', message: ValidationMessages::TYPE)]
-    #[OA\Property(description: 'Must be in the future', type: 'string', format: 'date-time', example: '2026-12-31T18:00:00+00:00', nullable: true)]
+    #[OA\Property(description: 'Must be in the future. `null` removes the due date; omit the field to keep it.', type: 'string', format: 'date-time', example: '2026-12-31T18:00:00+00:00', nullable: true)]
     public $dueDate;
 }

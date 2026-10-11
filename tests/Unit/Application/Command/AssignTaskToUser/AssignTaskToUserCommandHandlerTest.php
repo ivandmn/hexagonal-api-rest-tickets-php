@@ -9,7 +9,7 @@ use App\Application\Command\AssignTaskToUser\AssignTaskToUserCommandHandler;
 use App\Application\Command\AssignTaskToUser\AssignTaskToUserResponse;
 use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
-use App\Domain\Exception\Task\UserNotFoundException;
+use App\Domain\Exception\User\UserNotFoundException;
 use App\Domain\Model\Task;
 use App\Domain\Model\User;
 use App\Domain\Repository\TaskRepositoryInterface;

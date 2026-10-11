@@ -8,10 +8,15 @@ use App\Domain\Model\Task;
 
 final readonly class ListTasksResponse implements \JsonSerializable, \Countable, \IteratorAggregate
 {
+    /**
+     * @param list<Task> $tasks the current page
+     * @param int        $total every task matching the filters, across all pages
+     */
     public function __construct(
         private array $tasks,
-        private ?int $page = null,
-        private ?int $limit = null,
+        private int $total,
+        private int $page,
+        private int $limit,
     ) {
     }
 
@@ -36,9 +41,9 @@ final readonly class ListTasksResponse implements \JsonSerializable, \Countable,
                 $this->tasks,
             ),
             'meta' => [
-                'total' => $this->count(),
-                'page'  => $this->page ?? 1,
-                'limit' => $this->limit ?? $this->count(),
+                'total' => $this->total,
+                'page'  => $this->page,
+                'limit' => $this->limit,
             ],
         ];
     }

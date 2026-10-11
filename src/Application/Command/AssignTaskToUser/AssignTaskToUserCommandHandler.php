@@ -7,7 +7,7 @@ namespace App\Application\Command\AssignTaskToUser;
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
-use App\Domain\Exception\Task\UserNotFoundException;
+use App\Domain\Exception\User\UserNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\Task\TaskId;

@@ -15,6 +15,7 @@ use App\Domain\ValueObject\Task\TaskTitle;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\FutureDate;
 use PHPUnit\Framework\TestCase;
 
 final class TaskFactoryTest extends TestCase
@@ -26,7 +27,7 @@ final class TaskFactoryTest extends TestCase
         $taskTitle        = TaskTitle::fromString('Test Task Title');
         $taskDescription  = TaskDescription::fromString('Test Task Description');
         $taskPriority     = TaskPriority::LOW;
-        $dueDate          = new \DateTimeImmutable('2030-12-31');
+        $dueDate          = FutureDate::on(12, 31);
         $taskDueDate      = TaskDueDate::fromDate($dueDate);
         $taskAssignedUser = new User(UserId::new(), UserEmail::fromString('test@example.com'), UserName::fromString('Test User'));
 

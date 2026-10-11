@@ -22,5 +22,17 @@ interface TaskRepositoryInterface
 
     public function findByUserId(UserId $userId): array;
 
+    /**
+     * One page of the tasks matching the filters (all tasks when empty), newest first.
+     *
+     * @param array<string, mixed> $filters
+     *
+     * @return list<Task>
+     */
     public function findByFilters(array $filters, int $page, int $maxItems): array;
+
+    /**
+     * @param array<string, mixed> $filters
+     */
+    public function countByFilters(array $filters): int;
 }

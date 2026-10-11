@@ -43,12 +43,12 @@ class ListTaskController extends BaseController
 
     #[OA\Get(
         summary: 'List tasks',
-        description: 'Returns all tasks. `page` and `limit` are only applied when filtering by `status` or `priority`.',
+        description: 'Paginated, newest first. `meta.total` is the number of tasks matching the filters across all pages.',
     )]
     #[OA\Parameter(name: 'status', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: TaskStatus::class))]
     #[OA\Parameter(name: 'priority', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: TaskPriority::class))]
     #[OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 1, minimum: 1))]
-    #[OA\Parameter(name: 'limit', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 50, minimum: 1))]
+    #[OA\Parameter(name: 'limit', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: ListTasksQuery::DEFAULT_LIMIT, maximum: ListTasksQuery::MAX_LIMIT, minimum: 1))]
     #[SuccessResponse(TaskList::class, 'Tasks found')]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'No tasks match the filters')]
     #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Invalid query parameters', 'Invalid task status')]
@@ -64,7 +64,7 @@ class ListTaskController extends BaseController
                 $data->status,
                 $data->priority,
                 $data->page ? (int) $data->page : 1,
-                $data->limit ? (int) $data->limit : 50,
+                $data->limit ? (int) $data->limit : ListTasksQuery::DEFAULT_LIMIT,
             );
 
             /** @var ListTasksResponse $response */

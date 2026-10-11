@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Domain\ValueObject\Task;
 
 use App\Domain\Exception\Task\TaskDueDateInPastException;
 use App\Domain\ValueObject\Task\TaskDueDate;
+use App\Tests\Support\FutureDate;
 use PHPUnit\Framework\TestCase;
 
 final class TaskDueDateTest extends TestCase
@@ -40,7 +41,7 @@ final class TaskDueDateTest extends TestCase
 
     public function test_equals_returns_true_for_same_timestamp(): void
     {
-        $base = new \DateTimeImmutable('2030-01-01T00:00:00+00:00');
+        $base = FutureDate::on();
         $a    = new TaskDueDate(clone $base);
         $b    = new TaskDueDate(clone $base);
 
@@ -49,7 +50,7 @@ final class TaskDueDateTest extends TestCase
 
     public function test_equals_returns_false_for_different_timestamp(): void
     {
-        $base = new \DateTimeImmutable('2030-01-01T00:00:00+00:00');
+        $base = FutureDate::on();
         $a    = new TaskDueDate(clone $base);
         $b    = new TaskDueDate((clone $base)->modify('+1 second'));
 
@@ -58,7 +59,7 @@ final class TaskDueDateTest extends TestCase
 
     public function test_string_representation_is_rfc3339(): void
     {
-        $future = new \DateTimeImmutable('2040-05-06T12:34:56+02:00');
+        $future = FutureDate::on(5, 6, '12:34:56')->setTimezone(new \DateTimeZone('+02:00'));
         $due    = new TaskDueDate(clone $future);
 
         $this->assertSame($future->format(TaskDueDate::FORMAT), (string) $due);

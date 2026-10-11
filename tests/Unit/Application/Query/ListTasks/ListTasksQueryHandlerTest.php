@@ -22,7 +22,7 @@ use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class ListTasksQueryHandlerTest extends TestCase
 {
-    public function test_calls_find_all_when_no_filters(): void
+    public function test_paginates_and_counts_all_tasks_when_no_filters(): void
     {
         $repo = $this->createMock(TaskRepositoryInterface::class);
 
@@ -32,20 +32,29 @@ final class ListTasksQueryHandlerTest extends TestCase
         ];
 
         $repo->expects($this->once())
-            ->method('findAll')
+            ->method('findByFilters')
+            ->with([], 1, ListTasksQuery::DEFAULT_LIMIT)
             ->willReturn($tasks)
         ;
 
-        $repo->expects($this->never())->method('findByFilters');
+        // The total covers every page, not just the tasks returned in this one.
+        $repo->expects($this->once())
+            ->method('countByFilters')
+            ->with([])
+            ->willReturn(42)
+        ;
+
+        $repo->expects($this->never())->method('findAll');
 
         $uc       = new ListTasksQueryHandler($repo);
         $response = $uc(new ListTasksQuery(null, null));
 
         $this->assertInstanceOf(ListTasksResponse::class, $response);
         $payload = $response->toArray();
-        $this->assertSame(2, $payload['meta']['total']);
+        $this->assertCount(2, $payload['data']);
+        $this->assertSame(42, $payload['meta']['total']);
         $this->assertSame(1, $payload['meta']['page']);
-        $this->assertSame(50, $payload['meta']['limit']);
+        $this->assertSame(ListTasksQuery::DEFAULT_LIMIT, $payload['meta']['limit']);
     }
 
     public function test_calls_find_by_filters_with_status_and_pagination(): void

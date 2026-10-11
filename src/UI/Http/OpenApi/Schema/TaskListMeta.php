@@ -9,7 +9,7 @@ use OpenApi\Attributes as OA;
 #[OA\Schema(required: ['total', 'page', 'limit'])]
 final class TaskListMeta
 {
-    #[OA\Property(description: 'Number of tasks returned in this page', example: 1)]
+    #[OA\Property(description: 'Tasks matching the filters, across all pages', example: 1)]
     public int $total;
 
     #[OA\Property(example: 1)]

@@ -16,6 +16,7 @@ use App\Domain\ValueObject\Task\TaskTitle;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\FutureDate;
 use PHPUnit\Framework\TestCase;
 
 final class CreateTaskResponseTest extends TestCase
@@ -33,7 +34,7 @@ final class CreateTaskResponseTest extends TestCase
             UserName::fromString('User Name'),
             new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
-        $due     = TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-02T10:20:30+00:00'));
+        $due     = TaskDueDate::fromDate(FutureDate::on(day: 2, time: '10:20:30'));
         $created = new \DateTimeImmutable('2030-01-01T10:00:00+00:00');
         $updated = new \DateTimeImmutable('2030-01-03T12:34:56+00:00');
 
@@ -62,7 +63,7 @@ final class CreateTaskResponseTest extends TestCase
         $this->assertSame('high', $data['priority']);
         $this->assertSame($assignee->getId()->value(), $data['assignedTo']['id']);
         $this->assertSame('User Name', $data['assignedTo']['name']);
-        $this->assertSame('2030-01-02T10:20:30+00:00', $data['dueDate']);
+        $this->assertSame(FutureDate::on(day: 2, time: '10:20:30')->format(\DATE_ATOM), $data['dueDate']);
         $this->assertSame('2030-01-01T10:00:00+00:00', $data['createdAt']);
         $this->assertSame('2030-01-03T12:34:56+00:00', $data['updatedAt']);
     }

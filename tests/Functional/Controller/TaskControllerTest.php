@@ -18,6 +18,7 @@ use App\Domain\ValueObject\Task\TaskTitle;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\FutureDate;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -132,7 +133,7 @@ final class TaskControllerTest extends WebTestCase
             'title'       => 'Test Task',
             'description' => 'This is a valid task.',
             'priority'    => 'high',
-            'dueDate'     => '2030-01-01T10:00:00+00:00',
+            'dueDate'     => FutureDate::on(time: '10:00:00')->format(\DATE_ATOM),
         ];
 
         $this->client->request(
@@ -170,7 +171,7 @@ final class TaskControllerTest extends WebTestCase
                 'title'       => 'Test Task',
                 'description' => 'Has extra',
                 'priority'    => 'low',
-                'dueDate'     => '2030-01-01T10:00:00+00:00',
+                'dueDate'     => FutureDate::on(time: '10:00:00')->format(\DATE_ATOM),
                 'unexpected'  => 'value',
             ]),
         );
@@ -187,7 +188,7 @@ final class TaskControllerTest extends WebTestCase
                 'title'       => 12345,
                 'description' => 'x',
                 'priority'    => 'low',
-                'dueDate'     => '2030-01-01T10:00:00+00:00',
+                'dueDate'     => FutureDate::on(time: '10:00:00')->format(\DATE_ATOM),
             ]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
@@ -203,7 +204,7 @@ final class TaskControllerTest extends WebTestCase
                 'title'       => 'Test Task',
                 'description' => 'Priority must be low, medium or high.',
                 'priority'    => 'urgent',
-                'dueDate'     => '2030-01-01T10:00:00+00:00',
+                'dueDate'     => FutureDate::on(time: '10:00:00')->format(\DATE_ATOM),
             ]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
@@ -274,7 +275,7 @@ final class TaskControllerTest extends WebTestCase
             'description' => 'This is an updated task.',
             'status'      => 'in_progress',
             'priority'    => 'high',
-            'dueDate'     => '2030-01-01T10:00:00+00:00',
+            'dueDate'     => FutureDate::on(time: '10:00:00')->format(\DATE_ATOM),
         ];
 
         $this->client->request(
@@ -565,5 +566,73 @@ final class TaskControllerTest extends WebTestCase
         $json = \json_decode($this->client->getResponse()->getContent(), true);
         $this->assertSame('error', $json['status']);
         $this->assertArrayHasKey('reason', $json);
+    }
+
+    public function test_list_paginates_without_filters_and_reports_the_real_total(): void
+    {
+        $this->createTask('Paged Task One');
+        $this->createTask('Paged Task Two');
+        $this->createTask('Paged Task Three');
+
+        $this->client->request('GET', '/api/tasks?limit=2');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $json = \json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertCount(2, $json['data']['data']);
+        $this->assertSame(3, $json['data']['meta']['total']);
+        $this->assertSame(2, $json['data']['meta']['limit']);
+    }
+
+    public function test_list_returns_400_when_limit_exceeds_the_maximum(): void
+    {
+        $this->client->request('GET', '/api/tasks?limit=101');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+    }
+
+    public function test_create_without_due_date(): void
+    {
+        $this->client->request(
+            'POST',
+            '/api/tasks',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: \json_encode(['title' => 'No due date', 'description' => 'Optional field omitted', 'priority' => 'low']),
+        );
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $json = \json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertNull($json['data']['dueDate']);
+    }
+
+    public function test_update_with_null_due_date_removes_it(): void
+    {
+        $task = $this->createTask('Has a due date', 'D', TaskPriority::LOW, FutureDate::on());
+
+        $this->client->request(
+            'PUT',
+            '/api/tasks/' . $task->getId()->value(),
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: \json_encode(['dueDate' => null]),
+        );
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $json = \json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertNull($json['data']['dueDate']);
+    }
+
+    public function test_update_without_due_date_key_keeps_it(): void
+    {
+        $task = $this->createTask('Keeps its due date', 'D', TaskPriority::LOW, FutureDate::on());
+
+        $this->client->request(
+            'PUT',
+            '/api/tasks/' . $task->getId()->value(),
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: \json_encode(['title' => 'Renamed, same due date']),
+        );
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+        $json = \json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertSame(FutureDate::on()->format(\DATE_ATOM), $json['data']['dueDate']);
     }
 }

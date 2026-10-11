@@ -17,6 +17,7 @@ use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Domain\ValueObject\Task\TaskTitle;
+use App\Tests\Support\FutureDate;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid as RamseyUuid;
 
@@ -52,7 +53,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
                     && $updated->getDescription()->equals(TaskDescription::fromString('New Desc'))
                     && $updated->getStatus()->equals(TaskStatus::IN_PROGRESS)
                     && $updated->getPriority()->equals(TaskPriority::HIGH)
-                    && true === $updated->getDueDate()?->equals(TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-02T00:00:00+00:00')))
+                    && true === $updated->getDueDate()?->equals(TaskDueDate::fromDate(FutureDate::on(day: 2)))
                     && true === $updated->isUpdated()))
         ;
 
@@ -69,7 +70,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
             'New Desc',
             'in_progress',
             'high',
-            '2030-01-02T00:00:00+00:00',
+            FutureDate::on(day: 2)->format(\DATE_ATOM),
         );
 
         $response = $uc($request);
@@ -79,7 +80,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
         $this->assertSame('New Valid Title', $payload['title']);
         $this->assertSame('in_progress', $payload['status']);
         $this->assertSame('high', $payload['priority']);
-        $this->assertSame('2030-01-02T00:00:00+00:00', $payload['dueDate']);
+        $this->assertSame(FutureDate::on(day: 2)->format(\DATE_ATOM), $payload['dueDate']);
     }
 
     public function test_no_changes_detected_logs_and_does_not_persist(): void
@@ -146,5 +147,58 @@ final class UpdateTaskCommandHandlerTest extends TestCase
             null,
             null,
         ));
+    }
+
+    public function test_clears_the_due_date_when_asked(): void
+    {
+        $task = $this->taskWithDueDate(TaskDueDate::fromDate(FutureDate::on()));
+
+        $repo = $this->createMock(TaskRepositoryInterface::class);
+        $repo->method('findById')->willReturn($task);
+        $repo->expects($this->once())->method('update')->with($this->callback(static fn (Task $updated) => null === $updated->getDueDate()));
+
+        $handler  = new UpdateTaskCommandHandler($repo, $this->createStub(LoggerInterface::class));
+        $response = $handler(new UpdateTaskCommand($task->getId()->value(), null, null, null, null, null, clearDueDate: true));
+
+        $this->assertNull($response->toArray()['dueDate']);
+    }
+
+    public function test_resending_a_due_date_that_has_already_passed_is_a_no_op(): void
+    {
+        $past = new \DateTimeImmutable('-3 days')->setTime(10, 0);
+        $task = $this->taskWithDueDate($this->storedDueDate($past));
+
+        $repo = $this->createMock(TaskRepositoryInterface::class);
+        $repo->method('findById')->willReturn($task);
+        $repo->expects($this->never())->method('update');
+
+        $handler = new UpdateTaskCommandHandler($repo, $this->createStub(LoggerInterface::class));
+        $handler(new UpdateTaskCommand($task->getId()->value(), null, null, null, null, $past->format(TaskDueDate::FORMAT)));
+
+        $this->assertSame($past->getTimestamp(), $task->getDueDate()?->value()->getTimestamp());
+    }
+
+    private function taskWithDueDate(TaskDueDate $dueDate): Task
+    {
+        return new Task(
+            TaskId::fromString(RamseyUuid::uuid4()->toString()),
+            TaskTitle::fromString('Some Title'),
+            TaskDescription::fromString('Desc'),
+            TaskStatus::PENDING,
+            TaskPriority::LOW,
+            null,
+            $dueDate,
+        );
+    }
+
+    /**
+     * A due date loaded from storage that is in the past by now (the constructor would reject it).
+     */
+    private function storedDueDate(\DateTimeImmutable $date): TaskDueDate
+    {
+        $dueDate = new \ReflectionClass(TaskDueDate::class)->newInstanceWithoutConstructor();
+        new \ReflectionProperty(TaskDueDate::class, 'date')->setValue($dueDate, $date);
+
+        return $dueDate;
     }
 }

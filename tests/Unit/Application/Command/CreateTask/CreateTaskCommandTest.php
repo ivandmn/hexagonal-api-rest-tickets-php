@@ -41,14 +41,15 @@ final class CreateTaskCommandTest extends TestCase
         );
     }
 
-    public function test_construct_with_null_due_date_currently_errors_due_to_non_nullable_property(): void
+    public function test_construct_without_due_date(): void
     {
-        $this->expectException(\TypeError::class);
-        new CreateTaskCommand(
+        $command = new CreateTaskCommand(
             'Test Title',
             'Test Description',
             'high',
             null,
         );
+
+        $this->assertNull($command->getDueDate());
     }
 }

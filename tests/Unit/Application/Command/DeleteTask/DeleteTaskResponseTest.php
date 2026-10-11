@@ -12,6 +12,7 @@ use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Domain\ValueObject\Task\TaskTitle;
+use App\Tests\Support\FutureDate;
 use PHPUnit\Framework\TestCase;
 
 final class DeleteTaskResponseTest extends TestCase
@@ -25,7 +26,7 @@ final class DeleteTaskResponseTest extends TestCase
             TaskStatus::PENDING,
             TaskPriority::LOW,
             null,
-            TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-01T00:00:00+00:00')),
+            TaskDueDate::fromDate(FutureDate::on()),
             new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
             new \DateTimeImmutable('2030-01-02T00:00:00+00:00'),
         );

@@ -10,7 +10,7 @@ use App\Domain\ValueObject\Task\TaskDueDate;
 
 final class CreateTaskCommand implements CommandInterface
 {
-    private \DateTimeImmutable $dueDate;
+    private ?\DateTimeImmutable $dueDate;
 
     public function __construct(
         private string $title,

@@ -15,6 +15,7 @@ use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskTitle;
+use App\Tests\Support\FutureDate;
 use PHPUnit\Framework\TestCase;
 
 final class CreateTaskCommandHandlerTest extends TestCase
@@ -28,7 +29,7 @@ final class CreateTaskCommandHandlerTest extends TestCase
             'Test Title',
             'Test Description',
             'medium',
-            '2030-01-01T00:00:00+00:00',
+            FutureDate::on()->format(\DATE_ATOM),
         );
 
         $repo->expects($this->once())
@@ -36,7 +37,7 @@ final class CreateTaskCommandHandlerTest extends TestCase
             ->with($this->callback(static fn (Task $task) => $task->getTitle()->equals(TaskTitle::fromString('Test Title'))
                     && $task->getDescription()->equals(TaskDescription::fromString('Test Description'))
                     && $task->getPriority()->equals(TaskPriority::fromString('medium'))
-                    && true === $task->getDueDate()?->equals(TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-01T00:00:00+00:00')))))
+                    && true === $task->getDueDate()?->equals(TaskDueDate::fromDate(FutureDate::on()))))
         ;
 
         $logger->expects($this->once())
@@ -66,7 +67,7 @@ final class CreateTaskCommandHandlerTest extends TestCase
             'bad',
             'Ok description',
             'low',
-            '2030-01-01T00:00:00+00:00',
+            FutureDate::on()->format(\DATE_ATOM),
         ));
     }
 }

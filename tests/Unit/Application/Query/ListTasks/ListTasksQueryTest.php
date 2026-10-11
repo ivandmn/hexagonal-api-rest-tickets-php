@@ -29,13 +29,11 @@ final class ListTasksQueryTest extends TestCase
         $this->assertSame(50, $req->getLimit());
     }
 
-    public function test_accepts_nulls_for_filters_and_pagination(): void
+    public function test_normalises_out_of_range_pagination(): void
     {
-        $req = new ListTasksQuery(null, null, null, null);
-
-        $this->assertNull($req->getStatus());
-        $this->assertNull($req->getPriority());
-        $this->assertNull($req->getPage());
-        $this->assertNull($req->getLimit());
+        $this->assertSame(1, new ListTasksQuery(null, null, 0, 10)->getPage());
+        $this->assertSame(1, new ListTasksQuery(null, null, -3, 10)->getPage());
+        $this->assertSame(1, new ListTasksQuery(null, null, 1, 0)->getLimit());
+        $this->assertSame(ListTasksQuery::MAX_LIMIT, new ListTasksQuery(null, null, 1, 5000)->getLimit());
     }
 }

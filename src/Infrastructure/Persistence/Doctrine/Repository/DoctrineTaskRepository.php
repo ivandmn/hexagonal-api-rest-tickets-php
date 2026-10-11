@@ -59,4 +59,9 @@ final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
             ($page - 1) * $maxItems,
         );
     }
+
+    public function countByFilters(array $filters): int
+    {
+        return $this->entityManager->getRepository(Task::class)->count($filters);
+    }
 }

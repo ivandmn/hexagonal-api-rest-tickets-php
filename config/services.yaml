@@ -94,12 +94,3 @@ services:
     App\Domain\Repository\UserRepositoryInterface:
       alias: 'App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository'
 
-    App\Infrastructure\Service\ApiRequestValidator:
-      arguments:
-        - '@serializer'
-        - '@validator'
-
-    Symfony\Component\Serializer\Normalizer\ObjectNormalizer:
-      arguments:
-        $defaultContext:
-          allow_extra_attributes: false

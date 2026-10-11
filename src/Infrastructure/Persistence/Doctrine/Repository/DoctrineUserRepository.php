@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Doctrine\Repository;
 
+use App\Domain\Exception\User\UserAlreadyExistsException;
 use App\Domain\Model\User;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class DoctrineUserRepository implements UserRepositoryInterface
@@ -17,10 +19,19 @@ final readonly class DoctrineUserRepository implements UserRepositoryInterface
     ) {
     }
 
+    /**
+     * @throws UserAlreadyExistsException when another request registered the same email first
+     */
     public function save(User $user): void
     {
         $this->entityManager->persist($user);
-        $this->entityManager->flush();
+
+        try {
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException $exception) {
+            // The handler checks findByEmail() first, but two concurrent requests can both pass it.
+            throw new UserAlreadyExistsException('User with this email already exists', 0, $exception);
+        }
     }
 
     public function delete(User $user): void

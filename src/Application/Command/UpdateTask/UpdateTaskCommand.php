@@ -19,6 +19,8 @@ final class UpdateTaskCommand implements CommandInterface
         private ?string $stauts,
         private ?string $priority,
         ?string $dueDate,
+        // null fields mean "leave unchanged", so removing the due date needs an explicit flag
+        private bool $clearDueDate = false,
     ) {
         $date = null !== $dueDate ? \DateTimeImmutable::createFromFormat(TaskDueDate::FORMAT, $dueDate) : null;
         if (false === $date) {
@@ -56,5 +58,10 @@ final class UpdateTaskCommand implements CommandInterface
     public function getDueDate(): ?\DateTimeImmutable
     {
         return $this->dueDate;
+    }
+
+    public function shouldClearDueDate(): bool
+    {
+        return $this->clearDueDate;
     }
 }

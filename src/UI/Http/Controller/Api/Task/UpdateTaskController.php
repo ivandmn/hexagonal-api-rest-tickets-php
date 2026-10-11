@@ -49,7 +49,7 @@ class UpdateTaskController extends BaseController
 
     #[OA\Put(
         summary: 'Update a task',
-        description: 'Only the non-null fields sent are updated. Allowed status transitions: `pending` → `in_progress` → `completed`.',
+        description: 'Only the non-null fields sent are updated; send `"dueDate": null` to remove the due date. Allowed status transitions: `pending` → `in_progress` → `completed`.',
     )]
     #[OA\Parameter(name: 'id', description: 'Task identifier', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
     #[OA\RequestBody(required: true, content: new Model(type: UpdateTaskRequestDto::class))]
@@ -72,6 +72,8 @@ class UpdateTaskController extends BaseController
                 $data->status,
                 $data->priority,
                 $data->dueDate,
+                // `"dueDate": null` removes it; leaving the key out keeps it
+                clearDueDate: $request->getPayload()->has('dueDate') && null === $request->getPayload()->get('dueDate'),
             );
 
             /** @var UpdateTaskResponse $response */
