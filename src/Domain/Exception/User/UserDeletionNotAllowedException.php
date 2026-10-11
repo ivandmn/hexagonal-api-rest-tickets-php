@@ -16,7 +16,7 @@ final class UserDeletionNotAllowedException extends DomainException
         parent::__construct(
             self::ERROR_CODE,
             \sprintf('User %s cannot be deleted: %d task(s) not completed yet', $userId->value(), $unfinishedTasks),
-            ['userId' => $userId->value(), 'unfinishedTasks' => $unfinishedTasks],
+            ['user_id' => $userId->value(), 'unfinished_tasks' => $unfinishedTasks],
             0,
             $previous,
         );

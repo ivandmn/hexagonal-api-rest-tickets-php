@@ -15,13 +15,15 @@ use Symfony\Component\HttpFoundation\Response;
 final class SuccessResponse extends OA\Response
 {
     /**
-     * @param class-string $model Schema class describing the `data` payload
+     * @param class-string $model    Schema class describing the `data` payload
+     * @param bool         $location whether a Location header points to the resource (201)
      */
-    public function __construct(string $model, string $description, int $response = Response::HTTP_OK)
+    public function __construct(string $model, string $description, int $response = Response::HTTP_OK, bool $location = false)
     {
         parent::__construct(
             response: $response,
             description: $description,
+            headers: $location ? [new OA\Header(header: 'Location', description: 'URL of the created resource', schema: new OA\Schema(type: 'string', format: 'uri'))] : null,
             content: new OA\JsonContent(
                 required: ['status', 'data'],
                 properties: [

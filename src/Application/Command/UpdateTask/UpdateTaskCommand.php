@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Command\UpdateTask;
 
 use App\Application\Command\CommandInterface;
+use App\Application\Validation\Field;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskId;
@@ -22,11 +23,7 @@ final readonly class UpdateTaskCommand implements CommandInterface
     private ?TaskDescription $description;
     private ?TaskStatus $status;
     private ?TaskPriority $priority;
-    /**
-     * Only the format is checked here: whether the date may be in the past depends on the task
-     * (re-sending its current due date is allowed), so the TaskDueDate is built by the handler.
-     */
-    private ?\DateTimeImmutable $dueDate;
+    private ?TaskDueDate $dueDate;
 
     public function __construct(
         string $taskId,
@@ -38,12 +35,12 @@ final readonly class UpdateTaskCommand implements CommandInterface
         // null fields mean "leave unchanged", so removing the due date needs an explicit flag
         private bool $clearDueDate = false,
     ) {
-        $this->taskId      = TaskId::fromString($taskId);
-        $this->title       = null !== $title ? TaskTitle::fromString($title) : null;
-        $this->description = null !== $description ? TaskDescription::fromString($description) : null;
-        $this->status      = null !== $status ? TaskStatus::fromString($status) : null;
-        $this->priority    = null !== $priority ? TaskPriority::fromString($priority) : null;
-        $this->dueDate     = null !== $dueDate ? TaskDueDate::parse($dueDate) : null;
+        $this->taskId      = Field::of('taskId', static fn (): TaskId => TaskId::fromString($taskId));
+        $this->title       = null !== $title ? Field::of('title', static fn (): TaskTitle => TaskTitle::fromString($title)) : null;
+        $this->description = null !== $description ? Field::of('description', static fn (): TaskDescription => TaskDescription::fromString($description)) : null;
+        $this->status      = null !== $status ? Field::of('status', static fn (): TaskStatus => TaskStatus::fromString($status)) : null;
+        $this->priority    = null !== $priority ? Field::of('priority', static fn (): TaskPriority => TaskPriority::fromString($priority)) : null;
+        $this->dueDate     = null !== $dueDate ? Field::of('dueDate', static fn (): TaskDueDate => TaskDueDate::fromString($dueDate)) : null;
     }
 
     public function getTaskId(): TaskId
@@ -71,7 +68,7 @@ final readonly class UpdateTaskCommand implements CommandInterface
         return $this->priority;
     }
 
-    public function getDueDate(): ?\DateTimeImmutable
+    public function getDueDate(): ?TaskDueDate
     {
         return $this->dueDate;
     }

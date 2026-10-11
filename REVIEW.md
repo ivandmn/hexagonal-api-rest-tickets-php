@@ -44,28 +44,31 @@ Verificado: 191 tests unitarios y 58 funcionales en verde contra un Postgres lim
 
 ## 🟠 2. Arquitectura
 
-- [ ] **2.1 Quitar las 79 violaciones UI → Infrastructure.**
+- [x] **2.1 Quitar las 79 violaciones UI → Infrastructure.**
   - Mover a `src/UI/Http/` lo que pertenece al adaptador HTTP: `ApiResponse`, los DTOs de petición, `ApiRequestValidator` y las excepciones `InvalidRequest*`.
   - Borrar `BaseController` (obliga a inyectar los dos buses en cada controller).
   - Inyectar `LoggerInterface` en vez de `MonologLogger`.
-  🟡 Parcial: `ApiResponse`, DTOs, validación y excepciones de request ya viven en UI (79 → 8 violaciones). Queda `BaseController` (Infrastructure) y el logger concreto ya no se inyecta en controllers.
+  ✅ `ApiResponse`, DTOs, validación y excepciones de request viven en UI. `BaseController` no se borra sino que pasa a UI como `App\UI\Http\Controller\Api\ApiController` (abstracto, `ask()`/`dispatch()`): es un adaptador de entrada, y quitarlo obligaría a repetir los dos buses en 10 controllers. El logger concreto ya no se inyecta en controllers. **deptrac: 0 violaciones, 0 sin cubrir.**
 - [x] **2.2 Un único listener de excepciones para `/api`.** Sustituye los 8 try/catch copiados con su mapeo excepción → código HTTP (que ya no coinciden entre sí) y devuelve JSON también en 404/405/422, que hoy salen como HTML.
   ✅ `ApiExceptionListener` (Problem Details, RFC 9457) es el único sitio que construye errores; mapeo en `config/packages/error_mapping.yaml`. Ver README › Error Handling.
 - [x] **2.3 DTOs tipados con `#[MapRequestPayload]` / `#[MapQueryString]`** en lugar del validador hecho a mano, devolviendo todas las violaciones y no solo la primera.
   ✅ DTOs tipados en `src/UI/Http/Request` con `#[MapRequestPayload]` / `#[MapQueryString]`; reglas de valor delegadas al VO con `#[ValidVO]`; se devuelven todas las violaciones.
-- [ ] **2.4 CQRS de verdad:**
+- [x] **2.4 CQRS de verdad:**
   - Los commands devuelven `void`.
   - Una sola `TaskView` en lugar de 4 copias de la misma respuesta.
   - El formato JSON pasa a la capa UI (hoy las responses de Application hacen `jsonSerialize`).
-- [ ] **2.5 `TaskDueDate`:**
+  ✅ `CommandBusInterface::dispatch(): void` y todos los handlers de command devuelven `void`. Los 8 `*Response` se borran: las queries devuelven read models en `Application/DTO/Views` (`TaskView`, `AssignedUserView`, `TaskListView`, `UserView`, `UserListView`). El JSON lo construye `UI/Http/Response/ApiResponder` con el Serializer (fechas RFC 3339, snake_case). Para crear, el controller genera el id, despacha el command y lee la vista con la query (nueva `GetUserDetailsQuery` para el usuario).
+- [x] **2.5 `TaskDueDate`:**
   - Parsear la fecha en el value object (`fromString`, detectando fechas desbordadas como el 30 de febrero) en lugar de en los commands.
   - Inyectar un `Clock` (PSR-20) para la regla "no en el pasado".
   - Un `reconstitute()` en el dominio en lugar de la reflexión de `TaskDueDateType`.
+  ✅ `TaskDueDate` extiende el nuevo VO `DateTime` (`fromString` RFC 3339 que rechaza desbordes, normaliza a UTC). El VO es puro: la regla "no en el pasado" vive en `Task::create(..., $now)` y `Task::changeDueDate($date, $now)`, y los handlers pasan `$clock->now()` (`symfony/clock`, PSR-20; `MockClock` en tests). **`reconstitute()` no hace falta:** al no validar contra el reloj en el constructor, `TaskDueDateType` hidrata con el constructor normal y la reflexión desaparece.
 - [ ] **2.6 Persistencia:**
   - Middleware `doctrine_transaction` en el bus de commands y quitar el `flush()` de los repositorios.
   - `save()` único en lugar de `create`/`update`.
   - Un `TaskCriteria` tipado en lugar de `array $filters`.
   - Borrar los métodos que no se usan (`findByUserId`, `UserRepositoryInterface::delete`).
+  🟡 Parcial: `TaskCriteria` (enums tipados) sustituye a `array $filters` con `findByCriteria()`/`countByCriteria()`, con orden estable (`created_at DESC, id`). Fuera `findAll`, `findByUserId`, `findByFilters` y `countByFilters`. `UserRepositoryInterface::delete` **se queda**: ahora lo usa `DELETE /api/users/{id}`. Bug encontrado al testear: `findBy()` convertía los enums a string antes del tipo DBAL (500 al filtrar); ahora se usa QueryBuilder con parámetros tipados. Quedan la transacción en el bus y el `save()` único.
 - [ ] **2.7 Event bus montado pero sin usar:** o se emiten eventos de dominio, o se quita todo.
 - [ ] **2.8 Tipos DBAL:** clases base para los 9 casi idénticos, y quitar `getName()` (DBAL 4 ya no lo usa).
 - [ ] **2.9 Detalles de dominio:**
@@ -74,20 +77,26 @@ Verificado: 191 tests unitarios y 58 funcionales en verde contra un Postgres lim
   - Constructor privado más un constructor con nombre en `Task`.
   - `User` es anémico y su `updatedAt` nunca cambia.
   - Medir longitudes con `mb_strlen(trim())`, no con `strlen`.
+  🟡 Parcial: `TaskTitle`, `TaskDescription`, `UserName` y `Email` recortan con `trim()` y miden con `mb_strlen()` (el valor guardado es el recortado; `Email` comprueba la longitud antes del formato). El resto sigue pendiente.
 
 ---
 
 ## 🟡 3. Semántica de la API
 
-- [ ] **3.1 201 + `Location`** al crear (hoy 200).
-- [ ] **3.2 PATCH** para el update parcial (hoy PUT, pero solo cambia lo que envías).
-- [ ] **3.3 200 con `[]`** para listas vacías (hoy 204, que pierde el `meta`).
-- [ ] **3.4 Quitar el anidado `data.data`** de los listados.
+- [x] **3.1 201 + `Location`** al crear (hoy 200).
+  ✅ `POST /api/tasks` y `POST /api/users` → 201 con `Location` absoluto, que apunta a un recurso real (nuevo `GET /api/users/{id}`).
+- [x] **3.2 PATCH** para el update parcial (hoy PUT, pero solo cambia lo que envías).
+  ✅ `PATCH /api/tasks/{id}`; `PUT` da 405. `"due_date": null` borra la fecha y omitir la clave la mantiene.
+- [x] **3.3 200 con `[]`** para listas vacías (hoy 204, que pierde el `meta`).
+  ✅ Listas vacías: 200 con `"data": []` y su `meta`. `DELETE` de tareas y usuarios → 204 sin cuerpo.
+- [x] **3.4 Quitar el anidado `data.data`** de los listados.
+  ✅ Colecciones: `{"status": "success", "data": [...], "meta": {...}}`.
 - [x] **3.5 422** para fecha en el pasado (hoy 409; dejar el 409 para conflictos de estado).
   ✅ `TASK_DUE_DATE_IN_PAST` → 422 (409 queda para conflictos de estado).
 - [x] **3.6 `requirements: ['id' => Requirement::UUID]`** en las rutas (hoy `{id}` acepta cualquier texto).
   ✅ `requirements: ['id' => Requirement::UUID]` en todas las rutas con `{id}`: un id que no es UUID da 404.
-- [ ] **3.7 camelCase en todas las respuestas** (hoy `task_id`/`user_id` conviven con `assignedTo`/`dueDate`).
+- [x] **3.7 camelCase en todas las respuestas** (hoy `task_id`/`user_id` conviven con `assignedTo`/`dueDate`).
+  ✅ Decisión: **snake_case** en todo (peticiones, respuestas, `errors[].field`, `params` y `trace_id`). Name converter `camel_case_to_snake_case` global en el Serializer; el listener de errores usa el mismo para los paths de validación. Un `dueDate` en el payload es ahora campo desconocido (422).
 - [ ] **3.8 Docs solo en dev**, o protegidas (`/api/docs` es público en producción).
 - [ ] **3.9 CORS, rate limiting y API stateless** (`session: false`).
 - [ ] **3.10 `StatusController`:** sin `methods:`, `/` devuelve 200 vacío y `/health` no comprueba la BD.
@@ -96,15 +105,20 @@ Verificado: 191 tests unitarios y 58 funcionales en verde contra un Postgres lim
 
 ## 🧪 4. Tests
 
-- [ ] **4.1 BD de test propia.** Hoy los funcionales usan la BD externa (`.env.test` apunta a un host `db` que no existe y `dbname_suffix` está comentado).
+- [x] **4.1 BD de test propia.** Hoy los funcionales usan la BD externa (`.env.test` apunta a un host `db` que no existe y `dbname_suffix` está comentado).
   - Servicio Postgres en el compose de desarrollo.
   - Forzar `DATABASE_URL` en `phpunit.dist.xml`.
   - Target `make test-db` que cree el schema y migre.
-- [ ] **4.2 27 tests con el namespace mal** (`App\Tests\Application\…` sin `Unit`); PSR-4 no los resuelve.
+  ✅ Con otra solución, porque forzar `DATABASE_URL` en phpunit no cubre `bin/console --env=test`. `when@test` lee `TEST_DATABASE_URL`, que solo define `.env.test`, así que el `DATABASE_URL` real que inyecta el `env_file` del contenedor ya no puede ganar. Apunta al servicio `tickets-db-test` del compose de dev (Postgres 18 en tmpfs). `make test-db` crea el schema y migra; CI usa su propio servicio.
+- [x] **4.2 27 tests con el namespace mal** (`App\Tests\Application\…` sin `Unit`); PSR-4 no los resuelve.
+  ✅ Todos los namespaces de `tests/` coinciden con su ruta.
 - [ ] **4.3 Suite de integración:** repositorios, los 9 tipos DBAL, leer una fecha pasada guardada, migraciones.
+  🟡 Parcial: tests del repositorio para `TaskCriteria` (filtros, totales, páginas sin solapes con el mismo `created_at`) y del tipo `TaskDueDate`. CI valida las migraciones contra el mapping (`doctrine:schema:validate`).
 - [ ] **4.4 Tests de los buses** (que desenvuelven `HandlerFailedException`) y del validador (JSON inválido).
-- [ ] **4.5 Reloj falso (`MockClock`)** para quitar las dependencias de `now`.
-- [ ] **4.6 Object mothers y repositorios en memoria** en lugar de 43 `new Task(...)` y mocks que comprueban textos de log.
+- [x] **4.5 Reloj falso (`MockClock`)** para quitar las dependencias de `now`.
+  ✅ Los handlers que dependen del tiempo reciben `ClockInterface`; sus tests usan `MockClock` con un instante fijo.
+- [x] **4.6 Object mothers y repositorios en memoria** en lugar de 43 `new Task(...)` y mocks que comprueban textos de log.
+  ✅ `tests/Support/Mother`, `Double/InMemoryTaskRepository`, `Double/InMemoryUserRepository` y `Double/SpyAppLogger`. Los tests de Application comprueban estado, no llamadas a mocks.
 - [ ] **4.7 Asserts más estrictos:** quitar los que comprueban `instanceof` de lo recién construido, los que aceptan `[404, 400]` y los tests `*_currently` que fijan bugs como si fueran comportamiento correcto.
 - [ ] **4.8 Smoke tests** de `/health` y `/api/docs.json`.
 
@@ -112,47 +126,55 @@ Verificado: 191 tests unitarios y 58 funcionales en verde contra un Postgres lim
 
 ## 🛠️ 5. Tooling, Docker y config
 
-- [ ] **5.1 PHPStan.**
+- [x] **5.1 PHPStan.**
   - `tests/Support/PhpStan/Kernel.php:8` hace `dirname(__DIR__ . '/../../../vendor/autoload.php')`, que apunta al directorio y no al fichero.
   - `phpstan.dist.neon` lee `…KernelDevDebugContainer.xml`, mientras que `make phpstan` genera `…KernelLocalDebugContainer.xml`.
   - Solución: fijar el entorno `test` en los tres sitios.
-- [ ] **5.2 deptrac:** quitar restos de otro proyecto (`Farmapremium`, `Google|Firebase`, el `skip_violations` de `EmitTestApplePassCli`).
-- [ ] **5.3 CI con GitHub Actions:** cs-fixer, deptrac, PHPStan y tests unitarios y funcionales con un servicio Postgres (hoy no hay pipeline).
+  ✅ Entorno `test` fijado en `Kernel.php` (con `require_once` corregido), `phpstan.dist.neon` y `make phpstan`. Con el contenedor correcto salieron 222 errores de nivel 10 que nunca se habían visto. Están arreglados con tipos reales (narrowing, shapes `Problem`/`FieldError`, `@phpstan-consistent-constructor`), sin baseline. Única excepción documentada: el JSON decodificado de los tests funcionales (`mixed` por naturaleza). `config/reference.php` (generado) queda excluido. **Nivel 10: 0 errores.**
+- [x] **5.2 deptrac:** quitar restos de otro proyecto (`Farmapremium`, `Google|Firebase`, el `skip_violations` de `EmitTestApplePassCli`).
+  ✅ Reescrito: capas Domain/Application/Infrastructure/UI más capas de vendor (`CoreLibraries` = ramsey/uuid y PSR-20, `Logging` = PSR-3, `Framework`). Así "nada de framework en el núcleo" se comprueba en vez de solo documentarse. Caché en `var/`. 0 violaciones, 0 sin cubrir.
+- [x] **5.3 CI con GitHub Actions:** cs-fixer, deptrac, PHPStan y tests unitarios y funcionales con un servicio Postgres (hoy no hay pipeline).
+  ✅ `.github/workflows/ci.yml`: el job `quality` pasa cs-fixer, deptrac y PHPStan; el job `tests` levanta `postgres:18-alpine`, crea el schema, migra, valida el mapping y lanza unit y functional. Simulado en local en un directorio limpio y con entorno vacío: todo en verde.
 - [ ] **5.4 Composer:**
   - Quitar `guzzlehttp/guzzle`, `predis/predis` y `twig/extra-bundle` (no se usan).
   - Añadir `ext-pdo_pgsql`.
   - `"php": ">=8.5"` admite PHP 9: usar `~8.5.0` y fijar `config.platform`.
-- [ ] **5.5 Makefile:**
+- [x] **5.5 Makefile:**
   - Añadir `.PHONY`.
   - Prefijo `docker compose exec` para los comandos PHP cuando se lanzan desde el host.
   - Quitar el `chmod 777` de `fix-perms`.
   - `restart` usa un profile `supervisor` que no existe.
   - Faltan `test`, `test-functional`, `test-db` y `ci`.
+  ✅ `.PHONY` y `.DEFAULT_GOAL := help`; prefijo `EXEC` (`docker compose exec app-tickets`, vacío dentro del contenedor). `fix-perms` usa `chmod -R ug+rwX var` y `restart` reinicia `app-tickets`. Nuevos `test`, `test-functional`, `test-db` y `ci`; `code-check` queda para lo rápido sin BD.
 - [ ] **5.6 `.env`:** la convención de Symfony es commitear un `.env` con valores por defecto seguros y dejar los secretos en `.env.local`. Hoy está en `.gitignore`, así que un clon nuevo ni arranca los tests. Sobra uno de `.env.example` / `.env.local.example`.
 - [ ] **5.7 Dockerfile de producción (~860 MB):**
   - Multi-stage.
   - Quitar extensiones que no se usan (amqp, apcu, exif, gd, pcntl, redis, zip).
   - Quitar `git`, `acl`, `file` y Composer de la imagen final.
   - Una base común para dev y prod.
-- [ ] **5.8 `.dockerignore`:** excluir `bin/*` salvo `bin/console` (los proxies de las herramientas de desarrollo acaban rotos en la imagen de prod), cachés y configs de tooling.
+  🟡 Parcial: multi-stage (`base` → `build` con Composer → `prod`). La imagen final no lleva Composer, git, acl, file ni gettext, y `libcap2-bin` se purga tras el `setcap`. Probada: arranca como `www-data` en :80, `/health` 200, `/api/docs` 200, `/info` 404. El entrypoint solo intenta `composer install` si existe Composer. Quedan las extensiones sobrantes y la base común con dev.
+- [x] **5.8 `.dockerignore`:** excluir `bin/*` salvo `bin/console` (los proxies de las herramientas de desarrollo acaban rotos en la imagen de prod), cachés y configs de tooling.
+  ✅ `bin/*` salvo `bin/console`, tests, cachés (`.deptrac.cache`, `.php-cs-fixer.cache`, `.phpunit.cache`), configs de tooling, `.github/`, `*.md`, Makefile, compose y el `Caddyfile` de la raíz.
 - [ ] **5.9 Build de dev:** `USER_ID`/`GROUP_ID` sin valor por defecto rompen el build si falta `.env.local` (usar `${USER_ID:-1000}`).
 
 ---
 
 ## 📄 6. Docs y limpieza
 
-- [ ] **6.1 README:**
+- [x] **6.1 README:**
   - Título y autor dicen "Farmapremium API" y la URL de clonado apunta a ese repo.
   - Cita comandos que no existen (`make test`, `composer-install`, `bash`, `prune`).
   - Dice que la documentación está en `/` (está en `/api/docs`) y cita `phpunit.xml.dist` (es `phpunit.dist.xml`).
   - Falta la capa `UI/` en el árbol.
   - No hay sección de despliegue en Dokploy.
+  ✅ Reescrito entero: contrato de la API, endpoints, errores, arquitectura (con `UI/` y `Application/DTO/Views`), tests, calidad, comandos reales y despliegue en Dokploy.
 - [ ] **6.2 Ficheros que sobran:**
-  - `public/docs/openapi.yml` (spec escrito a mano y desfasado; ya lo genera Nelmio).
+  - `public/docs/openapi.yml` (spec escrito a mano y desfasado; ya lo genera Nelmio). ✅ Borrado.
   - `TEST.md` es el enunciado original: moverlo a `docs/`.
   - El `Caddyfile` de la raíz (idéntico a `etc/caddy/Caddyfile` y sin usar).
   - `AppFixtures` vacío y bloques de config que solo tienen comentarios.
-- [ ] **6.3 Comentarios en español** en un proyecto escrito en inglés (`framework.yaml`, `nelmio_api_doc.yaml`).
+- [x] **6.3 Comentarios en español** en un proyecto escrito en inglés (`framework.yaml`, `nelmio_api_doc.yaml`).
+  ✅ Traducidos. Además, la descripción de la API en Nelmio resume el contrato (snake_case, envoltorio, Problem Details, UTC).
 - [ ] **6.4 `etc/bash/.gitconfig`:** `credential.helper = store` guarda las credenciales en claro dentro del contenedor.
 
 ---

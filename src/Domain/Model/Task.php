@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Model;
 
 use App\Domain\Exception\Task\InvalidTaskStatusTransitionException;
+use App\Domain\Exception\Task\TaskDueDateInPastException;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskId;
@@ -21,13 +22,31 @@ final class Task
         private readonly TaskId $id,
         private TaskTitle $title,
         private TaskDescription $description,
-        private TaskStatus $status = TaskStatus::PENDING,
-        private TaskPriority $priority = TaskPriority::LOW,
-        private ?User $assignedUser = null,
-        private ?TaskDueDate $dueDate = null,
-        private readonly \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
-        private ?\DateTimeImmutable $updatedAt = null,
+        private TaskStatus $status,
+        private TaskPriority $priority,
+        private ?User $assignedUser,
+        private ?TaskDueDate $dueDate,
+        private readonly \DateTimeImmutable $createdAt,
+        private ?\DateTimeImmutable $updatedAt,
     ) {
+    }
+
+    /**
+     * New tasks start pending and unassigned; a due date, if any, cannot be in the past.
+     *
+     * @throws TaskDueDateInPastException
+     */
+    public static function create(
+        TaskId $id,
+        TaskTitle $title,
+        TaskDescription $description,
+        \DateTimeImmutable $now,
+        TaskPriority $priority = TaskPriority::LOW,
+        ?TaskDueDate $dueDate = null,
+    ): self {
+        $dueDate?->ensureNotBefore($now);
+
+        return new self($id, $title, $description, TaskStatus::PENDING, $priority, null, $dueDate, $now, null);
     }
 
     public function getId(): Uuid
@@ -129,7 +148,13 @@ final class Task
         $this->markAsUpdated();
     }
 
-    public function changeDueDate(?TaskDueDate $newTaskDueDate): void
+    /**
+     * Setting the due date the task already has is a no-op, even if it is in the past by now;
+     * a new due date cannot be in the past.
+     *
+     * @throws TaskDueDateInPastException
+     */
+    public function changeDueDate(?TaskDueDate $newTaskDueDate, \DateTimeImmutable $now): void
     {
         if (null === $this->dueDate && null === $newTaskDueDate) {
             return;
@@ -138,6 +163,8 @@ final class Task
         if (null !== $newTaskDueDate && $this->dueDate?->equals($newTaskDueDate)) {
             return;
         }
+
+        $newTaskDueDate?->ensureNotBefore($now);
 
         $this->dueDate = $newTaskDueDate;
         $this->markAsUpdated();

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\Query\ListTasks;
 
+use App\Application\DTO\Views\TaskListView;
+use App\Application\DTO\Views\TaskView;
 use App\Application\Query\QueryHandlerInterface;
+use App\Domain\Repository\TaskCriteria;
 use App\Domain\Repository\TaskRepositoryInterface;
 
 final readonly class ListTasksQueryHandler implements QueryHandlerInterface
@@ -14,16 +17,14 @@ final readonly class ListTasksQueryHandler implements QueryHandlerInterface
     ) {
     }
 
-    public function __invoke(ListTasksQuery $query): ListTasksResponse
+    public function __invoke(ListTasksQuery $query): TaskListView
     {
-        $filters = \array_filter(
-            ['status' => $query->getStatus(), 'priority' => $query->getPriority()],
-            static fn (?\BackedEnum $value): bool => null !== $value,
-        );
+        $criteria = new TaskCriteria($query->getStatus(), $query->getPriority());
+        $tasks    = $this->taskRepository->findByCriteria($criteria, $query->getPage(), $query->getLimit());
 
-        return new ListTasksResponse(
-            $this->taskRepository->findByFilters($filters, $query->getPage(), $query->getLimit()),
-            $this->taskRepository->countByFilters($filters),
+        return new TaskListView(
+            \array_map(TaskView::fromTask(...), $tasks),
+            $this->taskRepository->countByCriteria($criteria),
             $query->getPage(),
             $query->getLimit(),
         );

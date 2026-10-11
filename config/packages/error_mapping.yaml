@@ -4,7 +4,7 @@
 #
 # - Codes are stable: never change their meaning or reuse them (clients branch on them).
 # - Messages are public (shown to API clients). `{placeholders}` are filled with the exception
-#   params, e.g. TaskNotFoundException exposes {taskId}.
+#   params, e.g. TaskNotFoundException exposes {task_id}.
 # - `field` is only for domain errors raised outside request validation that still belong to a
 #   payload field; during validation the field comes from the property being validated.
 # - Every code declared in src/ must be listed here, and nothing else: a test enforces it
@@ -40,12 +40,12 @@ parameters:
         VALUE_TOO_LONG:        { status: 422, message: 'This value cannot be longer than {max} characters.' }
 
         # --- Tasks (App\Domain\Exception\Task) ---
-        TASK_NOT_FOUND:                     { status: 404, message: 'Task {taskId} does not exist.' }
+        TASK_NOT_FOUND:                     { status: 404, message: 'Task {task_id} does not exist.' }
         TASK_STATUS_TRANSITION_NOT_ALLOWED: { status: 409, message: 'A task cannot move from "{from}" to "{to}".', field: status }
         TASK_DELETION_NOT_ALLOWED:          { status: 409, message: 'Only pending tasks can be deleted; this one is "{status}".' }
-        TASK_DUE_DATE_IN_PAST:              { status: 422, message: 'The due date cannot be in the past.', field: dueDate }
+        TASK_DUE_DATE_IN_PAST:              { status: 422, message: 'The due date cannot be in the past.', field: due_date }
 
         # --- Users (App\Domain\Exception\User) ---
-        USER_NOT_FOUND:            { status: 404, message: 'User {userId} does not exist.' }
+        USER_NOT_FOUND:            { status: 404, message: 'User {user_id} does not exist.' }
         USER_ALREADY_EXISTS:       { status: 409, message: 'A user with email {email} already exists.', field: email }
-        USER_DELETION_NOT_ALLOWED: { status: 409, message: 'User {userId} still has {unfinishedTasks} unfinished task(s); complete them before deleting the user.' }
+        USER_DELETION_NOT_ALLOWED: { status: 409, message: 'User {user_id} still has {unfinished_tasks} unfinished task(s); complete them before deleting the user.' }

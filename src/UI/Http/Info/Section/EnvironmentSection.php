@@ -37,7 +37,8 @@ final readonly class EnvironmentSection implements InfoSectionInterface
 
     public function collect(): array
     {
-        $fromDotenv = \array_filter(\explode(',', (string) ($_SERVER['SYMFONY_DOTENV_VARS'] ?? '')));
+        $dotenvVars = $_SERVER['SYMFONY_DOTENV_VARS'] ?? '';
+        $fromDotenv = \array_filter(\explode(',', \is_string($dotenvVars) ? $dotenvVars : ''));
         $declared   = $this->declaredInDotenvFiles();
         $process    = \getenv();
 
@@ -94,7 +95,9 @@ final readonly class EnvironmentSection implements InfoSectionInterface
             }
 
             foreach (\array_keys($variables) as $name) {
-                $declared[$name][] = $file;
+                if (\is_string($name)) {
+                    $declared[$name][] = $file;
+                }
             }
         }
 

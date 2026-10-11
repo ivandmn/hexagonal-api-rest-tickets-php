@@ -2,189 +2,81 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Command\AssignTaskToUser;
+namespace App\Tests\Unit\Application\Command\AssignTaskToUser;
 
 use App\Application\Command\AssignTaskToUser\AssignTaskToUserCommand;
 use App\Application\Command\AssignTaskToUser\AssignTaskToUserCommandHandler;
-use App\Application\Command\AssignTaskToUser\AssignTaskToUserResponse;
-use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Exception\User\UserNotFoundException;
-use App\Domain\Model\Task;
-use App\Domain\Model\User;
-use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\Repository\UserRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskId;
-use App\Domain\ValueObject\Task\TaskPriority;
-use App\Domain\ValueObject\Task\TaskStatus;
-use App\Domain\ValueObject\Task\TaskTitle;
-use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
-use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\AssertsDomainError;
+use App\Tests\Support\Double\InMemoryTaskRepository;
+use App\Tests\Support\Double\InMemoryUserRepository;
+use App\Tests\Support\Double\SpyAppLogger;
+use App\Tests\Support\Mother;
 use PHPUnit\Framework\TestCase;
-use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class AssignTaskToUserCommandHandlerTest extends TestCase
 {
-    public function test_happy_path_assigns_and_updates_and_logs(): void
+    use AssertsDomainError;
+
+    private SpyAppLogger $logger;
+
+    protected function setUp(): void
     {
-        $taskRepo = $this->createMock(TaskRepositoryInterface::class);
-        $userRepo = $this->createMock(UserRepositoryInterface::class);
-        $logger   = $this->createMock(LoggerInterface::class);
-
-        $taskIdStr = RamseyUuid::uuid4()->toString();
-        $userIdStr = RamseyUuid::uuid4()->toString();
-
-        $task = new Task(
-            TaskId::fromString($taskIdStr),
-            TaskTitle::fromString('Test Title'),
-            TaskDescription::fromString('Test Description'),
-            TaskStatus::PENDING,
-            TaskPriority::LOW,
-            null,
-            null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
-        );
-
-        $user = new User(
-            UserId::fromString($userIdStr),
-            UserEmail::fromString('assignee@example.com'),
-            UserName::fromString('Assignee User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
-        );
-
-        $taskRepo->expects($this->once())
-            ->method('findById')
-            ->with($this->callback(static fn (TaskId $id) => $id->value() === $taskIdStr))
-            ->willReturn($task)
-        ;
-
-        $userRepo->expects($this->once())
-            ->method('findById')
-            ->with($this->callback(static fn (UserId $id) => $id->value() === $userIdStr))
-            ->willReturn($user)
-        ;
-
-        $taskRepo->expects($this->once())
-            ->method('update')
-            ->with($this->callback(static fn (Task $updated) => true === $updated->getAssignedUser()?->equals($user) && true === $updated->isUpdated()))
-        ;
-
-        $logger->expects($this->once())
-            ->method('info')
-            ->with(
-                'Task Assigned to User',
-                $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr
-                        && ($ctx['task_title'] ?? null) === 'Test Title'
-                        && ($ctx['user_id'] ?? null) === $userIdStr
-                        && ($ctx['user_email'] ?? null) === 'assignee@example.com'),
-            )
-        ;
-
-        $uc = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
-
-        $response = $uc(new AssignTaskToUserCommand($taskIdStr, $userIdStr));
-
-        $this->assertInstanceOf(AssignTaskToUserResponse::class, $response);
-        $this->assertSame($user, $task->getAssignedUser());
+        $this->logger = new SpyAppLogger();
     }
 
-    public function test_no_change_when_already_assigned_logs_and_does_not_update(): void
+    public function test_assigns_the_task_persists_and_logs(): void
     {
-        $taskRepo = $this->createMock(TaskRepositoryInterface::class);
-        $userRepo = $this->createMock(UserRepositoryInterface::class);
-        $logger   = $this->createMock(LoggerInterface::class);
+        $task  = Mother::task();
+        $user  = Mother::user();
+        $tasks = new InMemoryTaskRepository($task);
 
-        $taskIdStr = RamseyUuid::uuid4()->toString();
-        $userIdStr = RamseyUuid::uuid4()->toString();
+        $this->handler($tasks, new InMemoryUserRepository($user))(new AssignTaskToUserCommand($task->getId()->value(), $user->getId()->value()));
 
-        $user = new User(
-            UserId::fromString($userIdStr),
-            UserEmail::fromString('assignee@example.com'),
-            UserName::fromString('Assignee User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
-        );
+        $this->assertTrue($task->getAssignedUser()?->equals($user));
+        $this->assertSame(1, $tasks->updates);
+        $this->assertTrue($this->logger->has('info', 'Task assigned to user', ['task_id' => $task->getId()->value(), 'user_id' => $user->getId()->value()]));
+    }
 
-        $task = new Task(
-            TaskId::fromString($taskIdStr),
-            TaskTitle::fromString('Test Title'),
-            TaskDescription::fromString('Test Description'),
-            TaskStatus::PENDING,
-            TaskPriority::LOW,
-            $user,
-            null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
-        );
+    public function test_assigning_to_the_current_assignee_changes_nothing(): void
+    {
+        $user  = Mother::user();
+        $task  = Mother::task(assignee: $user);
+        $tasks = new InMemoryTaskRepository($task);
 
-        $taskRepo->expects($this->once())
-            ->method('findById')
-            ->willReturn($task)
-        ;
+        $this->handler($tasks, new InMemoryUserRepository($user))(new AssignTaskToUserCommand($task->getId()->value(), $user->getId()->value()));
 
-        $userRepo->expects($this->once())
-            ->method('findById')
-            ->willReturn($user)
-        ;
-
-        $taskRepo->expects($this->never())->method('update');
-
-        $logger->expects($this->once())
-            ->method('info')
-            ->with(
-                'Task not Assigned to User (no changes detected)',
-                $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr
-                        && ($ctx['task_title'] ?? null) === 'Test Title'
-                        && ($ctx['user_id'] ?? null) === $userIdStr
-                        && ($ctx['user_email'] ?? null) === 'assignee@example.com'),
-            )
-        ;
-
-        $uc       = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
-        $response = $uc(new AssignTaskToUserCommand($taskIdStr, $userIdStr));
-
-        $this->assertInstanceOf(AssignTaskToUserResponse::class, $response);
-        $this->assertSame($user, $task->getAssignedUser());
         $this->assertFalse($task->isUpdated());
+        $this->assertSame(0, $tasks->updates);
+        $this->assertTrue($this->logger->has('info', 'Task already assigned to this user'));
     }
 
-    public function test_throws_when_task_not_found(): void
+    public function test_fails_when_the_task_does_not_exist(): void
     {
-        $taskRepo = $this->createMock(TaskRepositoryInterface::class);
-        $userRepo = $this->createMock(UserRepositoryInterface::class);
-        $logger   = $this->createMock(LoggerInterface::class);
+        $taskId  = TaskId::new()->value();
+        $handler = $this->handler(new InMemoryTaskRepository(), new InMemoryUserRepository(Mother::user()));
 
-        $taskRepo->expects($this->once())->method('findById')->willReturn(null);
-        $userRepo->expects($this->never())->method('findById');
-        $logger->expects($this->never())->method('info');
-
-        $uc = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
-
-        $this->expectException(TaskNotFoundException::class);
-        $uc(new AssignTaskToUserCommand(RamseyUuid::uuid4()->toString(), RamseyUuid::uuid4()->toString()));
+        $this->assertDomainError(TaskNotFoundException::ERROR_CODE, static fn () => $handler(new AssignTaskToUserCommand($taskId, UserId::new()->value())), ['task_id' => $taskId]);
+        $this->assertSame([], $this->logger->records);
     }
 
-    public function test_throws_when_user_not_found(): void
+    public function test_fails_when_the_user_does_not_exist(): void
     {
-        $taskRepo = $this->createMock(TaskRepositoryInterface::class);
-        $userRepo = $this->createMock(UserRepositoryInterface::class);
-        $logger   = $this->createMock(LoggerInterface::class);
+        $task    = Mother::task();
+        $userId  = UserId::new()->value();
+        $tasks   = new InMemoryTaskRepository($task);
+        $handler = $this->handler($tasks, new InMemoryUserRepository());
 
-        $taskIdStr = RamseyUuid::uuid4()->toString();
-        $task      = new Task(
-            TaskId::fromString($taskIdStr),
-            TaskTitle::fromString('Test Title'),
-            TaskDescription::fromString('Test Description'),
-        );
+        $this->assertDomainError(UserNotFoundException::ERROR_CODE, static fn () => $handler(new AssignTaskToUserCommand($task->getId()->value(), $userId)), ['user_id' => $userId]);
+        $this->assertNull($task->getAssignedUser());
+        $this->assertSame(0, $tasks->updates);
+    }
 
-        $taskRepo->expects($this->once())->method('findById')->willReturn($task);
-        $userRepo->expects($this->once())->method('findById')->willReturn(null);
-        $taskRepo->expects($this->never())->method('update');
-        $logger->expects($this->never())->method('info');
-
-        $uc = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
-
-        $this->expectException(UserNotFoundException::class);
-        $uc(new AssignTaskToUserCommand($taskIdStr, RamseyUuid::uuid4()->toString()));
+    private function handler(InMemoryTaskRepository $tasks, InMemoryUserRepository $users): AssignTaskToUserCommandHandler
+    {
+        return new AssignTaskToUserCommandHandler($tasks, $users, $this->logger);
     }
 }

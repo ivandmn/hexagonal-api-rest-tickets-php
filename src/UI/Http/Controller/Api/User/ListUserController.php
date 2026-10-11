@@ -4,31 +4,30 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\User;
 
+use App\Application\DTO\Views\UserListView;
 use App\Application\Query\ListUsers\ListUsersQuery;
-use App\Application\Query\ListUsers\ListUsersResponse;
-use App\Infrastructure\Symfony\Controller\BaseController;
+use App\UI\Http\Controller\Api\ApiController;
+use App\UI\Http\OpenApi\Attribute\CollectionResponse;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
-use App\UI\Http\OpenApi\Attribute\SuccessResponse;
-use App\UI\Http\OpenApi\Schema\UserList;
-use App\UI\Http\Response\ApiResponse;
+use App\UI\Http\OpenApi\Schema\User;
+use App\UI\Http\OpenApi\Schema\UserListMeta;
+use App\UI\Http\Response\ApiResponder;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[OA\Tag(name: 'Users')]
-final class ListUserController extends BaseController
+final class ListUserController extends ApiController
 {
-    #[OA\Get(summary: 'List users')]
-    #[SuccessResponse(UserList::class, 'Users found')]
-    #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'There are no users')]
+    #[OA\Get(summary: 'List users', description: 'No users is a 200 with an empty `data`.')]
+    #[CollectionResponse(User::class, UserListMeta::class, 'Every user')]
     #[InternalErrorResponse]
     #[Route('/api/users', name: 'api_user_list', methods: ['GET'])]
-    public function __invoke(): JsonResponse
+    public function __invoke(ApiResponder $responder): JsonResponse
     {
-        /** @var ListUsersResponse $response */
-        $response = $this->queryHandler(new ListUsersQuery());
+        /** @var UserListView $users */
+        $users = $this->ask(new ListUsersQuery());
 
-        return $response->isEmpty() ? ApiResponse::empty() : ApiResponse::success($response);
+        return $responder->collection($users->items, ['total' => $users->total]);
     }
 }

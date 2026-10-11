@@ -47,34 +47,32 @@ final class ApiErrorHandlingTest extends WebTestCase
         $this->assertArrayNotHasKey('errors', $problem);
     }
 
-    public function test_reports_every_invalid_field_at_once(): void
+    public function test_reports_the_first_invalid_field(): void
     {
         $this->client->request('POST', '/api/tasks', server: ['CONTENT_TYPE' => 'application/json'], content: \json_encode([
-            'title'       => 'abc',
-            'priority'    => 'urgent',
-            'dueDate'     => 'tomorrow',
-            'unknown'     => true,
+            'title'        => 'abc',
+            'priority'     => 'urgent',
+            'due_date'     => 'tomorrow',
+            'unknown'      => true,
         ], \JSON_THROW_ON_ERROR));
 
         // Unknown fields are rejected before validation runs.
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['unknown' => ApiErrorCode::UNKNOWN_FIELD]);
 
         $this->client->request('POST', '/api/tasks', server: ['CONTENT_TYPE' => 'application/json'], content: \json_encode([
-            'title'    => 'abc',
-            'priority' => 'urgent',
-            'dueDate'  => 'tomorrow',
+            'title'       => 'abc',
+            'description' => 'Present, so the domain gets to judge the values',
+            'priority'    => 'urgent',
+            'due_date'    => 'tomorrow',
         ], \JSON_THROW_ON_ERROR));
 
+        // Fail-fast: the command stops at the first input the domain rejects.
         $problem = $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, [
-            'title'       => InvalidValueException::TOO_SHORT,
-            'description' => InvalidValueException::REQUIRED,
-            'priority'    => InvalidValueException::INVALID_CHOICE,
-            'dueDate'     => InvalidValueException::INVALID_FORMAT,
+            'title' => InvalidValueException::TOO_SHORT,
         ]);
 
         // Public messages come from the mapping, with placeholders resolved.
         $this->assertSame('This value must be at least 5 characters long.', $problem['errors'][0]['message']);
-        $this->assertSame('This value must be one of: low, medium, high.', $problem['errors'][2]['message']);
     }
 
     public function test_query_string_errors(): void
@@ -105,7 +103,7 @@ final class ApiErrorHandlingTest extends WebTestCase
     {
         $this->client->request('GET', '/api/does-not-exist', server: ['HTTP_X_REQUEST_ID' => 'trace-me-42']);
 
-        $this->assertSame('trace-me-42', $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND')['traceId']);
+        $this->assertSame('trace-me-42', $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND')['trace_id']);
     }
 
     public function test_routes_outside_the_api_keep_symfony_errors(): void

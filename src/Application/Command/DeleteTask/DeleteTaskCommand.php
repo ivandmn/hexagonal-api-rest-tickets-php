@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Command\DeleteTask;
 
 use App\Application\Command\CommandInterface;
+use App\Application\Validation\Field;
 use App\Domain\ValueObject\Task\TaskId;
 
 final readonly class DeleteTaskCommand implements CommandInterface
@@ -13,7 +14,7 @@ final readonly class DeleteTaskCommand implements CommandInterface
 
     public function __construct(string $taskId)
     {
-        $this->taskId = TaskId::fromString($taskId);
+        $this->taskId = Field::of('taskId', static fn (): TaskId => TaskId::fromString($taskId));
     }
 
     public function getTaskId(): TaskId

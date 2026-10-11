@@ -28,11 +28,8 @@ final class TaskPriorityType extends Type
         if ($value instanceof TaskPriority) {
             return $value->value;
         }
-        if (\is_string($value)) {
-            return TaskPriority::fromString($value)->value;
-        }
 
-        throw InvalidType::new($value, self::NAME, ['null', 'string', TaskPriority::class]);
+        throw InvalidType::new($value, self::NAME, ['null', TaskPriority::class]);
     }
 
     public function convertToPHPValue($value, AbstractPlatform $platform): ?TaskPriority
@@ -41,7 +38,11 @@ final class TaskPriorityType extends Type
             return $value;
         }
 
-        return TaskPriority::fromString((string) $value);
+        if (!\is_string($value)) {
+            throw InvalidType::new($value, self::NAME, ['null', 'string', TaskPriority::class]);
+        }
+
+        return TaskPriority::fromString($value);
     }
 
     public function getName(): string

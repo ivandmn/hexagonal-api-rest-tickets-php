@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Command\AssignTaskToUser;
 
 use App\Application\Command\CommandHandlerInterface;
+use App\Application\DTO\Views\TaskView;
 use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Exception\User\UserNotFoundException;
@@ -20,48 +21,25 @@ final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInt
     ) {
     }
 
-    public function __invoke(AssignTaskToUserCommand $command): AssignTaskToUserResponse
+    public function __invoke(AssignTaskToUserCommand $command): TaskView
     {
-        $taskId = $command->getTaskId();
-        $userId = $command->getUserId();
-
-        $task = $this->taskRepository->findById($taskId);
-
-        if (!$task) {
-            throw new TaskNotFoundException($taskId);
-        }
-
-        $user = $this->userRepository->findById($userId);
-
-        if (!$user) {
-            throw new UserNotFoundException($userId);
-        }
+        $task = $this->taskRepository->findById($command->getTaskId()) ?? throw new TaskNotFoundException($command->getTaskId());
+        $user = $this->userRepository->findById($command->getUserId()) ?? throw new UserNotFoundException($command->getUserId());
 
         $task->assignTo($user);
 
-        if (!$task->isUpdated()) {
-            $this->logger->info('Task not Assigned to User (no changes detected)', [
-                'task_id'    => $task->getId()->value(),
-                'task_title' => $task->getTitle()->value(),
-                'user_id'    => $task->getAssignedUser()?->getId()->value(),
-                'user_email' => $user->getEmail()->value(),
-            ]);
+        $context = ['task_id' => $task->getId()->value(), 'user_id' => $user->getId()->value()];
 
-            return new AssignTaskToUserResponse($task, $user);
+        if (!$task->isUpdated()) {
+            $this->logger->info('Task already assigned to this user', $context);
+
+            return TaskView::fromTask($task);
         }
 
         $this->taskRepository->update($task);
 
-        $this->logger->info(
-            'Task Assigned to User',
-            [
-                'task_id'    => $task->getId()->value(),
-                'task_title' => $task->getTitle()->value(),
-                'user_id'    => $task->getAssignedUser()?->getId()->value(),
-                'user_email' => $user->getEmail()->value(),
-            ],
-        );
+        $this->logger->info('Task assigned to user', $context);
 
-        return new AssignTaskToUserResponse($task, $user);
+        return TaskView::fromTask($task);
     }
 }

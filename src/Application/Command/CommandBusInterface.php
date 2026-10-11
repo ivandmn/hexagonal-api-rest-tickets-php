@@ -7,7 +7,9 @@ namespace App\Application\Command;
 interface CommandBusInterface
 {
     /**
-     * @throws \Throwable
+     * Returns whatever the handler returns: a view of the resource it created or changed, or null.
+     *
+     * @throws \Throwable the original exception thrown by the handler
      */
     public function dispatch(CommandInterface $command): mixed;
 }

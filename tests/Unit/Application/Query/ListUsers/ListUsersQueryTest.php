@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Query\ListUsers;
+namespace App\Tests\Unit\Application\Query\ListUsers;
 
 use App\Application\Query\ListUsers\ListUsersQuery;
 use PHPUnit\Framework\TestCase;

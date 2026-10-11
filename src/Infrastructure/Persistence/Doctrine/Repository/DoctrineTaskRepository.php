@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Doctrine\Repository;
 
 use App\Domain\Model\Task;
+use App\Domain\Repository\TaskCriteria;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Domain\ValueObject\User\UserId;
+use App\Infrastructure\Persistence\Doctrine\Type\Task\TaskPriorityType;
 use App\Infrastructure\Persistence\Doctrine\Type\Task\TaskStatusType;
 use App\Infrastructure\Persistence\Doctrine\Type\User\UserIdType;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
 
 final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
 {
@@ -38,34 +41,29 @@ final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
         $this->entityManager->flush();
     }
 
-    public function findAll(): array
-    {
-        return $this->entityManager->getRepository(Task::class)->findAll();
-    }
-
     public function findById(TaskId $id): ?Task
     {
         return $this->entityManager->find(Task::class, $id);
     }
 
-    public function findByUserId(UserId $userId): array
+    public function findByCriteria(TaskCriteria $criteria, int $page, int $maxItems): array
     {
-        return $this->entityManager->getRepository(Task::class)->findBy(['assignedUser' => $userId]);
+        /** @var list<Task> */
+        return $this->matching($criteria)
+            ->select('t')
+            // The id breaks ties between tasks created in the same second, so pages never overlap.
+            ->orderBy('t.createdAt', 'DESC')
+            ->addOrderBy('t.id', 'ASC')
+            ->setFirstResult(($page - 1) * $maxItems)
+            ->setMaxResults($maxItems)
+            ->getQuery()
+            ->getResult()
+        ;
     }
 
-    public function findByFilters(array $filters, int $page, int $maxItems): array
+    public function countByCriteria(TaskCriteria $criteria): int
     {
-        return $this->entityManager->getRepository(Task::class)->findBy(
-            $filters,
-            ['createdAt' => 'DESC'],
-            $maxItems,
-            ($page - 1) * $maxItems,
-        );
-    }
-
-    public function countByFilters(array $filters): int
-    {
-        return $this->entityManager->getRepository(Task::class)->count($filters);
+        return (int) $this->matching($criteria)->select('COUNT(t.id)')->getQuery()->getSingleScalarResult();
     }
 
     public function countByUser(UserId $userId): int
@@ -92,5 +90,23 @@ final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
         }
 
         return (int) $query->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Parameters carry their DBAL type: findBy() would turn the enums into plain strings first.
+     */
+    private function matching(TaskCriteria $criteria): QueryBuilder
+    {
+        $query = $this->entityManager->createQueryBuilder()->from(Task::class, 't');
+
+        if (null !== $criteria->status) {
+            $query->andWhere('t.status = :status')->setParameter('status', $criteria->status, TaskStatusType::NAME);
+        }
+
+        if (null !== $criteria->priority) {
+            $query->andWhere('t.priority = :priority')->setParameter('priority', $criteria->priority, TaskPriorityType::NAME);
+        }
+
+        return $query;
     }
 }

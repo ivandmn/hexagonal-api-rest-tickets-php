@@ -23,9 +23,9 @@ final class DoctrineUserRepositoryTest extends KernelTestCase
         /** @var UserRepositoryInterface $users */
         $users = static::getContainer()->get(UserRepositoryInterface::class);
 
-        $users->save(new User(UserId::new(), UserEmail::fromString('race@example.com'), UserName::fromString('First User')));
+        $users->save(User::create(UserId::new(), UserEmail::fromString('race@example.com'), UserName::fromString('First User'), new \DateTimeImmutable()));
 
         $this->expectException(UserAlreadyExistsException::class);
-        $users->save(new User(UserId::new(), UserEmail::fromString('race@example.com'), UserName::fromString('Second User')));
+        $users->save(User::create(UserId::new(), UserEmail::fromString('race@example.com'), UserName::fromString('Second User'), new \DateTimeImmutable()));
     }
 }

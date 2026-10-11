@@ -16,25 +16,19 @@ interface TaskRepositoryInterface
 
     public function delete(Task $task): void;
 
-    public function findAll(): array;
-
     public function findById(TaskId $id): ?Task;
 
-    public function findByUserId(UserId $userId): array;
-
     /**
-     * One page of the tasks matching the filters (all tasks when empty), newest first.
-     *
-     * @param array<string, mixed> $filters
+     * One page of the tasks matching the criteria, newest first.
      *
      * @return list<Task>
      */
-    public function findByFilters(array $filters, int $page, int $maxItems): array;
+    public function findByCriteria(TaskCriteria $criteria, int $page, int $maxItems): array;
 
     /**
-     * @param array<string, mixed> $filters
+     * Every task matching the criteria, across all pages.
      */
-    public function countByFilters(array $filters): int;
+    public function countByCriteria(TaskCriteria $criteria): int;
 
     /**
      * Tasks assigned to the user, whatever their status.

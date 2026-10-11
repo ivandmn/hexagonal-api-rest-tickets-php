@@ -16,7 +16,7 @@ final class UserNotFoundException extends DomainException
         parent::__construct(
             self::ERROR_CODE,
             \sprintf('User %s does not exist', $userId->value()),
-            ['userId' => $userId->value()],
+            ['user_id' => $userId->value()],
             0,
             $previous,
         );

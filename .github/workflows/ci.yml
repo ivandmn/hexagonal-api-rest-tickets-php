@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.5'
+  PHP_EXTENSIONS: ctype, iconv, intl, mbstring, pdo_pgsql, apcu, opcache
+
+jobs:
+  quality:
+    name: Code style, architecture, static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      # Composer's auto-scripts (cache:clear) boot the kernel, so .env must exist first. Only the
+      # variable names matter: nothing here connects to the app database.
+      - name: Environment file
+        run: cp .env.example .env
+
+      - uses: ramsey/composer-install@v3
+
+      - name: PHP-CS-Fixer
+        run: bin/php-cs-fixer fix --dry-run --diff --no-interaction
+
+      - name: Deptrac
+        run: bin/deptrac analyze --fail-on-uncovered --report-uncovered --no-progress
+
+      - name: PHPStan
+        run: |
+          bin/console cache:warmup --env=test --quiet
+          bin/phpstan analyse --memory-limit=512M --no-progress
+
+  tests:
+    name: Unit and functional tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: tickets_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d tickets_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      # Same database as the dev stack's tickets-db-test, reached through the mapped port.
+      TEST_DATABASE_URL: postgresql://app:app@127.0.0.1:5432/tickets_test?serverVersion=18&charset=utf8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Environment file
+        run: cp .env.example .env
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Test database schema
+        run: |
+          bin/console --env=test dbal:run-sql -q 'CREATE SCHEMA IF NOT EXISTS tickets'
+          bin/console --env=test doctrine:migrations:migrate --no-interaction --allow-no-migration
+          bin/console --env=test doctrine:schema:validate
+
+      - name: Unit tests
+        run: bin/phpunit --testsuite unit
+
+      - name: Functional tests
+        run: bin/phpunit --testsuite functional

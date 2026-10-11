@@ -4,64 +4,24 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject\Task;
 
-use App\Domain\Exception\InvalidValueException;
 use App\Domain\Exception\Task\TaskDueDateInPastException;
+use App\Domain\ValueObject\DateTime;
 
-final class TaskDueDate
+/**
+ * When a task is due. Pure value: format and comparisons only. Whether a due date may be in the
+ * past depends on *when* it is set, so that rule needs the current time and is enforced where a due
+ * date is set (Task::create, Task::changeDueDate) with the injected clock. A stored due date can
+ * therefore be loaded back even once it has passed.
+ */
+final readonly class TaskDueDate extends DateTime
 {
-    public const FORMAT      = \DATE_RFC3339;
-    public const FORMAT_NAME = 'RFC3339';
-
-    public function __construct(private \DateTimeImmutable $date)
-    {
-        if ($date < new \DateTimeImmutable('now')) {
-            throw new TaskDueDateInPastException($date);
-        }
-    }
-
-    public static function fromDate(\DateTimeImmutable $date): self
-    {
-        return new self($date);
-    }
-
     /**
-     * Parses and applies every rule, including "not in the past".
+     * @throws TaskDueDateInPastException
      */
-    public static function fromString(string $value): self
+    public function ensureNotBefore(\DateTimeImmutable $now): void
     {
-        return new self(self::parse($value));
-    }
-
-    /**
-     * Format rule only (RFC 3339). Overflowing dates such as February 30th are rejected
-     * instead of silently rolling over to March.
-     *
-     * @throws InvalidValueException
-     */
-    public static function parse(string $value): \DateTimeImmutable
-    {
-        $date   = \DateTimeImmutable::createFromFormat(self::FORMAT, $value);
-        $errors = \DateTimeImmutable::getLastErrors();
-
-        if (false === $date || (false !== $errors && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
-            throw InvalidValueException::invalidFormat(self::FORMAT_NAME . ' date-time (e.g. 2026-12-31T18:00:00+00:00)');
+        if ($this->value() < $now) {
+            throw new TaskDueDateInPastException($this->value());
         }
-
-        return $date;
-    }
-
-    public function value(): \DateTimeImmutable
-    {
-        return $this->date;
-    }
-
-    public function equals(self $other): bool
-    {
-        return $this->date->getTimestamp() === $other->date->getTimestamp();
-    }
-
-    public function __toString(): string
-    {
-        return $this->date->format(self::FORMAT);
     }
 }

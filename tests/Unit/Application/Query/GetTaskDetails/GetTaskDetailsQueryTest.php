@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Query\GetTaskDetails;
+namespace App\Tests\Unit\Application\Query\GetTaskDetails;
 
 use App\Application\Query\GetTaskDetails\GetTaskDetailsQuery;
 use App\Domain\Exception\InvalidValueException;
@@ -20,6 +20,6 @@ final class GetTaskDetailsQueryTest extends TestCase
 
     public function test_rejects_an_invalid_id_when_built(): void
     {
-        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new GetTaskDetailsQuery(''), ['expected' => 'UUID']);
+        $this->assertFieldError('taskId', InvalidValueException::INVALID_FORMAT, static fn () => new GetTaskDetailsQuery('not-a-uuid'), ['expected' => 'UUID']);
     }
 }

@@ -99,8 +99,9 @@ final readonly class OverviewSection implements InfoSectionInterface
         }
 
         $release = \parse_ini_file('/etc/os-release') ?: [];
+        $name    = $release['PRETTY_NAME'] ?? null;
 
-        return $release['PRETTY_NAME'] ?? null;
+        return \is_string($name) ? $name : null;
     }
 
     private function cpuCount(): ?int

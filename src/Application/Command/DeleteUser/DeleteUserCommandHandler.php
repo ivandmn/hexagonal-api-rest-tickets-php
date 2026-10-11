@@ -24,7 +24,7 @@ final readonly class DeleteUserCommandHandler implements CommandHandlerInterface
     ) {
     }
 
-    public function __invoke(DeleteUserCommand $command): DeleteUserResponse
+    public function __invoke(DeleteUserCommand $command): void
     {
         $userId = $command->getUserId();
         $user   = $this->userRepository->findById($userId) ?? throw new UserNotFoundException($userId);
@@ -38,7 +38,5 @@ final readonly class DeleteUserCommandHandler implements CommandHandlerInterface
         $this->userRepository->delete($user);
 
         $this->logger->info('User deleted', ['user_id' => $userId->value(), 'deleted_tasks' => $deletedTasks]);
-
-        return new DeleteUserResponse($user, $deletedTasks);
     }
 }

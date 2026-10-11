@@ -2,111 +2,51 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Command\DeleteTask;
+namespace App\Tests\Unit\Application\Command\DeleteTask;
 
 use App\Application\Command\DeleteTask\DeleteTaskCommand;
 use App\Application\Command\DeleteTask\DeleteTaskCommandHandler;
-use App\Application\Command\DeleteTask\DeleteTaskResponse;
-use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskDeletionNotAllowedException;
 use App\Domain\Exception\Task\TaskNotFoundException;
-use App\Domain\Model\Task;
-use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskId;
-use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
-use App\Domain\ValueObject\Task\TaskTitle;
+use App\Tests\Support\AssertsDomainError;
+use App\Tests\Support\Double\InMemoryTaskRepository;
+use App\Tests\Support\Double\SpyAppLogger;
+use App\Tests\Support\Mother;
 use PHPUnit\Framework\TestCase;
-use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class DeleteTaskCommandHandlerTest extends TestCase
 {
-    public function test_deletes_task_and_logs(): void
+    use AssertsDomainError;
+
+    public function test_deletes_a_pending_task_and_logs(): void
     {
-        $repo   = $this->createMock(TaskRepositoryInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $task   = Mother::task(title: 'Deletable Task');
+        $tasks  = new InMemoryTaskRepository($task);
+        $logger = new SpyAppLogger();
 
-        $taskId = TaskId::fromString(RamseyUuid::uuid4()->toString());
-        $task   = new Task(
-            $taskId,
-            TaskTitle::fromString('Deletable Task'),
-            TaskDescription::fromString('ok'),
-            TaskStatus::PENDING,
-            TaskPriority::LOW,
-            null,
-            null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
-        );
+        new DeleteTaskCommandHandler($tasks, $logger)(new DeleteTaskCommand($task->getId()->value()));
 
-        $repo->expects($this->once())
-            ->method('findById')
-            ->with($this->callback(static fn (TaskId $id) => $id->value() === $taskId->value()))
-            ->willReturn($task)
-        ;
-
-        $repo->expects($this->once())
-            ->method('delete')
-            ->with($this->identicalTo($task))
-        ;
-
-        $logger->expects($this->once())
-            ->method('info')
-            ->with(
-                'Task deleted',
-                $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskId->value()
-                        && isset($ctx['task_title'])
-                        && $ctx['task_title'] === $task->getTitle()->value()),
-            )
-        ;
-
-        $uc       = new DeleteTaskCommandHandler($repo, $logger);
-        $response = $uc(new DeleteTaskCommand($taskId->value()));
-
-        $this->assertInstanceOf(DeleteTaskResponse::class, $response);
-        $payload = $response->toArray();
-        $this->assertSame($taskId->value(), $payload['task_id']);
+        $this->assertSame([], $tasks->all());
+        $this->assertTrue($logger->has('info', 'Task deleted', ['task_id' => $task->getId()->value(), 'task_title' => 'Deletable Task']));
     }
 
-    public function test_throws_when_task_not_found(): void
+    public function test_fails_when_the_task_does_not_exist(): void
     {
-        $repo   = $this->createMock(TaskRepositoryInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $taskId  = TaskId::new()->value();
+        $handler = new DeleteTaskCommandHandler(new InMemoryTaskRepository(), new SpyAppLogger());
 
-        $repo->expects($this->once())->method('findById')->willReturn(null);
-        $repo->expects($this->never())->method('delete');
-        $logger->expects($this->never())->method('info');
-
-        $uc = new DeleteTaskCommandHandler($repo, $logger);
-
-        $this->expectException(TaskNotFoundException::class);
-        $uc(new DeleteTaskCommand(RamseyUuid::uuid4()->toString()));
+        $this->assertDomainError(TaskNotFoundException::ERROR_CODE, static fn () => $handler(new DeleteTaskCommand($taskId)), ['task_id' => $taskId]);
     }
 
-    public function test_throws_when_task_cannot_be_deleted(): void
+    public function test_refuses_a_task_that_is_not_pending(): void
     {
-        $repo   = $this->createMock(TaskRepositoryInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $task    = Mother::task(status: TaskStatus::IN_PROGRESS);
+        $tasks   = new InMemoryTaskRepository($task);
+        $handler = new DeleteTaskCommandHandler($tasks, new SpyAppLogger());
 
-        $taskId = TaskId::fromString(RamseyUuid::uuid4()->toString());
-        $task   = new Task(
-            $taskId,
-            TaskTitle::fromString('In Progress'),
-            TaskDescription::fromString('no'),
-            TaskStatus::IN_PROGRESS,
-            TaskPriority::LOW,
-            null,
-            null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
-        );
-
-        $repo->expects($this->once())->method('findById')->willReturn($task);
-        $repo->expects($this->never())->method('delete');
-        $logger->expects($this->never())->method('info');
-
-        $uc = new DeleteTaskCommandHandler($repo, $logger);
-
-        $this->expectException(TaskDeletionNotAllowedException::class);
-        $uc(new DeleteTaskCommand($taskId->value()));
+        $this->assertDomainError(TaskDeletionNotAllowedException::ERROR_CODE, static fn () => $handler(new DeleteTaskCommand($task->getId()->value())), ['task_id' => $task->getId()->value(), 'status' => 'in_progress']);
+        $this->assertCount(1, $tasks->all());
     }
 }

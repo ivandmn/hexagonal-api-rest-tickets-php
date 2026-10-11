@@ -86,7 +86,7 @@ final class ErrorCodeCoverageTest extends KernelTestCase
 
         $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($src, \FilesystemIterator::SKIP_DOTS));
         foreach ($files as $file) {
-            if ('php' !== $file->getExtension()) {
+            if (!$file instanceof \SplFileInfo || 'php' !== $file->getExtension()) {
                 continue;
             }
 

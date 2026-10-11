@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Exception;
 
 /**
- * Generic value errors raised by Value Objects. They carry no payload field: the HTTP layer
- * resolves it from the property being validated (see App\UI\Http\Validation\ValidVO).
+ * Generic value errors raised by Value Objects. They carry no field: the command or query that
+ * builds the Value Object tags it with the input name (see App\Application\Validation\Field).
  */
 final class InvalidValueException extends DomainException
 {

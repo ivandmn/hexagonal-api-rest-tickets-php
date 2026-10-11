@@ -42,8 +42,9 @@ doctrine:
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
-            # dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+            # A dedicated variable, never DATABASE_URL: real environment variables (e.g. the app
+            # container's env_file) win over .env.test, so tests could otherwise hit the app database.
+            url: '%env(resolve:TEST_DATABASE_URL)%'
 
 when@prod:
     doctrine:

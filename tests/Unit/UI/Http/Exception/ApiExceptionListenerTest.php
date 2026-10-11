@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\UI\Http\Exception;
 
+use App\Application\Validation\InvalidFieldException;
 use App\Domain\Exception\DomainException;
 use App\Domain\Exception\InvalidValueException;
 use App\Domain\Exception\Task\TaskNotFoundException;
@@ -13,19 +14,15 @@ use App\Domain\ValueObject\User\UserEmail;
 use App\Tests\Support\SpyLogger;
 use App\UI\Http\Exception\ApiErrorCode;
 use App\UI\Http\Exception\ApiExceptionListener;
-use App\UI\Http\Exception\ConstraintViolationTranslator;
 use App\UI\Http\Exception\ErrorCodeMapper;
+use App\UI\Http\Request\InvalidPayloadException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\Serializer\Exception\ExtraAttributesException;
-use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\ConstraintViolation;
-use Symfony\Component\Validator\ConstraintViolationList;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
 use Symfony\Component\Yaml\Yaml;
 
 final class ApiExceptionListenerTest extends TestCase
@@ -38,7 +35,10 @@ final class ApiExceptionListenerTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         // The real mapping, so these tests also exercise the YAML.
-        self::$codes = Yaml::parseFile(\dirname(__DIR__, 5) . '/config/packages/error_mapping.yaml')['parameters']['app.error_mapping.codes'];
+        $config = Yaml::parseFile(\dirname(__DIR__, 5) . '/config/packages/error_mapping.yaml');
+        \assert(\is_array($config) && \is_array($config['parameters']) && \is_array($config['parameters']['app.error_mapping.codes']));
+
+        self::$codes = $config['parameters']['app.error_mapping.codes'];
     }
 
     public function test_ignores_requests_outside_the_api(): void
@@ -55,7 +55,7 @@ final class ApiExceptionListenerTest extends TestCase
 
         $this->assertSame('TASK_NOT_FOUND', $problem['type']);
         $this->assertSame(\sprintf('Task %s does not exist.', $taskId->value()), $problem['title']);
-        $this->assertSame(['taskId' => $taskId->value()], $problem['params']);
+        $this->assertSame(['task_id' => $taskId->value()], $problem['params']);
         $this->assertArrayNotHasKey('errors', $problem);
     }
 
@@ -91,7 +91,7 @@ final class ApiExceptionListenerTest extends TestCase
     {
         $problem = $this->problem($this->dispatch(new \RuntimeException('SQLSTATE secret detail')), Response::HTTP_INTERNAL_SERVER_ERROR);
 
-        $this->assertSame(['type' => 'INTERNAL_ERROR', 'title' => 'An unexpected error occurred.', 'status' => 500], \array_diff_key($problem, ['traceId' => 1]));
+        $this->assertSame(['type' => 'INTERNAL_ERROR', 'title' => 'An unexpected error occurred.', 'status' => 500], \array_diff_key($problem, ['trace_id' => 1]));
         $this->assertStringNotContainsString('secret', (string) \json_encode($problem));
     }
 
@@ -103,28 +103,47 @@ final class ApiExceptionListenerTest extends TestCase
         $this->assertSame('boom', $problem['debug']['message']);
     }
 
-    public function test_validation_failures_list_every_violation(): void
+    public function test_rejected_command_input_is_a_validation_error_on_that_field(): void
     {
-        $violations = new ConstraintViolationList([
-            new ConstraintViolation('blank', null, [], null, 'title', null, null, NotBlank::IS_BLANK_ERROR),
-            new ConstraintViolation('short', null, [], null, 'name', 'abc', null, InvalidValueException::TOO_SHORT, null, InvalidValueException::tooShort(5)),
-        ]);
-
-        $problem = $this->problem($this->dispatch(new ValidationFailedException(null, $violations)), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $problem = $this->problem($this->dispatch(new InvalidFieldException('title', InvalidValueException::tooShort(5))), Response::HTTP_UNPROCESSABLE_ENTITY);
 
         $this->assertSame(ApiErrorCode::VALIDATION_ERROR, $problem['type']);
         $this->assertSame([
-            ['field' => 'title', 'code' => 'VALUE_REQUIRED', 'message' => 'This value is required.', 'params' => []],
-            ['field' => 'name', 'code' => 'VALUE_TOO_SHORT', 'message' => 'This value must be at least 5 characters long.', 'params' => ['min' => 5]],
+            ['field' => 'title', 'code' => 'VALUE_TOO_SHORT', 'message' => 'This value must be at least 5 characters long.', 'params' => ['min' => 5]],
         ], $problem['errors']);
+    }
+
+    public function test_command_input_names_become_payload_names_in_snake_case(): void
+    {
+        $problem = $this->problem($this->dispatch(new InvalidFieldException('dueDate', InvalidValueException::required())), Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        $this->assertSame([['field' => 'due_date', 'code' => 'VALUE_REQUIRED', 'message' => 'This value is required.', 'params' => []]], $problem['errors']);
     }
 
     public function test_unknown_fields_are_validation_errors(): void
     {
-        $problem = $this->problem($this->dispatch(new ExtraAttributesException(['foo', 'bar'])), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $problem = $this->problem($this->dispatch(InvalidPayloadException::unknownFields(['foo', 'bar'])), Response::HTTP_UNPROCESSABLE_ENTITY);
 
+        $this->assertSame(ApiErrorCode::VALIDATION_ERROR, $problem['type']);
         $this->assertSame(['foo', 'bar'], \array_column($problem['errors'], 'field'));
         $this->assertSame([ApiErrorCode::UNKNOWN_FIELD, ApiErrorCode::UNKNOWN_FIELD], \array_column($problem['errors'], 'code'));
+    }
+
+    public function test_wrong_types_are_validation_errors_with_the_expected_type(): void
+    {
+        $problem = $this->problem($this->dispatch(InvalidPayloadException::invalidType('title', 'string')), Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        $this->assertSame([
+            ['field' => 'title', 'code' => ApiErrorCode::INVALID_TYPE, 'message' => 'This value should be of type string.', 'params' => ['expected' => 'string']],
+        ], $problem['errors']);
+    }
+
+    public function test_body_level_payload_errors_have_no_errors_list(): void
+    {
+        $problem = $this->problem($this->dispatch(InvalidPayloadException::malformedJson()), Response::HTTP_BAD_REQUEST);
+
+        $this->assertSame(ApiErrorCode::MALFORMED_JSON, $problem['type']);
+        $this->assertArrayNotHasKey('errors', $problem);
     }
 
     public function test_framework_http_errors_keep_their_status_and_headers(): void
@@ -140,7 +159,7 @@ final class ApiExceptionListenerTest extends TestCase
     {
         $event = $this->dispatch(new \RuntimeException('boom'), requestId: 'req-123');
 
-        $this->assertSame('req-123', $this->problem($event, 500)['traceId']);
+        $this->assertSame('req-123', $this->problem($event, 500)['trace_id']);
         $this->assertSame('req-123', $event->getResponse()?->headers->get('X-Request-Id'));
     }
 
@@ -154,14 +173,14 @@ final class ApiExceptionListenerTest extends TestCase
         }
 
         $event    = new ExceptionEvent($this->createStub(HttpKernelInterface::class), $request, HttpKernelInterface::MAIN_REQUEST, $exception);
-        $listener = new ApiExceptionListener(new ErrorCodeMapper(self::$codes), new ConstraintViolationTranslator(), $this->logger, $debug, '/api');
+        $listener = new ApiExceptionListener(new ErrorCodeMapper(self::$codes), $this->logger, new CamelCaseToSnakeCaseNameConverter(), $debug, '/api');
         $listener($event);
 
         return $event;
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     private function problem(ExceptionEvent $event, int $status): array
     {
@@ -171,8 +190,9 @@ final class ApiExceptionListenerTest extends TestCase
         $this->assertSame('application/problem+json', $response->headers->get('Content-Type'));
 
         $problem = \json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        $this->assertIsArray($problem);
         $this->assertSame($status, $problem['status']);
-        $this->assertNotEmpty($problem['traceId']);
+        $this->assertNotEmpty($problem['trace_id']);
 
         return $problem;
     }

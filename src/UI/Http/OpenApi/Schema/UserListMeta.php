@@ -6,12 +6,9 @@ namespace App\UI\Http\OpenApi\Schema;
 
 use OpenApi\Attributes as OA;
 
-#[OA\Schema(required: ['total', 'page'])]
+#[OA\Schema(required: ['total'])]
 final class UserListMeta
 {
-    #[OA\Property(description: 'Number of users returned', example: 1)]
+    #[OA\Property(description: 'Number of users', example: 1)]
     public int $total;
-
-    #[OA\Property(example: 1)]
-    public int $page;
 }

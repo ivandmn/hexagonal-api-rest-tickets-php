@@ -11,7 +11,7 @@ use App\Domain\ValueObject\Task\TaskTitle;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 
-#[OA\Schema(required: ['id', 'title', 'description', 'status', 'priority', 'assignedTo', 'dueDate', 'createdAt', 'updatedAt'])]
+#[OA\Schema(required: ['id', 'title', 'description', 'status', 'priority', 'assigned_to', 'due_date', 'created_at', 'updated_at'])]
 final class Task
 {
     #[OA\Property(format: 'uuid', example: '3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63')]

@@ -42,7 +42,7 @@ final readonly class DoctrineUserRepository implements UserRepositoryInterface
 
     public function findAll(): array
     {
-        return $this->entityManager->getRepository(User::class)->findAll();
+        return $this->entityManager->getRepository(User::class)->findBy([], ['createdAt' => 'ASC', 'id' => 'ASC']);
     }
 
     public function findById(UserId $id): ?User

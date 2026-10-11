@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Query\GetTaskDetails;
 
+use App\Application\DTO\Views\TaskView;
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
@@ -15,16 +16,10 @@ final readonly class GetTaskDetailsQueryHandler implements QueryHandlerInterface
     ) {
     }
 
-    public function __invoke(GetTaskDetailsQuery $query): GetTaskDetailsResponse
+    public function __invoke(GetTaskDetailsQuery $query): TaskView
     {
-        $taskId = $query->getTaskId();
+        $task = $this->taskRepository->findById($query->getTaskId()) ?? throw new TaskNotFoundException($query->getTaskId());
 
-        $task = $this->taskRepository->findById($taskId);
-
-        if (!$task) {
-            throw new TaskNotFoundException($taskId);
-        }
-
-        return new GetTaskDetailsResponse($task);
+        return TaskView::fromTask($task);
     }
 }

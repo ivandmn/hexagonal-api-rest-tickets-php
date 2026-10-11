@@ -104,11 +104,15 @@ final readonly class ExtensionsSection implements InfoSectionInterface
             return [];
         }
 
-        $packages   = \array_keys(\array_merge($composer['require'] ?? [], $composer['require-dev'] ?? []));
-        $extensions = \array_values(\array_map(
-            static fn (string $package): string => \strtolower(\substr($package, 4)),
-            \array_filter($packages, static fn (string $package): bool => \str_starts_with($package, 'ext-')),
-        ));
+        $require    = \is_array($composer['require'] ?? null) ? $composer['require'] : [];
+        $requireDev = \is_array($composer['require-dev'] ?? null) ? $composer['require-dev'] : [];
+
+        $extensions = [];
+        foreach (\array_keys(\array_merge($require, $requireDev)) as $package) {
+            if (\is_string($package) && \str_starts_with($package, 'ext-')) {
+                $extensions[] = \strtolower(\substr($package, 4));
+            }
+        }
         \sort($extensions);
 
         return $extensions;

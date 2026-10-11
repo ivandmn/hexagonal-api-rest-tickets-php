@@ -14,6 +14,10 @@ enum TaskPriority: string
 
     public static function fromString(string $value): self
     {
+        if ('' === $value) {
+            throw InvalidValueException::required();
+        }
+
         return self::tryFrom($value)
             ?? throw InvalidValueException::invalidChoice($value, \array_column(self::cases(), 'value'));
     }

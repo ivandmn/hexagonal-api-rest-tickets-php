@@ -2,20 +2,27 @@ nelmio_api_doc:
   documentation:
     info:
       title: Ticket API
-      description: API for managing user tickets
+      description: |
+        Task (ticket) management: users, tasks, assignment and status workflow.
+
+        - Every JSON key is `snake_case`, in requests and responses.
+        - Success: `{"status": "success", "data": ...}`; collections add `meta`.
+        - Errors: [Problem Details](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`).
+          Branch on `type` and `errors[].code`, never on the human-readable texts.
+        - Dates: RFC 3339, returned in UTC.
       version: 1.0.0
-  areas: # to filter documented areas
+  areas: # which routes are documented
     path_patterns:
-      - ^/api(?!/docs$) # Accepts routes under /api except /api/docs
+      - ^/api(?!/docs$) # every route under /api except the docs page itself
   html_config:
     assets_mode: bundle
     scalar_config:
-      theme: purple             # otros: moon, purple, solarized, bluePlanet, saturn, kepler, mars, deepSpace
-      layout: modern             # o classic
+      theme: purple              # others: moon, solarized, bluePlanet, saturn, kepler, mars, deepSpace
+      layout: modern             # or classic
       darkMode: true
-      hideModels: true           # oculta la sección de modelos (schemas)
-      persistAuth: true          # recuerda el token al recargar
-      defaultOpenAllTags: false  # tags colapsados al abrir
+      hideModels: true           # hide the models (schemas) section
+      persistAuth: true          # keep the auth token across reloads
+      defaultOpenAllTags: false  # tags start collapsed
       defaultHttpClient:
         targetKey: shell
-        clientKey: curl          # el ejemplo de código que se muestra por defecto
+        clientKey: curl          # code sample shown by default

@@ -42,8 +42,8 @@ final class DeleteUserTest extends WebTestCase
 
         $this->client->request('DELETE', '/api/users/' . $user->getId()->value());
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        $this->assertSame(0, $this->json()['data']['deleted_tasks']);
+        $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+        $this->assertSame('', $this->client->getResponse()->getContent());
         $this->assertNull($this->users()->findById($user->getId()));
     }
 
@@ -56,8 +56,7 @@ final class DeleteUserTest extends WebTestCase
 
         $this->client->request('DELETE', '/api/users/' . $user->getId()->value());
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
-        $this->assertSame(2, $this->json()['data']['deleted_tasks']);
+        $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
         $this->assertNull($this->users()->findById($user->getId()));
 
         $this->em()->clear();
@@ -91,7 +90,7 @@ final class DeleteUserTest extends WebTestCase
         $this->client->request('DELETE', '/api/users/' . $user->getId()->value());
 
         $problem = $this->assertProblem($this->client, Response::HTTP_CONFLICT, UserDeletionNotAllowedException::ERROR_CODE);
-        $this->assertSame(['userId' => $user->getId()->value(), 'unfinishedTasks' => $unfinished], $problem['params']);
+        $this->assertSame(['user_id' => $user->getId()->value(), 'unfinished_tasks' => $unfinished], $problem['params']);
 
         $this->em()->clear();
         $this->assertNotNull($this->users()->findById($user->getId()), 'Nothing is deleted');
@@ -105,7 +104,7 @@ final class DeleteUserTest extends WebTestCase
         $this->client->request('DELETE', '/api/users/' . $userId);
 
         $problem = $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, UserNotFoundException::ERROR_CODE);
-        $this->assertSame(['userId' => $userId], $problem['params']);
+        $this->assertSame(['user_id' => $userId], $problem['params']);
         $this->assertArrayNotHasKey('errors', $problem);
     }
 
@@ -118,7 +117,7 @@ final class DeleteUserTest extends WebTestCase
 
     private function user(string $email): User
     {
-        $user = new User(UserId::new(), UserEmail::fromString($email), UserName::fromString('Some User'));
+        $user = User::create(UserId::new(), UserEmail::fromString($email), UserName::fromString('Some User'), new \DateTimeImmutable());
         $this->users()->save($user);
 
         return $user;
@@ -127,17 +126,9 @@ final class DeleteUserTest extends WebTestCase
     private function task(User $assignee, TaskStatus $status): TaskId
     {
         $taskId = TaskId::new();
-        $this->tasks()->create(new Task($taskId, TaskTitle::fromString('Some task'), TaskDescription::fromString('D'), $status, TaskPriority::LOW, $assignee));
+        $this->tasks()->create(new Task($taskId, TaskTitle::fromString('Some task'), TaskDescription::fromString('D'), $status, TaskPriority::LOW, $assignee, null, new \DateTimeImmutable(), null));
 
         return $taskId;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function json(): array
-    {
-        return \json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
     }
 
     private function users(): UserRepositoryInterface

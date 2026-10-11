@@ -66,4 +66,14 @@ final class EmailTest extends TestCase
         $this->assertTrue($a->equals($b), 'Same value must be equal');
         $this->assertNotSame($a, $b, 'Equal value objects are still distinct instances');
     }
+
+    public function test_trims_surrounding_whitespace(): void
+    {
+        $this->assertSame('jane@example.com', new Email('  jane@example.com ')->value());
+    }
+
+    public function test_an_overlong_address_reports_the_length_not_the_format(): void
+    {
+        $this->assertDomainError(InvalidValueException::TOO_LONG, static fn () => new Email(\str_repeat('a', Email::MAX_LENGTH) . '@example.com'), ['max' => Email::MAX_LENGTH]);
+    }
 }

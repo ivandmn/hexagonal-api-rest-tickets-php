@@ -54,7 +54,8 @@ final readonly class SymfonySection implements InfoSectionInterface
             default                                                 => Block::badge('maintained', 'ok'),
         };
 
-        $buildTime = $this->parameters->has('container.build_time') ? (int) $this->parameters->get('container.build_time') : null;
+        $buildTime = $this->parameter('container.build_time');
+        $buildTime = \is_numeric($buildTime) ? (int) $buildTime : null;
 
         $blocks = [
             Block::kv([
@@ -71,7 +72,7 @@ final readonly class SymfonySection implements InfoSectionInterface
                 'Parameters'         => \count($this->parameters->all()),
                 'Charset'            => $this->kernel->getCharset(),
                 'Default locale'     => $this->parameter('kernel.default_locale'),
-                'Secret'             => $this->parameters->has('kernel.secret') ? Block::badge('set', 'ok') : Block::badge('missing', 'danger'),
+                'Secret'             => $this->hasParameter('kernel.secret') ? Block::badge('set', 'ok') : Block::badge('missing', 'danger'),
             ], 'Kernel'),
             Block::kv([
                 'Project'  => $this->kernel->getProjectDir(),
@@ -126,6 +127,15 @@ final readonly class SymfonySection implements InfoSectionInterface
 
     private function parameter(string $name): mixed
     {
-        return $this->parameters->has($name) ? $this->parameters->get($name) : null;
+        return $this->hasParameter($name) ? $this->parameters->get($name) : null;
+    }
+
+    /**
+     * Checked at runtime: the compiled container gains parameters (container.build_time...)
+     * that the debug container dump used for static analysis does not list.
+     */
+    private function hasParameter(string $name): bool
+    {
+        return $this->parameters->has($name);
     }
 }

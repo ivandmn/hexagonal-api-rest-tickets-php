@@ -36,7 +36,11 @@ final class TaskDescriptionType extends Type
             return $value;
         }
 
-        return TaskDescription::fromString((string) $value);
+        if (!\is_string($value)) {
+            throw InvalidType::new($value, self::NAME, ['null', 'string', TaskDescription::class]);
+        }
+
+        return TaskDescription::fromString($value);
     }
 
     public function getName(): string

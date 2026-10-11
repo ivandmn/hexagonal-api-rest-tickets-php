@@ -7,12 +7,21 @@ namespace App\Domain\ValueObject;
 use App\Domain\Exception\InvalidValueException;
 use Ramsey\Uuid\Uuid as RamseyUuid;
 
+/**
+ * Subclasses (TaskId, UserId) keep the constructor signature: the named constructors use `new static`.
+ *
+ * @phpstan-consistent-constructor
+ */
 readonly class Uuid
 {
     public const LENGTH = 36;
 
     public function __construct(protected string $value)
     {
+        if ('' === $value) {
+            throw InvalidValueException::required();
+        }
+
         if (!RamseyUuid::isValid($value)) {
             throw InvalidValueException::invalidFormat('UUID');
         }

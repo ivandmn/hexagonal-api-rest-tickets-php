@@ -11,15 +11,28 @@ final readonly class UserName
     public const MIN_LENGTH = 5;
     public const MAX_LENGTH = 255;
 
-    public function __construct(private string $value)
+    private string $value;
+
+    /**
+     * Surrounding whitespace is dropped; length is counted in characters, not bytes.
+     */
+    public function __construct(string $value)
     {
-        if (\strlen($value) < self::MIN_LENGTH) {
+        $value = \trim($value);
+
+        if ('' === $value) {
+            throw InvalidValueException::required();
+        }
+
+        if (\mb_strlen($value) < self::MIN_LENGTH) {
             throw InvalidValueException::tooShort(self::MIN_LENGTH);
         }
 
-        if (\strlen($value) > self::MAX_LENGTH) {
+        if (\mb_strlen($value) > self::MAX_LENGTH) {
             throw InvalidValueException::tooLong(self::MAX_LENGTH);
         }
+
+        $this->value = $value;
     }
 
     public static function fromString(string $value): self

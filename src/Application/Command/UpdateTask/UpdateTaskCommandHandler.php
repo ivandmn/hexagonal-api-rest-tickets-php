@@ -5,28 +5,24 @@ declare(strict_types=1);
 namespace App\Application\Command\UpdateTask;
 
 use App\Application\Command\CommandHandlerInterface;
+use App\Application\DTO\Views\TaskView;
 use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
-use App\Domain\Model\Task;
 use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskDueDate;
+use Psr\Clock\ClockInterface;
 
 final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
+        private ClockInterface $clock,
         private LoggerInterface $logger,
     ) {
     }
 
-    public function __invoke(UpdateTaskCommand $command): UpdateTaskResponse
+    public function __invoke(UpdateTaskCommand $command): TaskView
     {
-        $taskId = $command->getTaskId();
-        $task   = $this->taskRepository->findById($taskId);
-
-        if (!$task) {
-            throw new TaskNotFoundException($taskId);
-        }
+        $task = $this->taskRepository->findById($command->getTaskId()) ?? throw new TaskNotFoundException($command->getTaskId());
 
         if (null !== $title = $command->getTitle()) {
             $task->changeTitle($title);
@@ -44,32 +40,22 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
             $task->changePriority($priority);
         }
 
-        $dueDate = $command->getDueDate();
         if ($command->shouldClearDueDate()) {
-            $task->changeDueDate(null);
-        } elseif (null !== $dueDate && !$this->isCurrentDueDate($task, $dueDate)) {
-            // Re-sending the due date the task already has is a no-op, even if it is in the past by now;
-            // a new one must be in the future (checked by TaskDueDate).
-            $task->changeDueDate(TaskDueDate::fromDate($dueDate));
+            $task->changeDueDate(null, $this->clock->now());
+        } elseif (null !== $dueDate = $command->getDueDate()) {
+            $task->changeDueDate($dueDate, $this->clock->now());
         }
 
         if (!$task->isUpdated()) {
-            $this->logger->info('Task not updated (no changes detected)', [
-                'task_id' => $task->getId()->value(),
-            ]);
+            $this->logger->info('Task not updated (no changes detected)', ['task_id' => $task->getId()->value()]);
 
-            return new UpdateTaskResponse($task);
+            return TaskView::fromTask($task);
         }
 
         $this->taskRepository->update($task);
 
-        $this->logger->info('Task Updated', ['task_id' => $task->getId()->value()]);
+        $this->logger->info('Task updated', ['task_id' => $task->getId()->value()]);
 
-        return new UpdateTaskResponse($task);
-    }
-
-    private function isCurrentDueDate(Task $task, \DateTimeImmutable $dueDate): bool
-    {
-        return $task->getDueDate()?->value()->getTimestamp() === $dueDate->getTimestamp();
+        return TaskView::fromTask($task);
     }
 }

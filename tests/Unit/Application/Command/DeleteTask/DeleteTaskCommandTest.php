@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Command\DeleteTask;
+namespace App\Tests\Unit\Application\Command\DeleteTask;
 
 use App\Application\Command\DeleteTask\DeleteTaskCommand;
 use App\Domain\Exception\InvalidValueException;
@@ -20,6 +20,6 @@ final class DeleteTaskCommandTest extends TestCase
 
     public function test_rejects_an_invalid_id_when_built(): void
     {
-        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new DeleteTaskCommand(''), ['expected' => 'UUID']);
+        $this->assertFieldError('taskId', InvalidValueException::INVALID_FORMAT, static fn () => new DeleteTaskCommand('not-a-uuid'), ['expected' => 'UUID']);
     }
 }

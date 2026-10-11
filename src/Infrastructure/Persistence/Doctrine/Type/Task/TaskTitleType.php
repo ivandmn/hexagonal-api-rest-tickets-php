@@ -36,7 +36,11 @@ final class TaskTitleType extends Type
             return $value;
         }
 
-        return TaskTitle::fromString((string) $value);
+        if (!\is_string($value)) {
+            throw InvalidType::new($value, self::NAME, ['null', 'string', TaskTitle::class]);
+        }
+
+        return TaskTitle::fromString($value);
     }
 
     public function getName(): string

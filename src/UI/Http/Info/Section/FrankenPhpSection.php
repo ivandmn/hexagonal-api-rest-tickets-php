@@ -60,11 +60,12 @@ final readonly class FrankenPhpSection implements InfoSectionInterface
             return ['summary' => \PHP_SAPI, 'blocks' => [Block::note(\sprintf('Not running under FrankenPHP (SAPI: %s).', \PHP_SAPI), 'muted')]];
         }
 
-        $worker = (bool) $server?->get('FRANKENPHP_WORKER');
+        $worker   = (bool) $server?->get('FRANKENPHP_WORKER');
+        $software = $server?->get('SERVER_SOFTWARE');
 
         $blocks = [
             Block::kv([
-                'Server software'          => $server?->get('SERVER_SOFTWARE'),
+                'Server software'          => $software,
                 'Worker mode'              => Block::flag($worker, 'worker', 'classic'),
                 'Runtime'                  => $server?->get('APP_RUNTIME') ?? 'Symfony\Component\Runtime\SymfonyRuntime',
                 'Server name'              => \getenv('SERVER_NAME') ?: null,
@@ -116,35 +117,41 @@ final readonly class FrankenPhpSection implements InfoSectionInterface
         }
 
         return [
-            'summary' => \sprintf('%s · %s', \preg_replace('~\s.*$~', '', (string) $server?->get('SERVER_SOFTWARE')) ?: 'FrankenPHP', $worker ? 'worker mode' : 'classic mode'),
+            'summary' => \sprintf('%s · %s', \preg_replace('~\s.*$~', '', \is_string($software) ? $software : '') ?: 'FrankenPHP', $worker ? 'worker mode' : 'classic mode'),
             'blocks'  => $blocks,
         ];
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param array<mixed> $config
      *
      * @return list<array<string, mixed>>
      */
     private function describeConfig(array $config): array
     {
         $blocks = [];
+        $apps   = self::array($config['apps'] ?? null);
 
-        $workers = $config['apps']['frankenphp']['workers'] ?? [];
+        $workers = self::array(self::array($apps['frankenphp'] ?? null)['workers'] ?? null);
         if ([] !== $workers) {
             $blocks[] = Block::table(['File', 'Instances', 'Watch'], \array_values(\array_map(
-                static fn (array $worker): array => [$worker['file_name'] ?? '?', $worker['num'] ?? 'auto (2 × CPU)', $worker['watch'] ?? []],
+                static function (mixed $worker): array {
+                    $worker = self::array($worker);
+
+                    return [$worker['file_name'] ?? '?', $worker['num'] ?? 'auto (2 × CPU)', $worker['watch'] ?? []];
+                },
                 $workers,
             )), 'Workers');
         }
 
         $servers = [];
-        foreach ($config['apps']['http']['servers'] ?? [] as $name => $server) {
+        foreach (self::array(self::array($apps['http'] ?? null)['servers'] ?? null) as $name => $server) {
+            $server    = self::array($server);
             $servers[] = [
                 $name,
                 $server['listen'] ?? [],
-                \count($server['routes'] ?? []),
-                $server['trusted_proxies']['ranges'] ?? [],
+                \count(self::array($server['routes'] ?? null)),
+                self::array($server['trusted_proxies'] ?? null)['ranges'] ?? [],
             ];
         }
         if ([] !== $servers) {
@@ -159,7 +166,15 @@ final readonly class FrankenPhpSection implements InfoSectionInterface
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @return array<mixed>
+     */
+    private static function array(mixed $value): array
+    {
+        return \is_array($value) ? $value : [];
+    }
+
+    /**
+     * @return array<mixed>|null
      */
     private function fetchJson(string $path): ?array
     {

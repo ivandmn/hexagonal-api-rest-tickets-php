@@ -14,11 +14,17 @@ final readonly class MonologLogger implements LoggerInterface
     ) {
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function info(string $message, array $context = []): void
     {
         $this->logger->info($message, $context);
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public function error(string $message, array $context = []): void
     {
         $this->logger->error($message, $context);

@@ -33,7 +33,7 @@ final readonly class XdebugSection implements InfoSectionInterface
         }
 
         $modes = \function_exists('xdebug_info') ? \xdebug_info('mode') : \explode(',', (string) \ini_get('xdebug.mode'));
-        $modes = \array_values(\array_filter(\array_map('trim', (array) $modes)));
+        $modes = \array_values(\array_filter(\array_map(static fn (mixed $mode): string => \is_string($mode) ? \trim($mode) : '', (array) $modes)));
 
         $blocks = [
             Block::tags(\array_map(

@@ -28,11 +28,8 @@ final class TaskStatusType extends Type
         if ($value instanceof TaskStatus) {
             return $value->value;
         }
-        if (\is_string($value)) {
-            return TaskStatus::fromString($value)->value;
-        }
 
-        throw InvalidType::new($value, self::NAME, ['null', 'string', TaskStatus::class]);
+        throw InvalidType::new($value, self::NAME, ['null', TaskStatus::class]);
     }
 
     public function convertToPHPValue($value, AbstractPlatform $platform): ?TaskStatus
@@ -41,7 +38,11 @@ final class TaskStatusType extends Type
             return $value;
         }
 
-        return TaskStatus::fromString((string) $value);
+        if (!\is_string($value)) {
+            throw InvalidType::new($value, self::NAME, ['null', 'string', TaskStatus::class]);
+        }
+
+        return TaskStatus::fromString($value);
     }
 
     public function getName(): string

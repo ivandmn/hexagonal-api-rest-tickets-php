@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Query\ListTasks;
+namespace App\Tests\Unit\Application\Query\ListTasks;
 
 use App\Application\Query\ListTasks\ListTasksQuery;
 use App\Domain\Exception\InvalidValueException;
@@ -35,17 +35,16 @@ final class ListTasksQueryTest extends TestCase
         $this->assertSame(50, $req->getLimit());
     }
 
-    public function test_normalises_out_of_range_pagination(): void
+    public function test_rejects_out_of_range_pagination(): void
     {
-        $this->assertSame(1, new ListTasksQuery(null, null, 0, 10)->getPage());
-        $this->assertSame(1, new ListTasksQuery(null, null, -3, 10)->getPage());
-        $this->assertSame(1, new ListTasksQuery(null, null, 1, 0)->getLimit());
-        $this->assertSame(ListTasksQuery::MAX_LIMIT, new ListTasksQuery(null, null, 1, 5000)->getLimit());
+        $this->assertFieldError('page', InvalidValueException::BELOW_MINIMUM, static fn () => new ListTasksQuery(null, null, 0, 10), ['min' => 1]);
+        $this->assertFieldError('limit', InvalidValueException::OUT_OF_RANGE, static fn () => new ListTasksQuery(null, null, 1, 0), ['min' => 1, 'max' => ListTasksQuery::MAX_LIMIT]);
+        $this->assertFieldError('limit', InvalidValueException::OUT_OF_RANGE, static fn () => new ListTasksQuery(null, null, 1, ListTasksQuery::MAX_LIMIT + 1), ['min' => 1, 'max' => ListTasksQuery::MAX_LIMIT]);
     }
 
     public function test_rejects_unknown_filter_values_when_built(): void
     {
-        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => new ListTasksQuery('done', null));
-        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => new ListTasksQuery(null, 'urgent'));
+        $this->assertFieldError('status', InvalidValueException::INVALID_CHOICE, static fn () => new ListTasksQuery('done', null));
+        $this->assertFieldError('priority', InvalidValueException::INVALID_CHOICE, static fn () => new ListTasksQuery(null, 'urgent'));
     }
 }

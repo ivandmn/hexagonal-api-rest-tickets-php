@@ -14,9 +14,14 @@ final readonly class User
         private UserId $id,
         private UserEmail $email,
         private UserName $name,
-        private \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
-        private ?\DateTimeImmutable $updatedAt = null,
+        private \DateTimeImmutable $createdAt,
+        private ?\DateTimeImmutable $updatedAt,
     ) {
+    }
+
+    public static function create(UserId $id, UserEmail $email, UserName $name, \DateTimeImmutable $now): self
+    {
+        return new self($id, $email, $name, $now, null);
     }
 
     public function getId(): UserId

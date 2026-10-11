@@ -17,6 +17,8 @@ deptrac:
   paths:
     - ./src
 
+  cache_file: ./var/.deptrac.cache
+
   layers:
     -
       name: Domain
@@ -43,27 +45,27 @@ deptrac:
           type: classLike
           value: ^App\\UI\\
 
-    # Framework-agnostic libraries (value objects, ids) the core can build on.
+    # Framework-agnostic libraries the core can build on: UUIDs and the PSR-20 clock.
     -
       name: CoreLibraries
       collectors:
         -
           type: classLike
-          value: ^(Farmapremium|Ramsey\\Uuid)\\
-    # PSR-3 interface only: Application may log through the abstraction.
+          value: ^(Ramsey\\Uuid|Psr\\Clock)\\
+    # PSR-3 interface only: logging through the abstraction.
     -
       name: Logging
       collectors:
         -
           type: classLike
           value: ^Psr\\Log\\
-    # Frameworks and SDKs: only the adapters (Infrastructure/UI) may know them.
+    # Frameworks and tooling: only the adapters (Infrastructure/UI) may know them.
     -
       name: Framework
       collectors:
         -
           type: classLike
-          value: ^(Symfony|Doctrine|Composer|Nelmio|Google|OpenApi|Firebase|Psr\\(Http|Cache))\\
+          value: ^(Symfony|Doctrine|Composer|Nelmio|OpenApi)\\
 
   ruleset:
     # The domain is the core: it knows no other layer.
@@ -76,7 +78,7 @@ deptrac:
       - CoreLibraries
       - Logging
 
-    # Outbound adapters: Doctrine, issuers, HTTP, Pub/Sub, buses.
+    # Outbound adapters: Doctrine persistence, message buses, logging.
     Infrastructure:
       - Domain
       - Application
@@ -84,21 +86,10 @@ deptrac:
       - Logging
       - Framework
 
-    # Inbound adapters: HTTP controllers and CLI commands.
+    # Inbound adapters: HTTP controllers, request mapping, error handling, API docs.
     UI:
       - Domain
       - Application
       - CoreLibraries
       - Logging
       - Framework
-
-  # Known, scoped exceptions. Every entry must be justified here;
-  # do not add anything without explaining why the layer cannot be respected.
-  skip_violations:
-    # Diagnostic tool: emits a sample .pkpass signed against the real
-    # secrets, with no DB and no service container. It wires the Apple
-    # builder/packager by hand precisely to verify the signing chain
-    # end-to-end, so it knows the implementation on purpose.
-    App\UI\Console\Command\EmitTestApplePassCli:
-      - App\Infrastructure\WalletIssuer\Apple\WalletPass\Builder\ApplePassBuilder
-      - App\Infrastructure\WalletIssuer\Apple\WalletPass\Builder\AppleWalletPassExternalIdBuilder

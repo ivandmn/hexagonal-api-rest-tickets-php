@@ -4,43 +4,65 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\Command\CreateTask\CreateTaskResponse;
-use App\Infrastructure\Symfony\Controller\BaseController;
+use App\Application\Command\CreateTask\CreateTaskCommand;
+use App\Application\DTO\Views\TaskView;
+use App\Domain\ValueObject\Task\TaskDescription;
+use App\Domain\ValueObject\Task\TaskId;
+use App\Domain\ValueObject\Task\TaskPriority;
+use App\Domain\ValueObject\Task\TaskTitle;
+use App\UI\Http\Controller\Api\ApiController;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\MalformedBodyResponse;
 use App\UI\Http\OpenApi\Attribute\ProblemResponse;
 use App\UI\Http\OpenApi\Attribute\SuccessResponse;
-use App\UI\Http\OpenApi\Attribute\ValidationErrorResponse;
 use App\UI\Http\OpenApi\Schema\Task;
-use App\UI\Http\Request\PayloadContext;
-use App\UI\Http\Request\Task\CreateTaskRequest;
-use App\UI\Http\Response\ApiResponse;
+use App\UI\Http\Request\Payload;
+use App\UI\Http\Response\ApiResponder;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[OA\Tag(name: 'Tasks')]
-final class CreateTaskController extends BaseController
+final class CreateTaskController extends ApiController
 {
     #[OA\Post(summary: 'Create a task', description: 'New tasks start with status `pending`.')]
-    #[OA\RequestBody(required: true, content: new Model(type: CreateTaskRequest::class))]
-    #[SuccessResponse(Task::class, 'Task created')]
-    #[ProblemResponse(Response::HTTP_BAD_REQUEST, 'Malformed request body', 'REQUEST_MALFORMED_JSON', 'The request body is not valid JSON.')]
-    #[ValidationErrorResponse([
-        ['field' => 'title', 'code' => 'VALUE_TOO_SHORT', 'message' => 'This value must be at least 5 characters long.', 'params' => ['min' => 5]],
-        ['field' => 'dueDate', 'code' => 'TASK_DUE_DATE_IN_PAST', 'message' => 'The due date cannot be in the past.', 'params' => ['dueDate' => '2020-01-01T10:00:00+00:00']],
-    ])]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(
+        required: ['title', 'description', 'priority'],
+        properties: [
+            new OA\Property(property: 'title', type: 'string', maxLength: TaskTitle::MAX_LENGTH, minLength: TaskTitle::MIN_LENGTH, example: 'Fix login redirect'),
+            new OA\Property(property: 'description', type: 'string', maxLength: TaskDescription::MAX_LENGTH, example: 'Users are redirected to a 404 after logging in'),
+            new OA\Property(property: 'priority', ref: new Model(type: TaskPriority::class)),
+            new OA\Property(property: 'due_date', description: 'RFC 3339 date-time; cannot be in the past', type: 'string', format: 'date-time', example: '2026-12-31T18:00:00+00:00', nullable: true),
+        ],
+    ))]
+    #[SuccessResponse(Task::class, 'Task created', Response::HTTP_CREATED, location: true)]
+    #[ProblemResponse(
+        Response::HTTP_UNPROCESSABLE_ENTITY,
+        'Due date in the past (TASK_DUE_DATE_IN_PAST) or invalid fields (VALIDATION_ERROR)',
+        'TASK_DUE_DATE_IN_PAST',
+        'The due date cannot be in the past.',
+        ['due_date' => '2020-01-01T10:00:00+00:00'],
+        [['field' => 'due_date', 'code' => 'TASK_DUE_DATE_IN_PAST', 'message' => 'The due date cannot be in the past.', 'params' => ['due_date' => '2020-01-01T10:00:00+00:00']]],
+    )]
+    #[MalformedBodyResponse]
     #[InternalErrorResponse]
     #[Route('/api/tasks', name: 'api_task_create', methods: ['POST'])]
-    public function __invoke(
-        #[MapRequestPayload(acceptFormat: 'json', serializationContext: PayloadContext::STRICT)]
-        CreateTaskRequest $payload,
-    ): JsonResponse {
-        /** @var CreateTaskResponse $response */
-        $response = $this->commandHandler($payload->toCommand());
+    public function __invoke(Request $request, ApiResponder $responder): JsonResponse
+    {
+        $payload = Payload::fromJsonBody($request, ['title', 'description', 'priority', 'due_date']);
 
-        return ApiResponse::success($response);
+        /** @var TaskView $task */
+        $task = $this->dispatch(new CreateTaskCommand(
+            TaskId::new()->value(),
+            $payload->string('title'),
+            $payload->string('description'),
+            $payload->string('priority'),
+            $payload->optionalString('due_date'),
+        ));
+
+        return $responder->created($task, 'api_task_detail', ['id' => $task->id]);
     }
 }

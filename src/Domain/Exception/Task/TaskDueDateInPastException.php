@@ -15,7 +15,7 @@ final class TaskDueDateInPastException extends DomainException
         parent::__construct(
             self::ERROR_CODE,
             \sprintf('Due date %s is in the past', $dueDate->format(\DATE_ATOM)),
-            ['dueDate' => $dueDate->format(\DATE_ATOM)],
+            ['due_date' => $dueDate->format(\DATE_ATOM)],
             0,
             $previous,
         );

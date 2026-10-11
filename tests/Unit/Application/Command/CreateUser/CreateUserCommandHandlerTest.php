@@ -2,101 +2,56 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Command\CreateUser;
+namespace App\Tests\Unit\Application\Command\CreateUser;
 
 use App\Application\Command\CreateUser\CreateUserCommand;
 use App\Application\Command\CreateUser\CreateUserCommandHandler;
-use App\Application\Command\CreateUser\CreateUserResponse;
-use App\Application\Service\LoggerInterface;
-use App\Domain\Exception\InvalidValueException;
 use App\Domain\Exception\User\UserAlreadyExistsException;
-use App\Domain\Factory\UserFactory;
-use App\Domain\Model\User;
-use App\Domain\Repository\UserRepositoryInterface;
-use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
-use App\Domain\ValueObject\User\UserName;
 use App\Tests\Support\AssertsDomainError;
+use App\Tests\Support\Double\InMemoryUserRepository;
+use App\Tests\Support\Double\SpyAppLogger;
+use App\Tests\Support\Mother;
 use PHPUnit\Framework\TestCase;
-use Ramsey\Uuid\Uuid as RamseyUuid;
+use Symfony\Component\Clock\MockClock;
 
 final class CreateUserCommandHandlerTest extends TestCase
 {
     use AssertsDomainError;
 
-    public function test_creates_user_persists_and_logs(): void
+    private const string ID  = '0199d2a4-3b1c-4f5e-9a7b-1c2d3e4f5a6b';
+    private const string NOW = '2026-06-01T12:00:00+00:00';
+
+    public function test_creates_the_user_with_the_given_id_and_logs(): void
     {
-        $repo   = $this->createMock(UserRepositoryInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $users   = new InMemoryUserRepository();
+        $logger  = new SpyAppLogger();
+        $handler = new CreateUserCommandHandler($users, new MockClock(self::NOW), $logger);
 
-        $request = new CreateUserCommand('user@example.com', 'User Name');
+        $handler(new CreateUserCommand(self::ID, 'user@example.com', 'User Name'));
 
-        $repo->expects($this->once())
-            ->method('findByEmail')
-            ->with($this->callback(static fn (UserEmail $e) => 'user@example.com' === $e->value()))
-            ->willReturn(null)
-        ;
-
-        $repo->expects($this->once())
-            ->method('save')
-            ->with($this->callback(static fn (User $u) => 'user@example.com' === $u->getEmail()->value()
-                    && 'User Name' === $u->getName()->value()))
-        ;
-
-        $logger->expects($this->once())
-            ->method('info')
-            ->with(
-                'User Created',
-                $this->callback(static fn (array $ctx) => isset($ctx['user_id'], $ctx['user_email'])
-                        && RamseyUuid::isValid($ctx['user_id'])
-                        && 'user@example.com' === $ctx['user_email']),
-            )
-        ;
-
-        $uc       = new CreateUserCommandHandler(new UserFactory(), $repo, $logger);
-        $response = $uc($request);
-
-        $this->assertInstanceOf(CreateUserResponse::class, $response);
-        $data = $response->toArray();
-        $this->assertTrue(RamseyUuid::isValid($data['id']));
-        $this->assertSame('user@example.com', $data['email']);
-        $this->assertSame('User Name', $data['name']);
-        $this->assertNotEmpty($data['createdAt']);
+        $user = $users->findById(UserId::fromString(self::ID));
+        $this->assertNotNull($user);
+        $this->assertSame('user@example.com', $user->getEmail()->value());
+        $this->assertSame('User Name', $user->getName()->value());
+        $this->assertSame(self::NOW, $user->getCreatedAt()->format(\DATE_ATOM));
+        $this->assertNull($user->getUpdatedAt());
+        $this->assertTrue($logger->has('info', 'User created', ['user_id' => self::ID, 'user_email' => 'user@example.com']));
     }
 
-    public function test_throws_if_email_already_exists(): void
+    public function test_refuses_an_email_that_is_already_taken(): void
     {
-        $repo   = $this->createMock(UserRepositoryInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $users   = new InMemoryUserRepository(Mother::user(email: 'user@example.com'));
+        $logger  = new SpyAppLogger();
+        $handler = new CreateUserCommandHandler($users, new MockClock(self::NOW), $logger);
 
-        $existing = new User(
-            UserId::new(),
-            UserEmail::fromString('user@example.com'),
-            UserName::fromString('Existing User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
+        $this->assertDomainError(
+            UserAlreadyExistsException::ERROR_CODE,
+            static fn () => $handler(new CreateUserCommand(self::ID, 'USER@example.com', 'Other Name')),
+            ['email' => 'user@example.com'],
         );
 
-        $repo->expects($this->once())
-            ->method('findByEmail')
-            ->willReturn($existing)
-        ;
-
-        $repo->expects($this->never())->method('save');
-        $logger->expects($this->never())->method('info');
-
-        $uc = new CreateUserCommandHandler(new UserFactory(), $repo, $logger);
-
-        $this->expectException(UserAlreadyExistsException::class);
-        $uc(new CreateUserCommand('user@example.com', 'User Name'));
-    }
-
-    public function test_propagates_invalid_email_exception(): void
-    {
-        $repo   = $this->createStub(UserRepositoryInterface::class);
-        $logger = $this->createStub(LoggerInterface::class);
-
-        $uc = new CreateUserCommandHandler(new UserFactory(), $repo, $logger);
-
-        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => $uc(new CreateUserCommand('not-an-email', 'User Name')));
+        $this->assertCount(1, $users->findAll());
+        $this->assertSame([], $logger->records);
     }
 }

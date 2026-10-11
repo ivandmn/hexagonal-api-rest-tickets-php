@@ -16,7 +16,7 @@ final class TaskNotFoundException extends DomainException
         parent::__construct(
             self::ERROR_CODE,
             \sprintf('Task %s does not exist', $taskId->value()),
-            ['taskId' => $taskId->value()],
+            ['task_id' => $taskId->value()],
             0,
             $previous,
         );

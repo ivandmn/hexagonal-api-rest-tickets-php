@@ -36,7 +36,11 @@ final class TaskIdType extends Type
             return $value;
         }
 
-        return TaskId::fromString((string) $value);
+        if (!\is_string($value)) {
+            throw InvalidType::new($value, self::NAME, ['null', 'string', TaskId::class]);
+        }
+
+        return TaskId::fromString($value);
     }
 
     public function getName(): string

@@ -36,7 +36,11 @@ final class UserIdType extends Type
             return $value;
         }
 
-        return UserId::fromString((string) $value);
+        if (!\is_string($value)) {
+            throw InvalidType::new($value, self::NAME, ['null', 'string', UserId::class]);
+        }
+
+        return UserId::fromString($value);
     }
 
     public function getName(): string

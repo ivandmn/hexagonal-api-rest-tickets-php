@@ -2,146 +2,73 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Query\ListTasks;
+namespace App\Tests\Unit\Application\Query\ListTasks;
 
 use App\Application\Query\ListTasks\ListTasksQuery;
 use App\Application\Query\ListTasks\ListTasksQueryHandler;
-use App\Application\Query\ListTasks\ListTasksResponse;
-use App\Domain\Exception\InvalidValueException;
-use App\Domain\Model\Task;
+use App\Domain\Repository\TaskCriteria;
 use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskDescription;
-use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
-use App\Domain\ValueObject\Task\TaskTitle;
-use App\Tests\Support\AssertsDomainError;
+use App\Tests\Support\Double\InMemoryTaskRepository;
+use App\Tests\Support\Mother;
 use PHPUnit\Framework\TestCase;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class ListTasksQueryHandlerTest extends TestCase
 {
-    use AssertsDomainError;
+    public function test_without_filters_returns_the_first_page_and_the_overall_total(): void
+    {
+        $repo = new InMemoryTaskRepository(...\array_map(
+            static fn (int $i) => Mother::task(createdAt: new \DateTimeImmutable("2026-01-01 +{$i} minutes")),
+            \range(1, 3),
+        ));
 
-    public function test_paginates_and_counts_all_tasks_when_no_filters(): void
+        $view = new ListTasksQueryHandler($repo)(new ListTasksQuery(null, null, 1, 2));
+
+        $this->assertCount(2, $view->items);
+        $this->assertSame(3, $view->total, 'the total covers every page');
+        $this->assertSame(1, $view->page);
+        $this->assertSame(2, $view->limit);
+    }
+
+    public function test_an_empty_result_is_an_empty_list(): void
+    {
+        $view = new ListTasksQueryHandler(new InMemoryTaskRepository())(new ListTasksQuery(null, null));
+
+        $this->assertSame([], $view->items);
+        $this->assertSame(0, $view->total);
+        $this->assertSame(ListTasksQuery::DEFAULT_LIMIT, $view->limit);
+    }
+
+    public function test_filters_by_status_and_priority(): void
+    {
+        $match = Mother::task(status: TaskStatus::IN_PROGRESS, priority: TaskPriority::MEDIUM);
+        $repo  = new InMemoryTaskRepository(
+            $match,
+            Mother::task(status: TaskStatus::IN_PROGRESS, priority: TaskPriority::HIGH),
+            Mother::task(status: TaskStatus::PENDING, priority: TaskPriority::MEDIUM),
+        );
+
+        $view = new ListTasksQueryHandler($repo)(new ListTasksQuery('in_progress', 'medium'));
+
+        $this->assertSame(1, $view->total);
+        $this->assertSame($match->getId()->value(), $view->items[0]->id);
+    }
+
+    public function test_passes_the_typed_criteria_and_pagination_to_the_repository(): void
     {
         $repo = $this->createMock(TaskRepositoryInterface::class);
-
-        $tasks = [
-            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Title A'), TaskDescription::fromString('D')),
-            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Title B'), TaskDescription::fromString('E')),
-        ];
-
         $repo->expects($this->once())
-            ->method('findByFilters')
-            ->with([], 1, ListTasksQuery::DEFAULT_LIMIT)
-            ->willReturn($tasks)
+            ->method('findByCriteria')
+            ->with(new TaskCriteria(TaskStatus::PENDING, null), 2, 10)
+            ->willReturn([])
+        ;
+        $repo->expects($this->once())
+            ->method('countByCriteria')
+            ->with(new TaskCriteria(TaskStatus::PENDING, null))
+            ->willReturn(0)
         ;
 
-        // The total covers every page, not just the tasks returned in this one.
-        $repo->expects($this->once())
-            ->method('countByFilters')
-            ->with([])
-            ->willReturn(42)
-        ;
-
-        $repo->expects($this->never())->method('findAll');
-
-        $uc       = new ListTasksQueryHandler($repo);
-        $response = $uc(new ListTasksQuery(null, null));
-
-        $this->assertInstanceOf(ListTasksResponse::class, $response);
-        $payload = $response->toArray();
-        $this->assertCount(2, $payload['data']);
-        $this->assertSame(42, $payload['meta']['total']);
-        $this->assertSame(1, $payload['meta']['page']);
-        $this->assertSame(ListTasksQuery::DEFAULT_LIMIT, $payload['meta']['limit']);
-    }
-
-    public function test_calls_find_by_filters_with_status_and_pagination(): void
-    {
-        $repo = $this->createMock(TaskRepositoryInterface::class);
-
-        $expected = [
-            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Pending 1'), TaskDescription::fromString('D1'), TaskStatus::PENDING, TaskPriority::LOW),
-        ];
-
-        $repo->expects($this->once())
-            ->method('findByFilters')
-            ->with(['status' => TaskStatus::PENDING], 2, 10)
-            ->willReturn($expected)
-        ;
-
-        $uc       = new ListTasksQueryHandler($repo);
-        $response = $uc(new ListTasksQuery('pending', null, 2, 10));
-
-        $this->assertInstanceOf(ListTasksResponse::class, $response);
-        $this->assertSame(1, $response->count());
-    }
-
-    public function test_calls_find_by_filters_with_priority_only(): void
-    {
-        $repo = $this->createMock(TaskRepositoryInterface::class);
-
-        $expected = [
-            new Task(
-                TaskId::fromString(Uuid::uuid4()->toString()),
-                TaskTitle::fromString('High One'),
-                TaskDescription::fromString('D1'),
-                TaskStatus::IN_PROGRESS,
-                TaskPriority::HIGH,
-            ),
-        ];
-
-        $repo->expects($this->once())
-            ->method('findByFilters')
-            ->with(['priority' => TaskPriority::HIGH], 1, 50)
-            ->willReturn($expected)
-        ;
-
-        $uc = new ListTasksQueryHandler($repo);
-
-        $response = $uc(new ListTasksQuery(null, 'high', 1, 50));
-
-        $this->assertInstanceOf(ListTasksResponse::class, $response);
-        $this->assertSame(1, $response->count());
-    }
-
-    public function test_calls_find_by_filters_with_both_filters(): void
-    {
-        $repo = $this->createMock(TaskRepositoryInterface::class);
-
-        $expected = [
-            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Title X'), TaskDescription::fromString('Y Desc'), TaskStatus::IN_PROGRESS, TaskPriority::MEDIUM),
-        ];
-
-        $repo->expects($this->once())
-            ->method('findByFilters')
-            ->with(['status' => TaskStatus::IN_PROGRESS, 'priority' => TaskPriority::MEDIUM], 3, 5)
-            ->willReturn($expected)
-        ;
-
-        $uc       = new ListTasksQueryHandler($repo);
-        $response = $uc(new ListTasksQuery('in_progress', 'medium', 3, 5));
-
-        $this->assertInstanceOf(ListTasksResponse::class, $response);
-        $this->assertSame(1, $response->count());
-    }
-
-    public function test_throws_on_invalid_status(): void
-    {
-        $repo = $this->createStub(TaskRepositoryInterface::class);
-        $uc   = new ListTasksQueryHandler($repo);
-
-        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => $uc(new ListTasksQuery('not_a_status', null)));
-    }
-
-    public function test_throws_on_invalid_priority(): void
-    {
-        $repo = $this->createStub(TaskRepositoryInterface::class);
-        $uc   = new ListTasksQueryHandler($repo);
-
-        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => $uc(new ListTasksQuery(null, 'not_a_priority')));
+        new ListTasksQueryHandler($repo)(new ListTasksQuery('pending', null, 2, 10));
     }
 }

@@ -40,33 +40,35 @@ final readonly class OpcacheSection implements InfoSectionInterface
             return ['summary' => 'disabled', 'blocks' => [Block::note('OPcache is loaded but disabled for this SAPI (or opcache.restrict_api blocks the status API).', 'warn')]];
         }
 
-        $memory      = $status['memory_usage'];
-        $stats       = $status['opcache_statistics'];
+        $enabled     = (bool) ($status['opcache_enabled'] ?? false);
+        $memory      = self::array($status, 'memory_usage');
+        $stats       = self::array($status, 'opcache_statistics');
         $strings     = $status['interned_strings_usage'] ?? null;
         $jit         = $status['jit'] ?? null;
-        $totalMemory = $memory['used_memory'] + $memory['free_memory'] + $memory['wasted_memory'];
+        $hitRate     = self::float($stats, 'opcache_hit_rate');
+        $totalMemory = self::int($memory, 'used_memory') + self::int($memory, 'free_memory') + self::int($memory, 'wasted_memory');
 
         $blocks = [
             Block::kv([
-                'Enabled'          => Block::flag($status['opcache_enabled']),
-                'Cache full'       => Block::flag($status['cache_full'], 'yes', 'no'),
-                'Restart pending'  => Block::flag($status['restart_pending'], 'yes', 'no'),
-                'Hit rate'         => Block::badge(\round($stats['opcache_hit_rate'], 2) . ' %', $stats['opcache_hit_rate'] > 90 ? 'ok' : 'warn'),
-                'Hits / misses'    => \sprintf('%s / %s', \number_format($stats['hits']), \number_format($stats['misses'])),
-                'Cached scripts'   => $stats['num_cached_scripts'],
-                'Cached keys'      => \sprintf('%d of %d', $stats['num_cached_keys'], $stats['max_cached_keys']),
-                'Wasted memory'    => \sprintf('%s (%.2f %%)', Format::bytes($memory['wasted_memory']), $memory['current_wasted_percentage']),
-                'OOM restarts'     => $stats['oom_restarts'],
-                'Hash restarts'    => $stats['hash_restarts'],
-                'Manual restarts'  => $stats['manual_restarts'],
-                'Started'          => Format::date($stats['start_time']),
-                'Last restart'     => Format::date($stats['last_restart_time']) ?? 'never',
+                'Enabled'          => Block::flag($enabled),
+                'Cache full'       => Block::flag((bool) ($status['cache_full'] ?? false), 'yes', 'no'),
+                'Restart pending'  => Block::flag((bool) ($status['restart_pending'] ?? false), 'yes', 'no'),
+                'Hit rate'         => Block::badge(\round($hitRate, 2) . ' %', $hitRate > 90 ? 'ok' : 'warn'),
+                'Hits / misses'    => \sprintf('%s / %s', \number_format(self::int($stats, 'hits')), \number_format(self::int($stats, 'misses'))),
+                'Cached scripts'   => self::int($stats, 'num_cached_scripts'),
+                'Cached keys'      => \sprintf('%d of %d', self::int($stats, 'num_cached_keys'), self::int($stats, 'max_cached_keys')),
+                'Wasted memory'    => \sprintf('%s (%.2f %%)', Format::bytes(self::int($memory, 'wasted_memory')), self::float($memory, 'current_wasted_percentage')),
+                'OOM restarts'     => self::int($stats, 'oom_restarts'),
+                'Hash restarts'    => self::int($stats, 'hash_restarts'),
+                'Manual restarts'  => self::int($stats, 'manual_restarts'),
+                'Started'          => Format::date(self::int($stats, 'start_time')),
+                'Last restart'     => Format::date(self::int($stats, 'last_restart_time')) ?? 'never',
             ], 'Status'),
-            Block::meter('Shared memory', $memory['used_memory'], $totalMemory),
+            Block::meter('Shared memory', self::int($memory, 'used_memory'), $totalMemory),
         ];
 
-        if (null !== $strings) {
-            $blocks[] = Block::meter('Interned strings buffer', $strings['used_memory'], $strings['buffer_size']);
+        if (\is_array($strings)) {
+            $blocks[] = Block::meter('Interned strings buffer', self::int($strings, 'used_memory'), self::int($strings, 'buffer_size'));
         }
 
         if (\is_array($jit)) {
@@ -79,8 +81,9 @@ final readonly class OpcacheSection implements InfoSectionInterface
                 'Opt flags'    => $jit['opt_flags'] ?? null,
             ], 'JIT');
 
-            if (($jit['buffer_size'] ?? 0) > 0) {
-                $blocks[] = Block::meter('JIT buffer', $jit['buffer_size'] - $jit['buffer_free'], $jit['buffer_size']);
+            $jitBuffer = self::int($jit, 'buffer_size');
+            if ($jitBuffer > 0) {
+                $blocks[] = Block::meter('JIT buffer', $jitBuffer - self::int($jit, 'buffer_free'), $jitBuffer);
             }
         }
 
@@ -94,8 +97,40 @@ final readonly class OpcacheSection implements InfoSectionInterface
         }
 
         return [
-            'summary' => \sprintf('%s · hit rate %.1f %% · JIT %s', $status['opcache_enabled'] ? 'enabled' : 'disabled', $stats['opcache_hit_rate'], ($jit['on'] ?? false) ? 'on' : 'off'),
+            'summary' => \sprintf('%s · hit rate %.1f %% · JIT %s', $enabled ? 'enabled' : 'disabled', $hitRate, \is_array($jit) && ($jit['on'] ?? false) ? 'on' : 'off'),
             'blocks'  => $blocks,
         ];
+    }
+
+    /**
+     * @param array<mixed> $data
+     *
+     * @return array<mixed>
+     */
+    private static function array(array $data, string $key): array
+    {
+        $value = $data[$key] ?? null;
+
+        return \is_array($value) ? $value : [];
+    }
+
+    /**
+     * @param array<mixed> $data
+     */
+    private static function int(array $data, string $key): int
+    {
+        $value = $data[$key] ?? null;
+
+        return \is_int($value) ? $value : 0;
+    }
+
+    /**
+     * @param array<mixed> $data
+     */
+    private static function float(array $data, string $key): float
+    {
+        $value = $data[$key] ?? null;
+
+        return \is_int($value) || \is_float($value) ? (float) $value : 0.0;
     }
 }

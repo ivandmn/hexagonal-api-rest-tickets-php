@@ -18,6 +18,9 @@ interface UserRepositoryInterface
 
     public function delete(User $user): void;
 
+    /**
+     * @return list<User> oldest first
+     */
     public function findAll(): array;
 
     public function findById(UserId $id): ?User;

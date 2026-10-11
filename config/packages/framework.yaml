@@ -2,7 +2,7 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Traefik (Dokploy) termina el TLS: sin esto Symfony vería http y la IP del proxy
+    # Traefik (Dokploy) terminates TLS: without this Symfony would see plain HTTP and the proxy's IP
     trusted_proxies: '%env(TRUSTED_PROXIES)%'
     trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
 
@@ -15,6 +15,10 @@ framework:
 
     php_errors:
       log: true
+
+    # The API speaks snake_case both ways: request payloads are mapped from it and responses use it.
+    serializer:
+      name_converter: 'serializer.name_converter.camel_case_to_snake_case'
 
     # Log levels only (a status_code here would wrap the exception before the API error listener).
     exceptions:

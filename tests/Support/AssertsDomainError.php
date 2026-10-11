@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\Application\Validation\InvalidFieldException;
 use App\Domain\Exception\DomainException;
 
 /**
@@ -30,5 +31,23 @@ trait AssertsDomainError
         }
 
         self::fail(\sprintf('Expected a domain exception with error code "%s", none was thrown.', $errorCode));
+    }
+
+    /**
+     * Same, for a command or query input: the domain error must come tagged with the input name.
+     *
+     * @param array<string, scalar|null>|null $params expected params, or null to skip the check
+     */
+    private function assertFieldError(string $field, string $errorCode, callable $action, ?array $params = null): DomainException
+    {
+        try {
+            $action();
+        } catch (InvalidFieldException $exception) {
+            self::assertSame($field, $exception->field, 'Unexpected field');
+
+            return $this->assertDomainError($errorCode, static fn () => throw $exception->error, $params);
+        }
+
+        self::fail(\sprintf('Expected field "%s" to be rejected with error code "%s", nothing was thrown.', $field, $errorCode));
     }
 }

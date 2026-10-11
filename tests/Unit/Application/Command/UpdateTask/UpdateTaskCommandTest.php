@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Command\UpdateTask;
+namespace App\Tests\Unit\Application\Command\UpdateTask;
 
 use App\Application\Command\UpdateTask\UpdateTaskCommand;
 use App\Domain\Exception\InvalidValueException;
@@ -32,8 +32,8 @@ final class UpdateTaskCommandTest extends TestCase
         $this->assertSame('Some description', $req->getDescription()?->value());
         $this->assertSame(TaskStatus::IN_PROGRESS, $req->getStatus());
         $this->assertSame(TaskPriority::HIGH, $req->getPriority());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $req->getDueDate());
-        $this->assertSame('2030-01-01T00:00:00+00:00', $req->getDueDate()->format(TaskDueDate::FORMAT));
+        $this->assertInstanceOf(TaskDueDate::class, $req->getDueDate());
+        $this->assertSame('2030-01-01T00:00:00+00:00', (string) $req->getDueDate());
     }
 
     public function test_nullables_are_accepted_and_due_date_can_be_null(): void
@@ -57,21 +57,21 @@ final class UpdateTaskCommandTest extends TestCase
 
     public function test_a_past_due_date_is_only_checked_for_format(): void
     {
-        // Whether it may be in the past depends on the task (re-sending its current due date is fine).
+        // "Not in the past" needs the clock and the task's current due date: checked by the handler.
         $command = new UpdateTaskCommand('018f9f9a-aaaa-bbbb-cccc-000000000004', null, null, null, null, '2020-01-01T00:00:00+00:00');
 
-        $this->assertSame('2020-01-01', $command->getDueDate()?->format('Y-m-d'));
+        $this->assertSame('2020-01-01T00:00:00+00:00', (string) $command->getDueDate());
     }
 
     public function test_rejects_invalid_values_when_built(): void
     {
-        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new UpdateTaskCommand('not-a-uuid', null, null, null, null, null));
-        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => new UpdateTaskCommand('018f9f9a-aaaa-bbbb-cccc-000000000005', null, null, 'done', null, null));
+        $this->assertFieldError('taskId', InvalidValueException::INVALID_FORMAT, static fn () => new UpdateTaskCommand('not-a-uuid', null, null, null, null, null));
+        $this->assertFieldError('status', InvalidValueException::INVALID_CHOICE, static fn () => new UpdateTaskCommand('018f9f9a-aaaa-bbbb-cccc-000000000005', null, null, 'done', null, null));
     }
 
     public function test_throws_on_invalid_due_date_format(): void
     {
-        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new UpdateTaskCommand(
+        $this->assertFieldError('dueDate', InvalidValueException::INVALID_FORMAT, static fn () => new UpdateTaskCommand(
             '018f9f9a-aaaa-bbbb-cccc-000000000003',
             'Another Title',
             null,

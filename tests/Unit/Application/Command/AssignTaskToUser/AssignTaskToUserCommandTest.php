@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Application\Command\AssignTaskToUser;
+namespace App\Tests\Unit\Application\Command\AssignTaskToUser;
 
 use App\Application\Command\AssignTaskToUser\AssignTaskToUserCommand;
 use App\Domain\Exception\InvalidValueException;
@@ -23,7 +23,7 @@ final class AssignTaskToUserCommandTest extends TestCase
 
     public function test_rejects_invalid_ids_when_built(): void
     {
-        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new AssignTaskToUserCommand('', '018f9f9a-dddd-eeee-ffff-000000000002'));
-        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new AssignTaskToUserCommand('018f9f9a-aaaa-bbbb-cccc-000000000001', ' user '));
+        $this->assertFieldError('taskId', InvalidValueException::REQUIRED, static fn () => new AssignTaskToUserCommand('', '018f9f9a-dddd-eeee-ffff-000000000002'));
+        $this->assertFieldError('userId', InvalidValueException::INVALID_FORMAT, static fn () => new AssignTaskToUserCommand('018f9f9a-aaaa-bbbb-cccc-000000000001', ' user '));
     }
 }

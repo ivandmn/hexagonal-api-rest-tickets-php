@@ -79,7 +79,7 @@ final readonly class PhpSection implements InfoSectionInterface
         $all  = \ini_get_all(null, true) ?: [];
         $rows = [];
         foreach (self::KEY_DIRECTIVES as $directive) {
-            if (isset($all[$directive])) {
+            if (\is_array($all[$directive] ?? null)) {
                 $rows[] = $this->directiveRow($directive, $all[$directive]);
             }
         }
@@ -88,7 +88,9 @@ final readonly class PhpSection implements InfoSectionInterface
         \ksort($all);
         $allRows = [];
         foreach ($all as $directive => $values) {
-            $allRows[] = $this->directiveRow($directive, $values);
+            if (\is_array($values)) {
+                $allRows[] = $this->directiveRow((string) $directive, $values);
+            }
         }
         $blocks[] = Block::items([
             Block::item('All ini directives', [Block::table(['Directive', 'Local value', 'Master value'], $allRows)], (string) \count($allRows)),
@@ -101,14 +103,14 @@ final readonly class PhpSection implements InfoSectionInterface
     }
 
     /**
-     * @param array{local_value?: string|null, global_value?: string|null} $values
+     * @param array<mixed> $values ini_get_all() details (local_value, global_value, access)
      *
      * @return list<mixed>
      */
     private function directiveRow(string $directive, array $values): array
     {
-        $local  = $this->display($directive, $values['local_value'] ?? null);
-        $global = $this->display($directive, $values['global_value'] ?? null);
+        $local  = $this->display($directive, self::string($values, 'local_value'));
+        $global = $this->display($directive, self::string($values, 'global_value'));
 
         // Highlight what this request/runtime overrides compared to php.ini.
         return [$directive, $local !== $global ? Block::badge((string) ($local ?? '(null)'), 'warn') : $local, $global];
@@ -124,6 +126,18 @@ final readonly class PhpSection implements InfoSectionInterface
             return \sprintf('%s (%s)', Format::errorLevel((int) $value), $value);
         }
 
-        return (string) $this->masker->mask($directive, $value);
+        $masked = $this->masker->mask($directive, $value);
+
+        return \is_string($masked) ? $masked : $value;
+    }
+
+    /**
+     * @param array<mixed> $values
+     */
+    private static function string(array $values, string $key): ?string
+    {
+        $value = $values[$key] ?? null;
+
+        return \is_string($value) ? $value : null;
     }
 }

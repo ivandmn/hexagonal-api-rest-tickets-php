@@ -6,7 +6,8 @@ log() {
 }
 
 if [ "$1" = 'frankenphp' ]; then
-    if [ "$APP_ENV" != 'prod' ] && [ ! -f vendor/autoload_runtime.php ]; then
+    # Dev only: the prod image ships its vendors and has no Composer.
+    if [ "$APP_ENV" != 'prod' ] && [ ! -f vendor/autoload_runtime.php ] && command -v composer >/dev/null; then
         log "vendor/ not found, running composer install..."
         composer install --prefer-dist --no-progress --no-interaction
     fi

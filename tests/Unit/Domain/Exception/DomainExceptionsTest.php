@@ -29,11 +29,11 @@ final class DomainExceptionsTest extends TestCase
         $taskId = TaskId::fromString('3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63');
         $userId = UserId::fromString('b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e');
 
-        yield 'task not found' => [new TaskNotFoundException($taskId), 'TASK_NOT_FOUND', ['taskId' => $taskId->value()]];
+        yield 'task not found' => [new TaskNotFoundException($taskId), 'TASK_NOT_FOUND', ['task_id' => $taskId->value()]];
         yield 'transition' => [new InvalidTaskStatusTransitionException(TaskStatus::COMPLETED, TaskStatus::PENDING), 'TASK_STATUS_TRANSITION_NOT_ALLOWED', ['from' => 'completed', 'to' => 'pending']];
-        yield 'deletion' => [new TaskDeletionNotAllowedException($taskId, TaskStatus::IN_PROGRESS), 'TASK_DELETION_NOT_ALLOWED', ['taskId' => $taskId->value(), 'status' => 'in_progress']];
-        yield 'due date in past' => [new TaskDueDateInPastException(new \DateTimeImmutable('2020-01-01T10:00:00+00:00')), 'TASK_DUE_DATE_IN_PAST', ['dueDate' => '2020-01-01T10:00:00+00:00']];
-        yield 'user not found' => [new UserNotFoundException($userId), 'USER_NOT_FOUND', ['userId' => $userId->value()]];
+        yield 'deletion' => [new TaskDeletionNotAllowedException($taskId, TaskStatus::IN_PROGRESS), 'TASK_DELETION_NOT_ALLOWED', ['task_id' => $taskId->value(), 'status' => 'in_progress']];
+        yield 'due date in past' => [new TaskDueDateInPastException(new \DateTimeImmutable('2020-01-01T10:00:00+00:00')), 'TASK_DUE_DATE_IN_PAST', ['due_date' => '2020-01-01T10:00:00+00:00']];
+        yield 'user not found' => [new UserNotFoundException($userId), 'USER_NOT_FOUND', ['user_id' => $userId->value()]];
         yield 'user exists' => [new UserAlreadyExistsException(UserEmail::fromString('Jane@Example.com')), 'USER_ALREADY_EXISTS', ['email' => 'jane@example.com']];
         yield 'required' => [InvalidValueException::required(), 'VALUE_REQUIRED', []];
         yield 'invalid' => [InvalidValueException::invalid('nope'), 'VALUE_INVALID', []];

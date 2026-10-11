@@ -14,7 +14,7 @@ final class ErrorCodeMapperTest extends TestCase
     protected function setUp(): void
     {
         $this->mapper = new ErrorCodeMapper([
-            'TASK_NOT_FOUND'     => ['status' => 404, 'message' => 'Task {taskId} does not exist.'],
+            'TASK_NOT_FOUND'     => ['status' => 404, 'message' => 'Task {task_id} does not exist.'],
             'VALUE_OUT_OF_RANGE' => ['status' => 422, 'message' => 'Between {min} and {max} ({strict}{nothing}).'],
         ]);
     }
@@ -31,7 +31,7 @@ final class ErrorCodeMapperTest extends TestCase
         $mapping = $this->mapper->find('TASK_NOT_FOUND');
         \assert(null !== $mapping);
 
-        $this->assertSame('Task 42 does not exist.', $this->mapper->render($mapping, ['taskId' => '42']));
+        $this->assertSame('Task 42 does not exist.', $this->mapper->render($mapping, ['task_id' => '42']));
     }
 
     public function test_renders_numbers_booleans_and_nulls(): void
@@ -47,6 +47,6 @@ final class ErrorCodeMapperTest extends TestCase
         $mapping = $this->mapper->find('TASK_NOT_FOUND');
         \assert(null !== $mapping);
 
-        $this->assertSame('Task {taskId} does not exist.', $this->mapper->render($mapping, []));
+        $this->assertSame('Task {task_id} does not exist.', $this->mapper->render($mapping, []));
     }
 }

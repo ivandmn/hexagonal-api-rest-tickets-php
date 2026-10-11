@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Exception;
 
+use App\Application\Validation\InvalidFieldException;
 use App\Domain\Exception\DomainException;
+use App\UI\Http\Request\InvalidPayloadException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerException;
-use Symfony\Component\Serializer\Exception\ExtraAttributesException;
-use Symfony\Component\Serializer\Exception\NotEncodableValueException;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 
 /**
  * The only place that builds API error responses: Problem Details (RFC 9457) as
@@ -25,15 +23,19 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
  * (config/packages/error_mapping.yaml).
  *
  * Resolution order:
- *  1. validation failure (#[MapRequestPayload] / #[MapQueryString]) → 422 with one entry per violation;
- *  2. unknown payload fields → 422 with one entry per field;
+ *  1. request input with the wrong shape (App\UI\Http\Request\Payload): bad JSON, empty or
+ *     non-object body → its request error code; unknown fields or wrong types → 422 with one entry per field;
+ *  2. command/query input rejected by the domain (App\Application\Validation\Field) → 422 with
+ *     that field and the domain error code;
  *  3. domain exception → status, message and field from the mapping (unmapped code = bug: 500 + warning);
- *  4. malformed request (bad JSON, empty or non-object body) → its request error code;
- *  5. any other HTTP exception from the framework (404, 405...) → its own status;
- *  6. anything else → generic 500 (details only with kernel.debug).
+ *  4. any other HTTP exception from the framework (404, 405, 415...) → its own status;
+ *  5. anything else → generic 500 (details only with kernel.debug).
  *
  * Runs after Symfony's logger (priority 0), so exceptions are still logged once, and before its
  * HTML error page (priority -128). Domain errors are logged at "info" (framework.exceptions).
+ *
+ * @phpstan-type FieldError array{field: string|null, code: string, message: string, params: array<string, scalar|null>|\stdClass}
+ * @phpstan-type Problem array{type: string, title: string, status: int, params?: array<string, scalar|null>, errors?: list<FieldError>, debug?: array{exception: class-string, message: string, at: string}}
  */
 #[AsEventListener(event: KernelEvents::EXCEPTION, priority: -64)]
 final readonly class ApiExceptionListener
@@ -42,8 +44,10 @@ final readonly class ApiExceptionListener
 
     public function __construct(
         private ErrorCodeMapper $mapper,
-        private ConstraintViolationTranslator $violations,
         private LoggerInterface $logger,
+        // Same converter as the serializer, so errors[].field matches the payload keys (snake_case).
+        #[Autowire(service: 'serializer.name_converter.camel_case_to_snake_case')]
+        private NameConverterInterface $nameConverter,
         #[Autowire('%kernel.debug%')]
         private bool $debug,
         #[Autowire(param: 'app.error_mapping.path_prefix')]
@@ -58,23 +62,18 @@ final readonly class ApiExceptionListener
             return;
         }
 
-        $exception  = $event->getThrowable();
-        $validation = $this->validationFailure($exception);
-
-        $payloadFailure = null !== $validation || $exception instanceof ExtraAttributesException;
+        $exception = $event->getThrowable();
 
         $problem = match (true) {
-            // Valid JSON that is not an object ([1], "x", null) cannot be mapped to a request DTO.
-            $payloadFailure && $this->isNonObjectJson($request) => $this->envelope(ApiErrorCode::INVALID_BODY),
-            null !== $validation                                => $this->fromValidation($validation),
-            $exception instanceof ExtraAttributesException      => $this->fromUnknownFields($exception),
-            $exception instanceof DomainException               => $this->fromDomain($exception),
-            default                                             => $this->fromRequest($exception, $request)
-                ?? ($exception instanceof HttpExceptionInterface ? $this->fromHttp($exception) : $this->internal($exception)),
+            $exception instanceof InvalidPayloadException => $this->fromPayload($exception),
+            $exception instanceof InvalidFieldException   => $this->fromField($exception),
+            $exception instanceof DomainException         => $this->fromDomain($exception),
+            $exception instanceof HttpExceptionInterface  => $this->fromHttp($exception),
+            default                                       => $this->internal($exception),
         };
 
-        $traceId            = $request->headers->get('X-Request-Id') ?: \bin2hex(\random_bytes(8));
-        $problem['traceId'] = $traceId;
+        $traceId             = $request->headers->get('X-Request-Id') ?: \bin2hex(\random_bytes(8));
+        $problem['trace_id'] = $traceId;
 
         $response = new JsonResponse($problem, $problem['status'], ['Content-Type' => self::CONTENT_TYPE, 'X-Request-Id' => $traceId]);
 
@@ -85,80 +84,51 @@ final readonly class ApiExceptionListener
         $event->setResponse($response);
     }
 
-    private function isNonObjectJson(Request $request): bool
+    /**
+     * @return Problem
+     */
+    private function fromPayload(InvalidPayloadException $exception): array
     {
-        $content = \trim($request->getContent());
-        if ('' === $content || !\json_validate($content)) {
-            return false;
+        if ([] === $exception->fields) {
+            return $this->envelope($exception->errorCode);
         }
 
-        $decoded = \json_decode($content, true);
-
-        // "{}" decodes to an empty array, which is still an object.
-        return !\is_array($decoded) || ([] !== $decoded && \array_is_list($decoded));
-    }
-
-    private function validationFailure(\Throwable $exception): ?ValidationFailedException
-    {
-        return match (true) {
-            $exception instanceof ValidationFailedException                => $exception,
-            $exception->getPrevious() instanceof ValidationFailedException => $exception->getPrevious(),
-            default                                                        => null,
-        };
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function fromValidation(ValidationFailedException $exception): array
-    {
-        $errors = [];
-
-        foreach ($exception->getViolations() as $violation) {
-            ['code' => $code, 'params' => $params] = $this->violations->translate($violation);
-            $mapping                               = $this->mapper->find($code);
-            $path                                  = $violation->getPropertyPath();
-
-            $errors[] = $this->fieldError(
-                '' !== $path ? $path : $mapping?->field,
-                $code,
-                null !== $mapping ? $this->mapper->render($mapping, $params) : (string) $violation->getMessage(),
-                $params,
-            );
-        }
-
-        return $this->envelope(ApiErrorCode::VALIDATION_ERROR, $errors);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function fromUnknownFields(ExtraAttributesException $exception): array
-    {
-        $message = $this->requiredMapping(ApiErrorCode::UNKNOWN_FIELD)->message;
+        $message = $this->mapper->render($this->requiredMapping($exception->errorCode), $exception->params);
         $errors  = [];
 
-        foreach ($exception->getExtraAttributes() as $field) {
-            $errors[] = $this->fieldError((string) $field, ApiErrorCode::UNKNOWN_FIELD, $message, []);
+        foreach ($exception->fields as $field) {
+            $errors[] = $this->fieldError($field, $exception->errorCode, $message, $exception->params);
         }
 
         return $this->envelope(ApiErrorCode::VALIDATION_ERROR, $errors);
     }
 
     /**
-     * @return array<string, mixed>
+     * @return Problem
+     */
+    private function fromField(InvalidFieldException $exception): array
+    {
+        $error   = $exception->error;
+        $mapping = $this->mapper->find($error->errorCode());
+
+        if (null === $mapping) {
+            return $this->unmapped($error);
+        }
+
+        return $this->envelope(ApiErrorCode::VALIDATION_ERROR, [
+            $this->fieldError($this->fieldName($exception->field), $error->errorCode(), $this->mapper->render($mapping, $error->params()), $error->params()),
+        ]);
+    }
+
+    /**
+     * @return Problem
      */
     private function fromDomain(DomainException $exception): array
     {
         $mapping = $this->mapper->find($exception->errorCode());
 
         if (null === $mapping) {
-            $this->logger->warning('Unmapped domain error code "{errorCode}": add it to config/packages/error_mapping.yaml', [
-                'errorCode' => $exception->errorCode(),
-                'exception' => $exception,
-            ]);
-
-            return $this->internal($exception);
+            return $this->unmapped($exception);
         }
 
         $message = $this->mapper->render($mapping, $exception->params());
@@ -177,32 +147,7 @@ final readonly class ApiExceptionListener
     }
 
     /**
-     * Problems with the request itself that the framework reports in a generic way.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function fromRequest(\Throwable $exception, Request $request): ?array
-    {
-        $previous = $exception->getPrevious();
-
-        $isPayloadError = $previous instanceof NotEncodableValueException
-            || ($exception instanceof HttpExceptionInterface && Response::HTTP_UNPROCESSABLE_ENTITY === $exception->getStatusCode() && null === $previous);
-
-        $code = match (true) {
-            // No body at all: reported by the framework either as invalid JSON or as a bare 422.
-            $isPayloadError && '' === \trim($request->getContent())  => ApiErrorCode::EMPTY_BODY,
-            $previous instanceof NotEncodableValueException          => ApiErrorCode::MALFORMED_JSON,
-            // The serializer could not map the body onto the request DTO.
-            '' !== \trim($request->getContent())
-                && ($exception instanceof SerializerException || $previous instanceof SerializerException) => ApiErrorCode::INVALID_BODY,
-            default                                                                                        => null,
-        };
-
-        return null !== $code ? $this->envelope($code) : null;
-    }
-
-    /**
-     * @return array<string, mixed>
+     * @return Problem
      */
     private function fromHttp(HttpExceptionInterface $exception): array
     {
@@ -217,7 +162,22 @@ final readonly class ApiExceptionListener
     }
 
     /**
-     * @return array<string, mixed>
+     * An unmapped code is a bug: answer 500 and warn.
+     *
+     * @return Problem
+     */
+    private function unmapped(DomainException $exception): array
+    {
+        $this->logger->warning('Unmapped domain error code "{errorCode}": add it to config/packages/error_mapping.yaml', [
+            'errorCode' => $exception->errorCode(),
+            'exception' => $exception,
+        ]);
+
+        return $this->internal($exception);
+    }
+
+    /**
+     * @return Problem
      */
     private function internal(\Throwable $exception): array
     {
@@ -237,9 +197,9 @@ final readonly class ApiExceptionListener
     /**
      * Problem for one of the API's own codes; status and title come from the mapping too.
      *
-     * @param list<array<string, mixed>> $errors
+     * @param list<FieldError> $errors
      *
-     * @return array<string, mixed>
+     * @return Problem
      */
     private function envelope(string $code, array $errors = []): array
     {
@@ -254,6 +214,18 @@ final readonly class ApiExceptionListener
     }
 
     /**
+     * "dueDate" → "due_date": command inputs use PHP names, the payload uses snake_case.
+     */
+    private function fieldName(string $propertyPath): string
+    {
+        return (string) \preg_replace_callback(
+            '/[A-Za-z_][A-Za-z0-9_]*/',
+            fn (array $match): string => $this->nameConverter->normalize($match[0]),
+            $propertyPath,
+        );
+    }
+
+    /**
      * The API's own codes must always be mapped (ErrorCodeCoverageTest guarantees it).
      */
     private function requiredMapping(string $code): ErrorMapping
@@ -265,7 +237,7 @@ final readonly class ApiExceptionListener
     /**
      * @param array<string, scalar|null> $params
      *
-     * @return array<string, mixed>
+     * @return FieldError
      */
     private function fieldError(?string $field, string $code, string $message, array $params): array
     {

@@ -17,7 +17,7 @@ final class TaskDeletionNotAllowedException extends DomainException
         parent::__construct(
             self::ERROR_CODE,
             \sprintf('Task %s cannot be deleted while "%s"', $taskId->value(), $status->value),
-            ['taskId' => $taskId->value(), 'status' => $status->value],
+            ['task_id' => $taskId->value(), 'status' => $status->value],
             0,
             $previous,
         );

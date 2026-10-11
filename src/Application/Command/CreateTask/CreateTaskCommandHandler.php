@@ -5,32 +5,36 @@ declare(strict_types=1);
 namespace App\Application\Command\CreateTask;
 
 use App\Application\Command\CommandHandlerInterface;
+use App\Application\DTO\Views\TaskView;
 use App\Application\Service\LoggerInterface;
-use App\Domain\Factory\TaskFactory;
+use App\Domain\Model\Task;
 use App\Domain\Repository\TaskRepositoryInterface;
+use Psr\Clock\ClockInterface;
 
 final readonly class CreateTaskCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private TaskFactory $taskFactory,
         private TaskRepositoryInterface $taskRepository,
+        private ClockInterface $clock,
         private LoggerInterface $logger,
     ) {
     }
 
-    public function __invoke(CreateTaskCommand $command): CreateTaskResponse
+    public function __invoke(CreateTaskCommand $command): TaskView
     {
-        $task = $this->taskFactory->register(
+        $task = Task::create(
+            $command->getTaskId(),
             $command->getTitle(),
             $command->getDescription(),
+            $this->clock->now(),
             $command->getPriority(),
             $command->getDueDate(),
         );
 
         $this->taskRepository->create($task);
 
-        $this->logger->info('Task Created', ['task_id' => $task->getId()->value(), 'task_title' => $task->getTitle()->value()]);
+        $this->logger->info('Task created', ['task_id' => $task->getId()->value(), 'task_title' => $task->getTitle()->value()]);
 
-        return new CreateTaskResponse($task);
+        return TaskView::fromTask($task);
     }
 }

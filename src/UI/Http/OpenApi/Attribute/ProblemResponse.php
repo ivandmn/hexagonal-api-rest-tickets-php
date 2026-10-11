@@ -30,7 +30,7 @@ class ProblemResponse extends OA\Response
         if ([] !== $errors) {
             $example['errors'] = $errors;
         }
-        $example['traceId'] = 'a3f9c2e17b4d8e05';
+        $example['trace_id'] = 'a3f9c2e17b4d8e05';
 
         parent::__construct(
             response: $response,

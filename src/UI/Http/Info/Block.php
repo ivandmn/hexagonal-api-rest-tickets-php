@@ -13,7 +13,7 @@ final class Block
     /**
      * Key/value rows. Values may be scalars, null, lists, or a badge()/link().
      *
-     * @param array<string, mixed> $rows
+     * @param array<mixed> $rows
      *
      * @return array<string, mixed>
      */

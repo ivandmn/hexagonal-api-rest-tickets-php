@@ -30,7 +30,7 @@ final readonly class DatabaseProbe
     {
         $connection = $this->connection;
         $params     = $connection->getParams();
-        $result     = ['Target' => \sprintf('%s:%s/%s', $params['host'] ?? '?', $params['port'] ?? '?', $params['dbname'] ?? '?')];
+        $result     = ['Target' => \sprintf('%s:%s/%s', self::param($params, 'host'), self::param($params, 'port'), self::param($params, 'dbname'))];
 
         try {
             $start = \hrtime(true);
@@ -80,5 +80,15 @@ final readonly class DatabaseProbe
         }
 
         return $result;
+    }
+
+    /**
+     * @param array<mixed> $params
+     */
+    private static function param(array $params, string $key): string
+    {
+        $value = $params[$key] ?? null;
+
+        return \is_scalar($value) ? (string) $value : '?';
     }
 }

@@ -30,12 +30,10 @@ final class TaskDescriptionTest extends TestCase
         $this->assertSame('Another description', $desc->value());
     }
 
-    public function test_allows_empty_string(): void
+    public function test_rejects_a_blank_description(): void
     {
-        $desc = new TaskDescription('');
-
-        $this->assertSame('', $desc->value());
-        $this->assertSame('', (string) $desc);
+        $this->assertDomainError(InvalidValueException::REQUIRED, static fn () => new TaskDescription(''));
+        $this->assertDomainError(InvalidValueException::REQUIRED, static fn () => new TaskDescription('   '));
     }
 
     public function test_throws_exception_when_too_long(): void
@@ -59,9 +57,14 @@ final class TaskDescriptionTest extends TestCase
         $this->assertFalse($a->equals($b));
     }
 
-    public function test_constructor_with_null_throws_type_error(): void
+    public function test_trims_surrounding_whitespace(): void
     {
-        $this->expectException(\TypeError::class);
-        new TaskDescription(null);
+        $this->assertSame('Some description', new TaskDescription("\t Some description  ")->value());
+    }
+
+    public function test_max_length_counts_characters_not_bytes(): void
+    {
+        $this->assertSame(TaskDescription::MAX_LENGTH, \mb_strlen(new TaskDescription(\str_repeat('ü', TaskDescription::MAX_LENGTH))->value()));
+        $this->assertDomainError(InvalidValueException::TOO_LONG, static fn () => new TaskDescription(\str_repeat('ü', TaskDescription::MAX_LENGTH + 1)));
     }
 }

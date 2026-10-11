@@ -18,15 +18,10 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
     ) {
     }
 
-    public function __invoke(DeleteTaskCommand $command): DeleteTaskResponse
+    public function __invoke(DeleteTaskCommand $command): void
     {
         $taskId = $command->getTaskId();
-
-        $task = $this->taskRepository->findById($taskId);
-
-        if (!$task) {
-            throw new TaskNotFoundException($taskId);
-        }
+        $task   = $this->taskRepository->findById($taskId) ?? throw new TaskNotFoundException($taskId);
 
         if (!$task->canBeDeleted()) {
             throw new TaskDeletionNotAllowedException($taskId, $task->getStatus());
@@ -35,7 +30,5 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
         $this->taskRepository->delete($task);
 
         $this->logger->info('Task deleted', ['task_id' => $taskId->value(), 'task_title' => $task->getTitle()->value()]);
-
-        return new DeleteTaskResponse($task);
     }
 }

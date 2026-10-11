@@ -14,7 +14,7 @@ trait AssertsProblemResponse
     /**
      * @param array<string, string>|null $fieldErrors expected `errors[]` as field => code (exact set), or null to skip
      *
-     * @return array<string, mixed> the decoded problem, for extra assertions
+     * @return array<array-key, mixed> the decoded problem, for extra assertions
      */
     private function assertProblem(KernelBrowser $client, int $status, string $type, ?array $fieldErrors = null): array
     {
@@ -24,16 +24,22 @@ trait AssertsProblemResponse
         self::assertSame('application/problem+json', $response->headers->get('Content-Type'));
 
         $problem = \json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($problem);
 
         self::assertSame($type, $problem['type']);
         self::assertSame($status, $problem['status']);
         self::assertIsString($problem['title']);
         self::assertNotSame('', $problem['title']);
-        self::assertMatchesRegularExpression('/^\S+$/', $problem['traceId']);
+        self::assertIsString($problem['trace_id']);
+        self::assertMatchesRegularExpression('/^\S+$/', $problem['trace_id']);
 
         if (null !== $fieldErrors) {
             $actual = [];
-            foreach ($problem['errors'] ?? [] as $error) {
+            $errors = $problem['errors'] ?? [];
+            self::assertIsArray($errors);
+            foreach ($errors as $error) {
+                self::assertIsArray($error);
+                self::assertIsString($error['field']);
                 $actual[$error['field']] = $error['code'];
             }
             self::assertSame($fieldErrors, $actual, 'Unexpected errors[] (field => code)');
