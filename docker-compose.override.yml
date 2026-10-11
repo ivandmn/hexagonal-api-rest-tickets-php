@@ -1,7 +1,7 @@
 services:
   app-tickets:
     build:
-      target: dev
+      dockerfile: etc/app/dev/Dockerfile
       args:
         USER: ${USER}
         USER_ID: ${USER_ID}
@@ -13,12 +13,6 @@ services:
       - path: .env
       - path: .env.local
         required: false
-    environment:
-      FRANKENPHP_WORKER_CONFIG: |
-        watch ./src/**/*.php
-        watch ./config/**/*.{php,yaml,yml}
-        watch ./templates/**/*.twig
-        watch ./.env*
     ports:
       - "127.0.0.1:${HTTP_WEB_PORT:-8080}:80"
     volumes:

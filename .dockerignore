@@ -30,6 +30,6 @@ postman_collection.json
 docker-compose*.yml
 etc/*
 !etc/caddy/
-!etc/app/php.*.ini
+!etc/app/*/php/
 !etc/app/docker-entrypoint.sh
 !etc/bash/

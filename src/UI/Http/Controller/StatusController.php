@@ -8,12 +8,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/')]
 class StatusController extends AbstractController
 {
-    #[Route('', name: 'home')]
+    #[Route('/', name: 'root')]
+    #[Route('/status', name: 'status')]
+    #[Route('/health', name: 'health')]
     public function index(): Response
     {
-        return $this->render('index.html.twig');
+        return new Response(null, Response::HTTP_OK);
     }
 }

@@ -1237,10 +1237,12 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         services?: ServicesConfig,
  *         framework?: FrameworkConfig,
  *         twig?: TwigConfig,
+ *         web_profiler?: WebProfilerConfig,
  *         monolog?: MonologConfig,
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         twig_extra?: TwigExtraConfig,
+ *         debug?: DebugConfig,
  *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
  *     "when@prod"?: array{

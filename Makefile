@@ -1,5 +1,10 @@
 ## ———— Ticket API ————
 
+# Let docker compose interpolate ${VARS} from .env.local too (overrides .env)
+ifneq ($(wildcard .env.local),)
+export COMPOSE_ENV_FILES := .env,.env.local
+endif
+
 help: ## Outputs this help screen
 	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^## ————)' $(firstword $(MAKEFILE_LIST)) \
 		| awk 'BEGIN {FS = ":.*?## "}{if (NR == 1) printf "\n\033[1;33m%s\033[0m\n", $$0; else if ($$1 ~ /^##/) {name = $$0; gsub(/^## *(—)* *| *(—)* *$$/, "", name); printf "\n \033[36m▸ %s\033[0m\n", name} else printf "  \033[32m%-35s\033[0m %s\n", $$1, $$2}'
@@ -64,7 +69,7 @@ test-unit: ## Run unit tests
 	bin/phpunit --testsuite Unit --stop-on-failure --testdox
 
 test-coverage: ## Generate test coverage
-	bin/phpunit --stop-on-failure --testdox --coverage-html var/coverage
+	XDEBUG_MODE=coverage bin/phpunit --stop-on-failure --testdox --coverage-html var/coverage
 
 deptrac: ## Check architectural dependencies
 	bin/deptrac analyze --fail-on-uncovered --report-uncovered

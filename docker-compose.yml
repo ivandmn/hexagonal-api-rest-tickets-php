@@ -7,8 +7,7 @@ services:
   app-tickets:
     build:
       context: .
-      dockerfile: etc/Dockerfile
-      target: prod
+      dockerfile: etc/app/prod/Dockerfile
     container_name: app-tickets
     env_file: .env
     restart: unless-stopped
