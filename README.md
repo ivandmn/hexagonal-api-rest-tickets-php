@@ -44,7 +44,7 @@ The boundaries are not just a convention: deptrac enforces the layer rules on ev
 - Docker with Compose v2
 - GNU Make
 
-The dev stack is self-contained: it runs the app, its PostgreSQL (`database`, data in the `db_data` volume) and a throwaway PostgreSQL for the tests (`tickets-db-test`, in memory). You can still point `.env` at another database.
+The dev stack only runs the app. PostgreSQL (`app-postgres`), the test PostgreSQL (`app-postgres-test`) and Redis (`app-redis`) come from the `infrastructure` repository (`docker-postgres`, `docker-postgres-test`, `docker-redis`): start them there first, on the same `EXTERNAL_NET` network.
 
 ### 1. Clone and configure
 
@@ -56,7 +56,7 @@ cp .env.example .env              # app settings: DATABASE_URL, APP_SECRET...
 cp .env.local.example .env.local  # your machine: USER/USER_ID/GROUP_ID, Xdebug, ports (not committed)
 ```
 
-`.env.example` already points at the stack's `database` service. The app owns a single PostgreSQL schema, `tickets`, and ignores everything else in that database.
+`.env.example` already points at `app-postgres` and `app-redis`: fill in their passwords. The app owns a single PostgreSQL schema, `tickets`, and ignores everything else in that database.
 
 Git over SSH inside the container uses your SSH agent, not your `~/.ssh`: start it on the host (`eval "$(ssh-agent)" && ssh-add`) before `make up`.
 
@@ -65,7 +65,7 @@ Git over SSH inside the container uses your SSH agent, not your `~/.ssh`: start 
 ```bash
 docker network create app   # once: the stack joins this external network
 make build                  # build the dev image
-make up                     # start the app and both databases
+make up                     # start the app (databases and Redis: infrastructure repo)
 make install                # composer install
 make db-migrate             # create the "tickets" schema and run the migrations
 ```
@@ -360,7 +360,7 @@ make test-functional  # functional only
 make test-coverage    # HTML/XML/text report in var/phpunit/coverage
 ```
 
-**The test database is isolated.** The test environment reads `TEST_DATABASE_URL` (defined in `.env.test`), never `DATABASE_URL`, so the app database cannot be touched by mistake. It points to the `tickets-db-test` service of the dev stack: PostgreSQL in memory, empty on every `make up`. Each test runs inside a transaction that is rolled back (`dama/doctrine-test-bundle`).
+**The test database is isolated.** The test environment reads `TEST_DATABASE_URL` (defined in `.env.test`), never `DATABASE_URL`, so the app database cannot be touched by mistake. It points to `app-postgres-test` from the infrastructure repo. Tests use an in-memory cache, never Redis. Each test runs inside a transaction that is rolled back (`dama/doctrine-test-bundle`).
 
 PHPUnit reads `phpunit.dist.xml`. Copy it to `phpunit.xml` (ignored by git) for local tweaks.
 
@@ -438,7 +438,7 @@ On every push to `main` that passes all checks, CI builds `prod` and pushes it a
 ### Steps
 
 1. **Create a Compose service** in Dokploy, pointing to this repository. The compose path is `docker-compose.yml`. If the GHCR package is private, add `ghcr.io` under Dokploy's Registry with a token that has `read:packages`.
-2. **Add a PostgreSQL database** in the same Dokploy project.
+2. **Add a PostgreSQL database and Redis** in the same Dokploy project (or start them from the infrastructure repo on `dokploy-network`).
 3. **Fill the Environment tab** using [`.env.prod.example`](.env.prod.example) as a template:
 
    | Variable | Value |
@@ -449,6 +449,7 @@ On every push to `main` that passes all checks, CI builds `prod` and pushes it a
    | `TRUSTED_HOSTS` | The hosts the app answers to, as regexes: `^api\.example\.com$,^localhost$` (`localhost` is for the healthcheck) |
    | `IMAGE_TAG` | The git SHA to deploy (`latest` if unset) |
    | `DATABASE_URL` | The database's **internal** host from Dokploy's "Internal Credentials" (URL-encode special characters in the password) |
+   | `REDIS_URL` | `redis://PASSWORD@INTERNAL_HOST:6379`: the app cache and Doctrine's result cache |
    | `RUN_MIGRATIONS` | `true` |
    | `INFO_USER` / `INFO_PASSWORD` | Optional: enables `/info` behind Basic Auth |
 

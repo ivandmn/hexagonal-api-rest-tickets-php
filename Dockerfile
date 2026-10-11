@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl libcap2-bi
 RUN install-php-extensions \
     intl \
     pdo_pgsql \
+    redis \
     opcache
 
 COPY etc/caddy/Caddyfile /etc/frankenphp/Caddyfile
@@ -110,7 +111,7 @@ RUN mkdir -p var/cache var/log \
     && composer dump-autoload --classmap-authoritative --no-dev \
     && composer dump-env prod \
     && APP_SECRET=build DEFAULT_URI=http://localhost DATABASE_URL="postgresql://build:build@localhost:5432/build?serverVersion=18&charset=utf8" \
-        composer run-script --no-dev post-install-cmd
+        REDIS_URL=redis://localhost:6379 composer run-script --no-dev post-install-cmd
 
 # ---- prod: the image that runs ----
 FROM base AS prod

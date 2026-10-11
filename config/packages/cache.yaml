@@ -1,19 +1,16 @@
 framework:
     cache:
         # Unique name of your app: used to compute stable namespaces for cache keys.
-        #prefix_seed: your_vendor_name/app_name
+        prefix_seed: ivandmn/tickets-api
 
-        # The "app" cache stores to the filesystem by default.
-        # The data in this cache should persist between deploys.
-        # Other options include:
+        # The "app" cache (and the Doctrine result cache in prod, see doctrine.yaml) lives in Redis,
+        # so it is shared by every worker and survives deploys. The connection is lazy: nothing
+        # connects until a pool is used. cache.system stays on the filesystem (it ships in the image).
+        app: cache.adapter.redis
+        default_redis_provider: '%env(REDIS_URL)%'
 
-        # Redis
-        #app: cache.adapter.redis
-        #default_redis_provider: redis://localhost
-
-        # APCu (not recommended with heavy random-write workloads as memory fragmentation can cause perf issues)
-        #app: cache.adapter.apcu
-
-        # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+when@test:
+    framework:
+        cache:
+            # Tests never need Redis: each run starts with an empty in-memory cache.
+            app: cache.adapter.array
