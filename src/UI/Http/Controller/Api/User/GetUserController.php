@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\User;
 
-use App\Application\DTO\Views\UserView;
-use App\Application\Query\GetUserDetails\GetUserDetailsQuery;
+use App\Application\DTO\Views\User\UserView;
+use App\Application\Query\User\GetUserDetails\GetUserDetailsQuery;
 use App\UI\Http\Controller\Api\ApiController;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
 use App\UI\Http\OpenApi\Attribute\ProblemResponse;

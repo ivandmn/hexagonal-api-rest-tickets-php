@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\Command\UpdateTask\UpdateTaskCommand;
-use App\Application\DTO\Views\TaskView;
+use App\Application\Command\Task\UpdateTask\UpdateTaskCommand;
+use App\Application\DTO\Views\Task\TaskView;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;

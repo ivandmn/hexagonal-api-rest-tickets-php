@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\Command\CreateTask\CreateTaskCommand;
-use App\Application\DTO\Views\TaskView;
+use App\Application\Command\Task\CreateTask\CreateTaskCommand;
+use App\Application\DTO\Views\Task\TaskView;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;

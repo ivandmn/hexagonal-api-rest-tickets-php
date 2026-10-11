@@ -279,7 +279,7 @@ UI and Infrastructure never depend on each other. `deptrac.yaml` enforces all of
 1. **A controller** (`src/UI/Http/Controller/Api`, one class per action) reads the primitives with `Payload` and turns them into a command or query.
 2. **Commands and queries build their value objects in the constructor** (through `Field::of()`), so invalid input never reaches the bus. Handlers only orchestrate.
 3. **Command handlers return the view of the resource they created or changed** (`TaskView`, `UserView`), or nothing when it is gone (delete). For creation, the controller generates the id first.
-4. **Query handlers return read models** from `Application/DTO/Views` (`TaskView`, `UserView`...), which are plain readonly objects.
+4. **Query handlers return read models** from `Application/DTO/Views/<Aggregate>` (`TaskView`, `UserView`...), which are plain readonly objects.
 5. **`ApiResponder`** serializes them to JSON: `snake_case`, RFC 3339 dates, success envelope.
 6. **Any exception** ends in `ApiExceptionListener`, which renders Problem Details.
 
@@ -293,9 +293,15 @@ src/
 │   ├── Repository/               # Repository ports, TaskCriteria
 │   └── Exception/                # DomainException + Task/ and User/ errors
 ├── Application/
-│   ├── Command/                  # Write side: <UseCase>/<UseCase>Command + Handler
-│   ├── Query/                    # Read side: <UseCase>/<UseCase>Query + Handler
+│   ├── Command/                  # Write side: <Aggregate>/<UseCase>/<UseCase>Command + Handler
+│   │   ├── Task/                 #   AssignTaskToUser, CreateTask, DeleteTask, UpdateTask
+│   │   └── User/                 #   CreateUser, DeleteUser
+│   ├── Query/                    # Read side: <Aggregate>/<UseCase>/<UseCase>Query + Handler
+│   │   ├── Task/                 #   GetTaskDetails, ListTasks
+│   │   └── User/                 #   GetUserDetails, ListUsers
 │   ├── DTO/Views/                # Read models returned by queries and commands
+│   │   ├── Task/                 #   TaskView, TaskListView, AssignedUserView
+│   │   └── User/                 #   UserView, UserListView
 │   ├── Validation/               # Field::of(): tags a rejected input with its name
 │   └── Event/                    # Event bus port
 ├── Infrastructure/

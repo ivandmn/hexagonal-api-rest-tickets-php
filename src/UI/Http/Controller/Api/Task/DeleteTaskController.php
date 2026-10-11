@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\Command\DeleteTask\DeleteTaskCommand;
+use App\Application\Command\Task\DeleteTask\DeleteTaskCommand;
 use App\UI\Http\Controller\Api\ApiController;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
 use App\UI\Http\OpenApi\Attribute\ProblemResponse;

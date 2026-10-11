@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\DTO\Views\TaskView;
-use App\Application\Query\GetTaskDetails\GetTaskDetailsQuery;
+use App\Application\DTO\Views\Task\TaskView;
+use App\Application\Query\Task\GetTaskDetails\GetTaskDetailsQuery;
 use App\UI\Http\Controller\Api\ApiController;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
 use App\UI\Http\OpenApi\Attribute\ProblemResponse;

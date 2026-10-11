@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\DTO\Views\TaskListView;
-use App\Application\Query\ListTasks\ListTasksQuery;
+use App\Application\DTO\Views\Task\TaskListView;
+use App\Application\Query\Task\ListTasks\ListTasksQuery;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\UI\Http\Controller\Api\ApiController;

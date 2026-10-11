@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\User;
 
-use App\Application\Command\DeleteUser\DeleteUserCommand;
+use App\Application\Command\User\DeleteUser\DeleteUserCommand;
 use App\UI\Http\Controller\Api\ApiController;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
 use App\UI\Http\OpenApi\Attribute\ProblemResponse;

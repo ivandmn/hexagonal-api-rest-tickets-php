@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\User;
 
-use App\Application\Command\CreateUser\CreateUserCommand;
-use App\Application\DTO\Views\UserView;
+use App\Application\Command\User\CreateUser\CreateUserCommand;
+use App\Application\DTO\Views\User\UserView;
 use App\Domain\ValueObject\Email;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
