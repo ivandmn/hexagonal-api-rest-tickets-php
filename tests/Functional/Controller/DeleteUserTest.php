@@ -10,6 +10,7 @@ use App\Domain\Model\Task;
 use App\Domain\Model\User;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\ValueObject\DateTime;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;
@@ -126,7 +127,7 @@ final class DeleteUserTest extends WebTestCase
     private function task(User $assignee, TaskStatus $status): TaskId
     {
         $taskId = TaskId::new();
-        $this->tasks()->create(new Task($taskId, TaskTitle::fromString('Some task'), TaskDescription::fromString('D'), $status, TaskPriority::LOW, $assignee, null, new \DateTimeImmutable(), null));
+        $this->tasks()->create(new Task($taskId, TaskTitle::fromString('Some task'), TaskDescription::fromString('D'), $status, TaskPriority::LOW, $assignee, null, DateTime::fromDateTime(new \DateTimeImmutable()), null));
 
         return $taskId;
     }

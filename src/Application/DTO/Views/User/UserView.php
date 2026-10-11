@@ -26,8 +26,8 @@ final readonly class UserView
             $user->getId()->value(),
             $user->getEmail()->value(),
             $user->getName()->value(),
-            $user->getCreatedAt(),
-            $user->getUpdatedAt(),
+            $user->getCreatedAt()->value(),
+            $user->getUpdatedAt()?->value(),
         );
     }
 }

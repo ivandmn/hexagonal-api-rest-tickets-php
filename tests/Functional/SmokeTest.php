@@ -63,9 +63,11 @@ final class SmokeTest extends WebTestCase
             'PATCH /api/tasks/{id}',
             'DELETE /api/tasks/{id}',
             'PATCH /api/tasks/{id}/assign',
+            'DELETE /api/tasks/{id}/assign',
             'GET /api/users',
             'POST /api/users',
             'GET /api/users/{id}',
+            'PATCH /api/users/{id}',
             'DELETE /api/users/{id}',
         ], $operations);
     }

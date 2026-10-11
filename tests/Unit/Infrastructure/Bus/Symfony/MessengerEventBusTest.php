@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Infrastructure\Bus\Symfony;
 
 use App\Domain\Event\EventInterface;
+use App\Domain\ValueObject\DateTime;
 use App\Infrastructure\Bus\Symfony\MessengerEventBus;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Handler\HandlerDescriptor;
@@ -19,6 +20,16 @@ final class MessengerEventBusTest extends TestCase
     protected function setUp(): void
     {
         $this->event = new class implements EventInterface {
+            public function eventName(): string
+            {
+                return 'test.happened';
+            }
+
+            public function occurredOn(): DateTime
+            {
+                return DateTime::fromTimestamp(0);
+            }
+
             public function payload(): array
             {
                 return [];
@@ -43,6 +54,25 @@ final class MessengerEventBusTest extends TestCase
         $bus->dispatch($event);
 
         $this->assertSame([['first', $event], ['second', $event]], $received);
+    }
+
+    public function test_dispatches_several_events_in_order(): void
+    {
+        $other    = clone $this->event;
+        $received = [];
+
+        $bus = new MessengerEventBus(new MessageBus([
+            new HandleMessageMiddleware(new HandlersLocator([$this->event::class => [static function (EventInterface $e) use (&$received): void {
+                $received[] = $e;
+            }]])),
+        ]));
+
+        $bus->dispatch($this->event, $other);
+        $bus->dispatch();
+
+        $this->assertCount(2, $received);
+        $this->assertSame($this->event, $received[0]);
+        $this->assertSame($other, $received[1]);
     }
 
     public function test_an_event_nobody_listens_to_is_fine(): void

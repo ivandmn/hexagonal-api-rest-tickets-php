@@ -19,7 +19,13 @@ final readonly class ListTasksQueryHandler implements QueryHandlerInterface
 
     public function __invoke(ListTasksQuery $query): TaskListView
     {
-        $criteria = new TaskCriteria($query->getStatus(), $query->getPriority());
+        $criteria = new TaskCriteria(
+            $query->getStatus(),
+            $query->getPriority(),
+            $query->getAssignedTo(),
+            $query->getDueFrom(),
+            $query->getDueTo(),
+        );
         $tasks    = $this->taskRepository->findByCriteria($criteria, $query->getPage(), $query->getLimit());
 
         return new TaskListView(

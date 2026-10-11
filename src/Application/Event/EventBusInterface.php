@@ -8,5 +8,8 @@ use App\Domain\Event\EventInterface;
 
 interface EventBusInterface
 {
-    public function dispatch(EventInterface $event): void;
+    /**
+     * In order; usually what an aggregate recorded: `dispatch(...$task->pullDomainEvents())`.
+     */
+    public function dispatch(EventInterface ...$events): void;
 }

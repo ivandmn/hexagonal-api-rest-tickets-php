@@ -16,7 +16,14 @@ final readonly class MessengerEventBus implements EventBusInterface
     ) {
     }
 
-    public function dispatch(EventInterface $event): void
+    public function dispatch(EventInterface ...$events): void
+    {
+        foreach ($events as $event) {
+            $this->dispatchOne($event);
+        }
+    }
+
+    private function dispatchOne(EventInterface $event): void
     {
         try {
             $this->eventBus->dispatch($event);

@@ -36,8 +36,8 @@ final readonly class TaskView
             $task->getPriority()->value,
             null !== $assignee ? AssignedUserView::fromUser($assignee) : null,
             $task->getDueDate()?->value(),
-            $task->getCreatedAt(),
-            $task->getUpdatedAt(),
+            $task->getCreatedAt()->value(),
+            $task->getUpdatedAt()?->value(),
         );
     }
 }

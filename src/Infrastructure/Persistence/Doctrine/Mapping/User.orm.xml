@@ -10,7 +10,7 @@
         <field name="email" type="user_email" column="email" unique="true" nullable="false"/>
         <field name="name" type="user_name" column="name" nullable="false"/>
 
-        <field name="createdAt" type="datetimetz_immutable" column="created_at" nullable="false"/>
-        <field name="updatedAt" type="datetimetz_immutable" column="updated_at" nullable="true"/>
+        <field name="createdAt" type="utc_datetime" column="created_at" nullable="false"/>
+        <field name="updatedAt" type="utc_datetime" column="updated_at" nullable="true"/>
     </entity>
 </doctrine-mapping>

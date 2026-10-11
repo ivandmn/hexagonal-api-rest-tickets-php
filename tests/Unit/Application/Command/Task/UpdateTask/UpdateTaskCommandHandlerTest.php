@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Application\Command\Task\UpdateTask;
 
 use App\Application\Command\Task\UpdateTask\UpdateTaskCommand;
 use App\Application\Command\Task\UpdateTask\UpdateTaskCommandHandler;
+use App\Domain\Event\Task\TaskCompleted;
 use App\Domain\Exception\Task\TaskDueDateInPastException;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Model\Task;
@@ -15,6 +16,7 @@ use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryTaskRepository;
+use App\Tests\Support\Double\SpyEventBus;
 use App\Tests\Support\Mother;
 use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
@@ -28,11 +30,13 @@ final class UpdateTaskCommandHandlerTest extends TestCase
 
     private InMemoryTaskRepository $tasks;
     private SpyLogger $logger;
+    private SpyEventBus $eventBus;
 
     protected function setUp(): void
     {
-        $this->tasks  = new InMemoryTaskRepository();
-        $this->logger = new SpyLogger();
+        $this->tasks    = new InMemoryTaskRepository();
+        $this->logger   = new SpyLogger();
+        $this->eventBus = new SpyEventBus();
     }
 
     public function test_updates_the_given_fields_persists_and_logs(): void
@@ -47,7 +51,23 @@ final class UpdateTaskCommandHandlerTest extends TestCase
         $this->assertSame(TaskPriority::HIGH, $task->getPriority());
         $this->assertSame('2026-06-02T10:00:00+00:00', (string) $task->getDueDate());
         $this->assertSame(1, $this->tasks->updates);
+        $this->assertSame(self::NOW, (string) $task->getUpdatedAt(), 'updatedAt comes from the clock');
         $this->assertTrue($this->logger->has('info', 'Task updated', ['task_id' => $task->getId()->value()]));
+        $this->assertSame([], $this->eventBus->events, 'Moving to in_progress is not an event');
+    }
+
+    public function test_completing_a_task_dispatches_task_completed(): void
+    {
+        $user = Mother::user();
+        $task = $this->stored(Mother::task(status: TaskStatus::IN_PROGRESS, assignee: $user));
+
+        $this->update($task, status: 'completed');
+
+        $this->assertCount(1, $this->eventBus->events);
+        $event = $this->eventBus->ofType(TaskCompleted::class)[0];
+        $this->assertTrue($event->taskId->equals($task->getId()));
+        $this->assertTrue($event->assignedUserId?->equals($user->getId()));
+        $this->assertSame(self::NOW, (string) $event->occurredOn());
     }
 
     public function test_null_fields_are_left_unchanged(): void
@@ -122,6 +142,6 @@ final class UpdateTaskCommandHandlerTest extends TestCase
 
     private function handler(): UpdateTaskCommandHandler
     {
-        return new UpdateTaskCommandHandler($this->tasks, new MockClock(self::NOW), $this->logger);
+        return new UpdateTaskCommandHandler($this->tasks, $this->eventBus, new MockClock(self::NOW), $this->logger);
     }
 }

@@ -14,6 +14,7 @@ use App\Domain\Model\Task;
 use App\Domain\Model\User;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\ValueObject\DateTime;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskId;
@@ -82,6 +83,54 @@ final class TaskControllerTest extends WebTestCase
         $this->assertCount(1, $json['data']);
         $this->assertSame('high', $json['data'][0]['priority']);
         $this->assertSame(['total' => 2, 'page' => 1, 'limit' => 1], $json['meta']);
+    }
+
+    public function test_list_filters_by_assignee_and_due_date_range(): void
+    {
+        $jane = $this->givenUser('jane.filter@example.com', 'Jane Filter');
+        $john = $this->givenUser('john.filter@example.com', 'John Filter');
+        $this->givenTask('Jane in range', due: FutureDate::on(3, 10), assignee: $jane);
+        $this->givenTask('Jane too late', due: FutureDate::on(4, 10), assignee: $jane);
+        $this->givenTask('Jane no due date', assignee: $jane);
+        $this->givenTask('John in range', due: FutureDate::on(3, 10), assignee: $john);
+
+        $this->client->request('GET', '/api/tasks?' . \http_build_query([
+            'assigned_to' => $jane->getId()->value(),
+            'due_from'    => FutureDate::on(3, 1)->format(\DATE_ATOM),
+            'due_to'      => FutureDate::on(3, 31, '23:59:59')->format(\DATE_ATOM),
+        ]));
+
+        $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
+        $this->assertSame(['Jane in range'], \array_column($json['data'], 'title'));
+        $this->assertSame(1, $json['meta']['total']);
+    }
+
+    public function test_list_filter_by_assignee_alone_includes_tasks_without_due_date(): void
+    {
+        $jane = $this->givenUser('jane.only@example.com', 'Jane Only');
+        $this->givenTask('Jane no due date', assignee: $jane);
+        $this->givenTask('Unassigned');
+
+        $this->client->request('GET', '/api/tasks?assigned_to=' . $jane->getId()->value());
+
+        $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
+        $this->assertSame(['Jane no due date'], \array_column($json['data'], 'title'));
+    }
+
+    public function test_list_rejects_invalid_assignee_and_due_dates(): void
+    {
+        $this->client->request('GET', '/api/tasks?assigned_to=nope');
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['assigned_to' => InvalidValueException::INVALID_FORMAT]);
+
+        $this->client->request('GET', '/api/tasks?due_from=2030-01-01');
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['due_from' => InvalidValueException::INVALID_FORMAT]);
+    }
+
+    public function test_list_rejects_a_due_to_before_due_from(): void
+    {
+        $this->client->request('GET', '/api/tasks?due_from=2030-01-02T00:00:00Z&due_to=2030-01-01T00:00:00Z');
+
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['due_to' => InvalidValueException::INVALID]);
     }
 
     public function test_list_page_beyond_the_last_is_an_empty_list(): void
@@ -425,6 +474,36 @@ final class TaskControllerTest extends WebTestCase
         $this->assertSame(['id' => $user->getId()->value(), 'name' => 'Assign Target'], $data['assigned_to']);
     }
 
+    public function test_unassign_returns_the_task_without_assignee(): void
+    {
+        $user = $this->givenUser('unassign@example.com', 'Unassign Target');
+        $task = $this->givenTask('Assigned task', assignee: $user);
+
+        $this->client->request('DELETE', '/api/tasks/' . $task->getId()->value() . '/assign');
+
+        $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
+        $this->assertNull($data['assigned_to']);
+        $this->assertNotNull($data['updated_at']);
+    }
+
+    public function test_unassign_an_unassigned_task_is_still_200(): void
+    {
+        $task = $this->givenTask('Nobody\'s task');
+
+        $this->client->request('DELETE', '/api/tasks/' . $task->getId()->value() . '/assign');
+
+        $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
+        $this->assertNull($data['assigned_to']);
+        $this->assertNull($data['updated_at']);
+    }
+
+    public function test_unassign_returns_404_on_task_not_found(): void
+    {
+        $this->client->request('DELETE', '/api/tasks/' . self::UNKNOWN_ID . '/assign');
+
+        $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, TaskNotFoundException::ERROR_CODE);
+    }
+
     public function test_assign_returns_422_on_missing_required_parameter(): void
     {
         $task = $this->givenTask();
@@ -544,6 +623,7 @@ final class TaskControllerTest extends WebTestCase
         ?\DateTimeImmutable $due = null,
         TaskStatus $status = TaskStatus::PENDING,
         \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
+        ?User $assignee = null,
     ): Task {
         $task = new Task(
             TaskId::new(),
@@ -551,9 +631,9 @@ final class TaskControllerTest extends WebTestCase
             TaskDescription::fromString('Valid Description'),
             $status,
             $priority,
-            null,
+            $assignee,
             null !== $due ? TaskDueDate::fromDateTime($due) : null,
-            $createdAt,
+            DateTime::fromDateTime($createdAt),
             null,
         );
 

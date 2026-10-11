@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Application\Command\User\DeleteUser;
 
 use App\Application\Command\User\DeleteUser\DeleteUserCommand;
 use App\Application\Command\User\DeleteUser\DeleteUserCommandHandler;
+use App\Domain\Event\User\UserDeleted;
 use App\Domain\Exception\User\UserDeletionNotAllowedException;
 use App\Domain\Exception\User\UserNotFoundException;
 use App\Domain\Model\User;
@@ -14,23 +15,26 @@ use App\Domain\ValueObject\User\UserId;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryTaskRepository;
 use App\Tests\Support\Double\InMemoryUserRepository;
+use App\Tests\Support\Double\SpyEventBus;
 use App\Tests\Support\Mother;
-use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Clock\MockClock;
 
 final class DeleteUserCommandHandlerTest extends TestCase
 {
     use AssertsDomainError;
 
+    private const string NOW = '2030-01-01T10:00:00+00:00';
+
     private User $user;
     private InMemoryUserRepository $users;
-    private SpyLogger $logger;
+    private SpyEventBus $eventBus;
 
     protected function setUp(): void
     {
-        $this->user   = Mother::user(email: 'jane@example.com');
-        $this->users  = new InMemoryUserRepository($this->user);
-        $this->logger = new SpyLogger();
+        $this->user     = Mother::user(email: 'jane@example.com');
+        $this->users    = new InMemoryUserRepository($this->user);
+        $this->eventBus = new SpyEventBus();
     }
 
     public function test_deletes_a_user_whose_tasks_are_all_completed(): void
@@ -44,7 +48,12 @@ final class DeleteUserCommandHandlerTest extends TestCase
         $this->handler($tasks)(new DeleteUserCommand($this->user->getId()->value()));
 
         $this->assertNull($this->users->findById($this->user->getId()));
-        $this->assertTrue($this->logger->has('info', 'User deleted', ['user_id' => $this->user->getId()->value(), 'deleted_tasks' => 2]));
+
+        $this->assertCount(1, $this->eventBus->events);
+        $event = $this->eventBus->ofType(UserDeleted::class)[0];
+        $this->assertTrue($event->userId->equals($this->user->getId()));
+        $this->assertSame(2, $event->deletedTasks);
+        $this->assertSame(self::NOW, (string) $event->occurredOn());
     }
 
     public function test_deletes_a_user_without_tasks(): void
@@ -69,6 +78,7 @@ final class DeleteUserCommandHandlerTest extends TestCase
             ['user_id' => $userId, 'unfinished_tasks' => 2],
         );
         $this->assertNotNull($this->users->findById($this->user->getId()));
+        $this->assertSame([], $this->eventBus->events);
     }
 
     public function test_fails_when_the_user_does_not_exist(): void
@@ -84,6 +94,6 @@ final class DeleteUserCommandHandlerTest extends TestCase
 
     private function handler(InMemoryTaskRepository $tasks): DeleteUserCommandHandler
     {
-        return new DeleteUserCommandHandler($this->users, $tasks, $this->logger);
+        return new DeleteUserCommandHandler($this->users, $tasks, $this->eventBus, new MockClock(self::NOW));
     }
 }

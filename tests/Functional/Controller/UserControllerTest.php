@@ -167,6 +167,75 @@ final class UserControllerTest extends WebTestCase
         $this->assertProblem($this->client, Response::HTTP_CONFLICT, UserAlreadyExistsException::ERROR_CODE, ['email' => UserAlreadyExistsException::ERROR_CODE]);
     }
 
+    public function test_update_changes_the_given_fields(): void
+    {
+        $user = $this->givenUser('before@example.com', 'Before Name');
+
+        $this->patchJson($user->getId()->value(), ['email' => 'After@Example.com', 'name' => 'After Name']);
+
+        $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
+        $this->assertSame($user->getId()->value(), $data['id']);
+        $this->assertSame('after@example.com', $data['email']);
+        $this->assertSame('After Name', $data['name']);
+        $this->assertSame('2026-01-01T10:00:00+00:00', $data['created_at']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $data['updated_at']);
+    }
+
+    public function test_update_leaves_omitted_fields_as_they_are(): void
+    {
+        $user = $this->givenUser('keep@example.com', 'Old Name');
+
+        $this->patchJson($user->getId()->value(), ['name' => 'New Name']);
+
+        $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
+        $this->assertSame('keep@example.com', $data['email']);
+        $this->assertSame('New Name', $data['name']);
+    }
+
+    public function test_update_returns_409_when_the_email_belongs_to_another_user(): void
+    {
+        $this->givenUser('taken@example.com', 'Existing User');
+        $user = $this->givenUser('mine@example.com', 'Some User');
+
+        $this->patchJson($user->getId()->value(), ['email' => 'taken@example.com']);
+
+        $this->assertProblem($this->client, Response::HTTP_CONFLICT, UserAlreadyExistsException::ERROR_CODE, ['email' => UserAlreadyExistsException::ERROR_CODE]);
+    }
+
+    public function test_update_returns_422_on_invalid_values_and_unknown_fields(): void
+    {
+        $user = $this->givenUser('valid@example.com', 'Valid Name');
+
+        $this->patchJson($user->getId()->value(), ['email' => 'not-an-email']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['email' => InvalidValueException::INVALID_FORMAT]);
+
+        $this->patchJson($user->getId()->value(), ['name' => 'ab']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['name' => InvalidValueException::TOO_SHORT]);
+
+        $this->patchJson($user->getId()->value(), ['id' => 'x']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['id' => ApiErrorCode::UNKNOWN_FIELD]);
+    }
+
+    public function test_update_returns_404_on_user_not_found(): void
+    {
+        $this->patchJson('018f63a8-bb93-7e5b-b0e1-49d24fa4ffff', ['name' => 'Some Name']);
+
+        $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, UserNotFoundException::ERROR_CODE);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function patchJson(string $id, array $payload): void
+    {
+        $this->client->request(
+            'PATCH',
+            '/api/users/' . $id,
+            server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
+            content: \json_encode($payload, \JSON_THROW_ON_ERROR),
+        );
+    }
+
     /**
      * @param array<string, mixed> $payload
      */

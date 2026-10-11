@@ -13,6 +13,9 @@ doctrine:
 
         # Map columns straight to domain value objects
         types:
+            # Shared
+            utc_datetime: App\Infrastructure\Persistence\Doctrine\Type\UtcDateTimeType
+
             # Task
             task_id: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskIdType
             task_title: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskTitleType

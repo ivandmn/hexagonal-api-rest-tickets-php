@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Model;
 
+use App\Domain\Event\Task\TaskAssigned;
+use App\Domain\Event\Task\TaskCompleted;
 use App\Domain\Exception\Task\InvalidTaskStatusTransitionException;
 use App\Domain\Exception\Task\TaskDueDateInPastException;
+use App\Domain\ValueObject\DateTime;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskId;
@@ -13,7 +16,12 @@ use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Domain\ValueObject\Task\TaskTitle;
 
-final class Task
+/**
+ * Every change takes the current time ($now, from the injected clock) and becomes updatedAt.
+ * Changing something to the value it already has is a no-op: updatedAt and the events stay as
+ * they were.
+ */
+final class Task extends AggregateRoot
 {
     private bool $isUpdated = false;
 
@@ -25,8 +33,8 @@ final class Task
         private TaskPriority $priority,
         private ?User $assignedUser,
         private ?TaskDueDate $dueDate,
-        private readonly \DateTimeImmutable $createdAt,
-        private ?\DateTimeImmutable $updatedAt,
+        private readonly DateTime $createdAt,
+        private ?DateTime $updatedAt,
     ) {
     }
 
@@ -45,7 +53,7 @@ final class Task
     ): self {
         $dueDate?->ensureNotBefore($now);
 
-        return new self($id, $title, $description, TaskStatus::PENDING, $priority, null, $dueDate, $now, null);
+        return new self($id, $title, $description, TaskStatus::PENDING, $priority, null, $dueDate, DateTime::fromDateTime($now), null);
     }
 
     public function getId(): TaskId
@@ -83,37 +91,42 @@ final class Task
         return $this->dueDate;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTime
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): ?DateTime
     {
         return $this->updatedAt;
     }
 
-    public function changeTitle(TaskTitle $newTitle): void
+    public function changeTitle(TaskTitle $newTitle, \DateTimeImmutable $now): void
     {
         if ($this->title->equals($newTitle)) {
             return;
         }
 
         $this->title = $newTitle;
-        $this->markAsUpdated();
+        $this->markAsUpdated($now);
     }
 
-    public function changeDescription(TaskDescription $newDescription): void
+    public function changeDescription(TaskDescription $newDescription, \DateTimeImmutable $now): void
     {
         if ($this->description->equals($newDescription)) {
             return;
         }
 
         $this->description = $newDescription;
-        $this->markAsUpdated();
+        $this->markAsUpdated($now);
     }
 
-    public function changeStatus(TaskStatus $newStatus): void
+    /**
+     * Records TaskCompleted when the task reaches "completed".
+     *
+     * @throws InvalidTaskStatusTransitionException
+     */
+    public function changeStatus(TaskStatus $newStatus, \DateTimeImmutable $now): void
     {
         if ($this->status->equals($newStatus)) {
             return;
@@ -125,26 +138,47 @@ final class Task
         }
 
         $this->status = $newStatus;
-        $this->markAsUpdated();
+        $updatedAt    = $this->markAsUpdated($now);
+
+        if ($newStatus->isCompleted()) {
+            $this->record(new TaskCompleted($this->id, $this->assignedUser?->getId(), $updatedAt));
+        }
     }
 
-    public function changePriority(TaskPriority $newPriority): void
+    public function changePriority(TaskPriority $newPriority, \DateTimeImmutable $now): void
     {
         if ($this->priority->equals($newPriority)) {
             return;
         }
 
         $this->priority = $newPriority;
-        $this->markAsUpdated();
+        $this->markAsUpdated($now);
     }
 
-    public function assignTo(User $user): void
+    /**
+     * Records TaskAssigned, also when the task is taken over from another user.
+     */
+    public function assignTo(User $user, \DateTimeImmutable $now): void
     {
         if ($this->assignedUser?->equals($user)) {
             return;
         }
+
+        $previousUser       = $this->assignedUser;
         $this->assignedUser = $user;
-        $this->markAsUpdated();
+        $updatedAt          = $this->markAsUpdated($now);
+
+        $this->record(new TaskAssigned($this->id, $user->getId(), $previousUser?->getId(), $updatedAt));
+    }
+
+    public function unassign(\DateTimeImmutable $now): void
+    {
+        if (null === $this->assignedUser) {
+            return;
+        }
+
+        $this->assignedUser = null;
+        $this->markAsUpdated($now);
     }
 
     /**
@@ -166,7 +200,7 @@ final class Task
         $newTaskDueDate?->ensureNotBefore($now);
 
         $this->dueDate = $newTaskDueDate;
-        $this->markAsUpdated();
+        $this->markAsUpdated($now);
     }
 
     public function isCompleted(): bool
@@ -179,6 +213,11 @@ final class Task
         return $this->status->isPending();
     }
 
+    public function isAssigned(): bool
+    {
+        return null !== $this->assignedUser;
+    }
+
     public function canBeDeleted(): bool
     {
         return $this->isPending();
@@ -189,9 +228,10 @@ final class Task
         return $this->isUpdated;
     }
 
-    private function markAsUpdated(): void
+    private function markAsUpdated(\DateTimeImmutable $now): DateTime
     {
         $this->isUpdated = true;
-        $this->updatedAt = new \DateTimeImmutable('now');
+
+        return $this->updatedAt = DateTime::fromDateTime($now);
     }
 }

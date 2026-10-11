@@ -6,6 +6,7 @@ namespace App\Application\Command\Task\UpdateTask;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\DTO\Views\Task\TaskView;
+use App\Application\Event\EventBusInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
 use Psr\Clock\ClockInterface;
@@ -15,6 +16,7 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
+        private EventBusInterface $eventBus,
         private ClockInterface $clock,
         private LoggerInterface $logger,
     ) {
@@ -23,27 +25,28 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
     public function __invoke(UpdateTaskCommand $command): TaskView
     {
         $task = $this->taskRepository->findById($command->getTaskId()) ?? throw new TaskNotFoundException($command->getTaskId());
+        $now  = $this->clock->now();
 
         if (null !== $title = $command->getTitle()) {
-            $task->changeTitle($title);
+            $task->changeTitle($title, $now);
         }
 
         if (null !== $description = $command->getDescription()) {
-            $task->changeDescription($description);
+            $task->changeDescription($description, $now);
         }
 
         if (null !== $status = $command->getStatus()) {
-            $task->changeStatus($status);
+            $task->changeStatus($status, $now);
         }
 
         if (null !== $priority = $command->getPriority()) {
-            $task->changePriority($priority);
+            $task->changePriority($priority, $now);
         }
 
         if ($command->shouldClearDueDate()) {
-            $task->changeDueDate(null, $this->clock->now());
+            $task->changeDueDate(null, $now);
         } elseif (null !== $dueDate = $command->getDueDate()) {
-            $task->changeDueDate($dueDate, $this->clock->now());
+            $task->changeDueDate($dueDate, $now);
         }
 
         if (!$task->isUpdated()) {
@@ -55,6 +58,8 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
         $this->taskRepository->update($task);
 
         $this->logger->info('Task updated', ['task_id' => $task->getId()->value()]);
+
+        $this->eventBus->dispatch(...$task->pullDomainEvents());
 
         return TaskView::fromTask($task);
     }

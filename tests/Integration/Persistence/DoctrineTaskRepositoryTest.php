@@ -9,6 +9,7 @@ use App\Domain\Model\User;
 use App\Domain\Repository\TaskCriteria;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\ValueObject\DateTime;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskId;
@@ -40,8 +41,8 @@ final class DoctrineTaskRepositoryTest extends KernelTestCase
             TaskPriority::HIGH,
             $assignee,
             TaskDueDate::fromString('2020-01-01T10:00:00+02:00'),
-            new \DateTimeImmutable('2026-01-01T10:00:00+00:00'),
-            new \DateTimeImmutable('2026-01-02T11:30:00+00:00'),
+            DateTime::fromString('2026-01-01T10:00:00+00:00'),
+            DateTime::fromString('2026-01-02T13:30:00+02:00'),
         );
         $this->tasks()->create($task);
         $this->entityManager()->clear();
@@ -56,8 +57,9 @@ final class DoctrineTaskRepositoryTest extends KernelTestCase
         $this->assertSame(TaskStatus::IN_PROGRESS, $loaded->getStatus());
         $this->assertSame(TaskPriority::HIGH, $loaded->getPriority());
         $this->assertSame('2020-01-01T08:00:00+00:00', (string) $loaded->getDueDate());
-        $this->assertSame('2026-01-01T10:00:00+00:00', $loaded->getCreatedAt()->format(\DATE_ATOM));
-        $this->assertSame('2026-01-02T11:30:00+00:00', $loaded->getUpdatedAt()?->format(\DATE_ATOM));
+        $this->assertSame('2026-01-01T10:00:00+00:00', (string) $loaded->getCreatedAt());
+        $this->assertSame('2026-01-02T11:30:00+00:00', (string) $loaded->getUpdatedAt());
+        $this->assertTrue($task->getCreatedAt()->equals($loaded->getCreatedAt()), 'equals() holds after a round trip');
 
         $loadedAssignee = $loaded->getAssignedUser();
         $this->assertNotNull($loadedAssignee);
@@ -71,8 +73,9 @@ final class DoctrineTaskRepositoryTest extends KernelTestCase
         $task = $this->task(TaskStatus::PENDING, null);
         $this->tasks()->create($task);
 
-        $task->changeTitle(TaskTitle::fromString('Renamed task'));
-        $task->changeStatus(TaskStatus::IN_PROGRESS);
+        $now = new \DateTimeImmutable('2026-03-04T05:06:07.890+01:00');
+        $task->changeTitle(TaskTitle::fromString('Renamed task'), $now);
+        $task->changeStatus(TaskStatus::IN_PROGRESS, $now);
         $this->tasks()->update($task);
         $this->entityManager()->clear();
 
@@ -80,7 +83,7 @@ final class DoctrineTaskRepositoryTest extends KernelTestCase
         $this->assertNotNull($updated);
         $this->assertSame('Renamed task', $updated->getTitle()->value());
         $this->assertSame(TaskStatus::IN_PROGRESS, $updated->getStatus());
-        $this->assertNotNull($updated->getUpdatedAt());
+        $this->assertSame('2026-03-04T04:06:07+00:00', (string) $updated->getUpdatedAt());
 
         $this->tasks()->delete($updated);
         $this->entityManager()->clear();
@@ -138,6 +141,40 @@ final class DoctrineTaskRepositoryTest extends KernelTestCase
         }
     }
 
+    public function test_finds_by_assignee_and_due_date_range(): void
+    {
+        $jane = User::create(UserId::new(), UserEmail::fromString('jane@example.com'), UserName::fromString('Jane Doe'), new \DateTimeImmutable());
+        $john = User::create(UserId::new(), UserEmail::fromString('john@example.com'), UserName::fromString('John Doe'), new \DateTimeImmutable());
+        $this->users()->save($jane);
+        $this->users()->save($john);
+
+        $tasks = $this->tasks();
+        $early = $this->task(TaskStatus::PENDING, $jane, dueDate: TaskDueDate::fromString('2030-01-01T00:00:00+00:00'));
+        $mid   = $this->task(TaskStatus::PENDING, $jane, dueDate: TaskDueDate::fromString('2030-01-15T12:00:00+00:00'));
+        $late  = $this->task(TaskStatus::PENDING, $john, dueDate: TaskDueDate::fromString('2030-01-31T23:59:59+00:00'));
+        $noDue = $this->task(TaskStatus::PENDING, $jane);
+        foreach ([$early, $mid, $late, $noDue, $this->task(TaskStatus::PENDING, null)] as $task) {
+            $tasks->create($task);
+        }
+
+        $cases = [
+            'assignee'               => [new TaskCriteria(assignedUserId: $jane->getId()), [$early, $mid, $noDue], 3],
+            'unknown assignee'       => [new TaskCriteria(assignedUserId: UserId::new()), [], 0],
+            // Inclusive at both ends, and compared as instants whatever offset the filter came in.
+            'range, ends included'   => [new TaskCriteria(dueFrom: DateTime::fromString('2030-01-01T01:00:00+01:00'), dueTo: DateTime::fromString('2030-01-15T12:00:00Z')), [$early, $mid], 2],
+            'from only'              => [new TaskCriteria(dueFrom: DateTime::fromString('2030-01-15T12:00:01Z')), [$late], 1],
+            'to only'                => [new TaskCriteria(dueTo: DateTime::fromString('2029-12-31T23:59:59Z')), [], 0],
+            'assignee and range'     => [new TaskCriteria(assignedUserId: $jane->getId(), dueFrom: DateTime::fromString('2030-01-10T00:00:00Z')), [$mid], 1],
+        ];
+
+        foreach ($cases as $case => [$criteria, $expected, $count]) {
+            $found = \array_map(static fn (Task $task): string => $task->getId()->value(), $tasks->findByCriteria($criteria, 1, 10));
+
+            $this->assertEqualsCanonicalizing(\array_map(static fn (Task $task): string => $task->getId()->value(), $expected), $found, $case);
+            $this->assertSame($count, $tasks->countByCriteria($criteria), $case);
+        }
+    }
+
     public function test_pages_are_newest_first_and_never_overlap(): void
     {
         $tasks = $this->tasks();
@@ -192,8 +229,13 @@ final class DoctrineTaskRepositoryTest extends KernelTestCase
         return $service;
     }
 
-    private function task(TaskStatus $status, ?User $assignee, TaskPriority $priority = TaskPriority::LOW, \DateTimeImmutable $createdAt = new \DateTimeImmutable()): Task
-    {
-        return new Task(TaskId::new(), TaskTitle::fromString('Some task'), TaskDescription::fromString('D'), $status, $priority, $assignee, null, $createdAt, null);
+    private function task(
+        TaskStatus $status,
+        ?User $assignee,
+        TaskPriority $priority = TaskPriority::LOW,
+        \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
+        ?TaskDueDate $dueDate = null,
+    ): Task {
+        return new Task(TaskId::new(), TaskTitle::fromString('Some task'), TaskDescription::fromString('D'), $status, $priority, $assignee, $dueDate, DateTime::fromDateTime($createdAt), null);
     }
 }

@@ -13,6 +13,7 @@ use App\Domain\ValueObject\User\UserId;
 use App\Infrastructure\Persistence\Doctrine\Type\Task\TaskPriorityType;
 use App\Infrastructure\Persistence\Doctrine\Type\Task\TaskStatusType;
 use App\Infrastructure\Persistence\Doctrine\Type\User\UserIdType;
+use App\Infrastructure\Persistence\Doctrine\Type\UtcDateTimeType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
@@ -105,6 +106,19 @@ final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
 
         if (null !== $criteria->priority) {
             $query->andWhere('t.priority = :priority')->setParameter('priority', $criteria->priority, TaskPriorityType::NAME);
+        }
+
+        if (null !== $criteria->assignedUserId) {
+            $query->andWhere('t.assignedUser = :assignee')->setParameter('assignee', $criteria->assignedUserId, UserIdType::NAME);
+        }
+
+        // NULL due dates never compare true, so tasks without one drop out of a due date filter.
+        if (null !== $criteria->dueFrom) {
+            $query->andWhere('t.dueDate >= :dueFrom')->setParameter('dueFrom', $criteria->dueFrom, UtcDateTimeType::NAME);
+        }
+
+        if (null !== $criteria->dueTo) {
+            $query->andWhere('t.dueDate <= :dueTo')->setParameter('dueTo', $criteria->dueTo, UtcDateTimeType::NAME);
         }
 
         return $query;

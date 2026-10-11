@@ -35,7 +35,7 @@ final class TaskViewTest extends TestCase
         $this->assertSame($user->getId()->value(), $view->assignedTo->id);
         $this->assertSame('Jane Doe', $view->assignedTo->name);
         $this->assertSame('2026-07-01T09:00:00+00:00', $view->dueDate?->format(\DATE_ATOM));
-        $this->assertSame($task->getCreatedAt(), $view->createdAt);
+        $this->assertSame($task->getCreatedAt()->value(), $view->createdAt);
         $this->assertNull($view->updatedAt);
     }
 

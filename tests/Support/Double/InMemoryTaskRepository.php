@@ -52,7 +52,7 @@ final class InMemoryTaskRepository implements TaskRepositoryInterface
     public function findByCriteria(TaskCriteria $criteria, int $page, int $maxItems): array
     {
         $matching = $this->matching($criteria);
-        \usort($matching, static fn (Task $a, Task $b): int => $b->getCreatedAt() <=> $a->getCreatedAt());
+        \usort($matching, static fn (Task $a, Task $b): int => $b->getCreatedAt()->compareTo($a->getCreatedAt()));
 
         return \array_slice($matching, ($page - 1) * $maxItems, $maxItems);
     }
@@ -88,7 +88,10 @@ final class InMemoryTaskRepository implements TaskRepositoryInterface
         return \array_values(\array_filter(
             $this->tasks,
             static fn (Task $task): bool => (null === $criteria->status || $criteria->status === $task->getStatus())
-                && (null === $criteria->priority || $criteria->priority === $task->getPriority()),
+                && (null === $criteria->priority || $criteria->priority === $task->getPriority())
+                && (null === $criteria->assignedUserId || ($task->getAssignedUser()?->getId()->equals($criteria->assignedUserId) ?? false))
+                && (null === $criteria->dueFrom || ($task->getDueDate()?->isAfterOrEqual($criteria->dueFrom) ?? false))
+                && (null === $criteria->dueTo || ($task->getDueDate()?->isBeforeOrEqual($criteria->dueTo) ?? false)),
         ));
     }
 

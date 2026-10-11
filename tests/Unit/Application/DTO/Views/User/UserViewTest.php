@@ -19,7 +19,7 @@ final class UserViewTest extends TestCase
         $this->assertSame($user->getId()->value(), $view->id);
         $this->assertSame('jane@example.com', $view->email);
         $this->assertSame('Jane Doe', $view->name);
-        $this->assertSame($user->getCreatedAt(), $view->createdAt);
+        $this->assertSame($user->getCreatedAt()->value(), $view->createdAt);
         $this->assertNull($view->updatedAt);
     }
 }

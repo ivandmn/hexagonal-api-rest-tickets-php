@@ -6,6 +6,7 @@ namespace App\Tests\Support;
 
 use App\Domain\Model\Task;
 use App\Domain\Model\User;
+use App\Domain\ValueObject\DateTime;
 use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskId;
@@ -30,11 +31,11 @@ final class Mother
         ?TaskDueDate $dueDate = null,
         \DateTimeImmutable $createdAt = new \DateTimeImmutable('2026-01-01T10:00:00+00:00'),
     ): Task {
-        return new Task($id ?? TaskId::new(), TaskTitle::fromString($title), TaskDescription::fromString('Some description'), $status, $priority, $assignee, $dueDate, $createdAt, null);
+        return new Task($id ?? TaskId::new(), TaskTitle::fromString($title), TaskDescription::fromString('Some description'), $status, $priority, $assignee, $dueDate, DateTime::fromDateTime($createdAt), null);
     }
 
     public static function user(?UserId $id = null, string $email = 'jane.doe@example.com', string $name = 'Jane Doe'): User
     {
-        return new User($id ?? UserId::new(), UserEmail::fromString($email), UserName::fromString($name), new \DateTimeImmutable('2026-01-01T10:00:00+00:00'), null);
+        return new User($id ?? UserId::new(), UserEmail::fromString($email), UserName::fromString($name), DateTime::fromString('2026-01-01T10:00:00+00:00'), null);
     }
 }

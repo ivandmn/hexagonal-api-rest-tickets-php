@@ -25,8 +25,9 @@ The boundaries are not just a convention: deptrac enforces the layer rules on ev
 
 ## Features
 
-- **Users:** create, read, list and delete. A user cannot be deleted while any of their tasks is unfinished; once deleted, their completed tasks go with them.
-- **Tasks:** create, read, list (filtered and paginated), partially update, assign to a user and delete.
+- **Users:** create, read, list, partially update and delete. A user cannot be deleted while any of their tasks is unfinished; once deleted, their completed tasks go with them.
+- **Tasks:** create, read, list (filtered and paginated), partially update, assign to a user, unassign and delete.
+- **Domain events:** `TaskAssigned`, `TaskCompleted` and `UserDeleted`, handled synchronously (for now they are logged).
 - **A predictable contract:**
   - `snake_case` everywhere;
   - `201 Created` + `Location`, `204 No Content`, `PATCH` for partial updates;
@@ -103,15 +104,17 @@ The port comes from `HTTP_WEB_PORT` in `.env.local` (default `8080`).
 
 | Method | Path | Description | Success |
 |--------|------|-------------|---------|
-| `GET` | `/api/tasks` | List tasks, newest first. Filters: `status`, `priority`. Pagination: `page` (default 1), `limit` (1–100, default 50). | 200 |
+| `GET` | `/api/tasks` | List tasks, newest first. Filters: `status`, `priority`, `assigned_to` (user id), `due_from` / `due_to` (RFC 3339, inclusive; tasks without a due date are left out). Pagination: `page` (default 1), `limit` (1–100, default 50). | 200 |
 | `POST` | `/api/tasks` | Create a task. | 201 |
 | `GET` | `/api/tasks/{id}` | Task details. | 200 |
 | `PATCH` | `/api/tasks/{id}` | Partial update: `title`, `description`, `status`, `priority`, `due_date`. | 200 |
 | `PATCH` | `/api/tasks/{id}/assign` | Assign the task to a user (`user_id`). Returns the task. | 200 |
+| `DELETE` | `/api/tasks/{id}/assign` | Unassign the task (a no-op if nobody has it). Returns the task. | 200 |
 | `DELETE` | `/api/tasks/{id}` | Delete a task (pending tasks only). | 204 |
 | `GET` | `/api/users` | List users, oldest first. | 200 |
 | `POST` | `/api/users` | Create a user. | 201 |
 | `GET` | `/api/users/{id}` | User details. | 200 |
+| `PATCH` | `/api/users/{id}` | Partial update: `email`, `name`. | 200 |
 | `DELETE` | `/api/users/{id}` | Delete a user (none of their tasks may be unfinished). | 204 |
 
 The documentation at `/api/docs` lists every request and response schema, constraint and error example.
@@ -240,8 +243,10 @@ Every error under `/api` is a Problem Details document (`application/problem+jso
 | Status only moves forward, `pending` → `in_progress` → `completed`, and nothing leaves `completed`. | `TaskStatus::canTransitionTo()` |
 | The due date cannot be set in the past. A stored date that has since passed may be kept or cleared. | `Task::create()`, `Task::changeDueDate()`, using the injected PSR-20 clock |
 | Only `pending` tasks can be deleted. | `Task::canBeDeleted()` |
-| A user can be deleted only when all their tasks are completed. Those tasks are then deleted too (`ON DELETE CASCADE`). | `DeleteUserCommandHandler` |
-| Re-sending the current values is a no-op: no write, `updated_at` unchanged. | `Task::change*()` |
+| A user can be deleted only when all their tasks are completed. Those tasks are then deleted too (`ON DELETE CASCADE`). | `User::delete()` |
+| An email can only be changed to one no other user has. | `UpdateUserCommandHandler`, unique index |
+| Re-sending the current values is a no-op: no write, `updated_at` unchanged, no event. | `Task::change*()`, `User::change*()` |
+| `created_at` / `updated_at` come from the injected clock, in UTC and whole seconds. | `DateTime` value object |
 
 ---
 
@@ -288,14 +293,15 @@ UI and Infrastructure never depend on each other. `deptrac.yaml` enforces all of
 ```
 src/
 ├── Domain/                       # Pure PHP: no framework
-│   ├── Model/                    # Task, User aggregates
+│   ├── Model/                    # Task, User aggregates (AggregateRoot records their events)
+│   ├── Event/                    # Domain events: Task/ (TaskAssigned, TaskCompleted), User/ (UserDeleted)
 │   ├── ValueObject/              # Uuid, Email, DateTime + Task/ and User/ value objects
 │   ├── Repository/               # Repository ports, TaskCriteria
 │   └── Exception/                # DomainException + Task/ and User/ errors
 ├── Application/
 │   ├── Command/                  # Write side: <Aggregate>/<UseCase>/<UseCase>Command + Handler
-│   │   ├── Task/                 #   AssignTaskToUser, CreateTask, DeleteTask, UpdateTask
-│   │   └── User/                 #   CreateUser, DeleteUser
+│   │   ├── Task/                 #   AssignTaskToUser, CreateTask, DeleteTask, UnassignTask, UpdateTask
+│   │   └── User/                 #   CreateUser, DeleteUser, UpdateUser
 │   ├── Query/                    # Read side: <Aggregate>/<UseCase>/<UseCase>Query + Handler
 │   │   ├── Task/                 #   GetTaskDetails, ListTasks
 │   │   └── User/                 #   GetUserDetails, ListUsers
@@ -303,12 +309,12 @@ src/
 │   │   ├── Task/                 #   TaskView, TaskListView, AssignedUserView
 │   │   └── User/                 #   UserView, UserListView
 │   ├── Validation/               # Field::of(): tags a rejected input with its name
-│   └── Event/                    # Event bus port
+│   └── Event/                    # Event bus port + <Aggregate>/ event handlers (Log*EventHandler)
 ├── Infrastructure/
 │   ├── Bus/Symfony/              # Messenger command, query and event buses
 │   ├── Persistence/Doctrine/
 │   │   ├── Mapping/              # XML mapping of the domain models (*.orm.xml)
-│   │   ├── Type/                 # DBAL types: one per value object
+│   │   ├── Type/                 # DBAL types: one per value object (UtcDateTimeType for created/updated)
 │   │   ├── Repository/           # Repository adapters
 │   │   └── Migration/            # Doctrine migrations
 │   └── Symfony/                  # Kernel
@@ -485,10 +491,8 @@ These improvements are still open; `REVIEW.md` has the full checklist.
 - **Persistence:**
   - a `doctrine_transaction` middleware on the command bus, with no `flush()` in repositories;
   - a single `save()` per repository.
-- **Domain events:** either emit them, or remove the event bus wiring.
+- **Domain events:** move the handlers to an async transport (with an outbox, so an event is never lost nor sent for a rolled-back change) once they do more than log.
 - **DBAL types:** base classes for the near-identical ones.
-- **Domain details:**
-  - a richer `User` aggregate.
 - **API hardening:**
   - CORS;
   - rate limiting;
