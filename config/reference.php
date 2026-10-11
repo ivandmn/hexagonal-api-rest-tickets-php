@@ -1102,53 +1102,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     enable_static_query_cache?: bool|Param, // Default: true
  *     connection_keys?: list<mixed>,
  * }
- * @psalm-type TwigExtraConfig = array{
- *     cache?: bool|array{
- *         enabled?: bool|Param, // Default: false
- *     },
- *     html?: bool|array{
- *         enabled?: bool|Param, // Default: false
- *     },
- *     markdown?: bool|array{
- *         enabled?: bool|Param, // Default: false
- *     },
- *     intl?: bool|array{
- *         enabled?: bool|Param, // Default: false
- *     },
- *     cssinliner?: bool|array{
- *         enabled?: bool|Param, // Default: false
- *     },
- *     inky?: bool|array{
- *         enabled?: bool|Param, // Default: false
- *     },
- *     string?: bool|array{
- *         enabled?: bool|Param, // Default: false
- *     },
- *     commonmark?: array{
- *         renderer?: array{ // Array of options for rendering HTML.
- *             block_separator?: scalar|Param|null,
- *             inner_separator?: scalar|Param|null,
- *             soft_break?: scalar|Param|null,
- *         },
- *         html_input?: "strip"|"allow"|"escape"|Param, // How to handle HTML input.
- *         allow_unsafe_links?: bool|Param, // Remove risky link and image URLs by setting this to false. // Default: true
- *         max_nesting_level?: int|Param, // The maximum nesting level for blocks. // Default: 9223372036854775807
- *         max_delimiters_per_line?: int|Param, // The maximum number of strong/emphasis delimiters per line. // Default: 9223372036854775807
- *         slug_normalizer?: array{ // Array of options for configuring how URL-safe slugs are created.
- *             instance?: mixed,
- *             max_length?: int|Param, // Default: 255
- *             unique?: mixed,
- *         },
- *         commonmark?: array{ // Array of options for configuring the CommonMark core extension.
- *             enable_em?: bool|Param, // Default: true
- *             enable_strong?: bool|Param, // Default: true
- *             use_asterisk?: bool|Param, // Default: true
- *             use_underscore?: bool|Param, // Default: true
- *             unordered_list_markers?: list<scalar|Param|null>,
- *         },
- *         ...<string, mixed>
- *     },
- * }
  * @psalm-type DebugConfig = array{
  *     max_items?: int|Param, // Max number of displayed items past the first level, -1 means no limit. // Default: 2500
  *     min_depth?: int|Param, // Minimum tree depth to clone all the items, 1 is default. // Default: 1
@@ -1215,7 +1168,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     monolog?: MonologConfig,
  *     doctrine?: DoctrineConfig,
  *     doctrine_migrations?: DoctrineMigrationsConfig,
- *     twig_extra?: TwigExtraConfig,
  *     nelmio_api_doc?: NelmioApiDocConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
@@ -1227,7 +1179,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
- *         twig_extra?: TwigExtraConfig,
  *         debug?: DebugConfig,
  *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
@@ -1241,7 +1192,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
- *         twig_extra?: TwigExtraConfig,
  *         debug?: DebugConfig,
  *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
@@ -1254,7 +1204,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
- *         twig_extra?: TwigExtraConfig,
  *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
  *     "when@test"?: array{
@@ -1268,7 +1217,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         dama_doctrine_test?: DamaDoctrineTestConfig,
- *         twig_extra?: TwigExtraConfig,
  *         nelmio_api_doc?: NelmioApiDocConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias

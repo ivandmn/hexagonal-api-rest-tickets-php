@@ -12,7 +12,6 @@ use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Domain\ValueObject\Task\TaskTitle;
-use App\Domain\ValueObject\Uuid;
 
 final class Task
 {
@@ -49,7 +48,7 @@ final class Task
         return new self($id, $title, $description, TaskStatus::PENDING, $priority, null, $dueDate, $now, null);
     }
 
-    public function getId(): Uuid
+    public function getId(): TaskId
     {
         return $this->id;
     }

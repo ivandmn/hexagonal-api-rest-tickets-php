@@ -156,7 +156,7 @@ final class DeleteUserTest extends WebTestCase
     private function service(string $id): object
     {
         $service = static::getContainer()->get($id);
-        $this->assertInstanceOf($id, $service);
+        \assert($service instanceof $id);
 
         return $service;
     }

@@ -104,7 +104,7 @@ final class TaskTest extends TestCase
 
         $this->assertSame('New Test Title', $task->getTitle()->value());
         $this->assertTrue($task->isUpdated());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $task->getUpdatedAt());
+        $this->assertNotNull($task->getUpdatedAt());
     }
 
     public function test_change_title_noop_when_same_value(): void
@@ -123,7 +123,7 @@ final class TaskTest extends TestCase
 
         $this->assertSame('New Test Description', $task->getDescription()->value());
         $this->assertTrue($task->isUpdated());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $task->getUpdatedAt());
+        $this->assertNotNull($task->getUpdatedAt());
     }
 
     public function test_change_description_noop_when_same_value(): void

@@ -58,12 +58,11 @@ final class DomainExceptionsTest extends TestCase
         $this->assertSame(0, $exception->getCode(), 'The native code is not used for business codes');
     }
 
-    public function test_keeps_the_standard_exception_contract(): void
+    public function test_keeps_the_previous_exception(): void
     {
         $previous  = new \RuntimeException('driver error');
         $exception = new UserAlreadyExistsException(UserEmail::fromString('jane@example.com'), $previous);
 
-        $this->assertInstanceOf(\DomainException::class, $exception);
         $this->assertSame($previous, $exception->getPrevious());
     }
 }

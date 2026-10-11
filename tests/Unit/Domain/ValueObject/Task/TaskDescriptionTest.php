@@ -17,7 +17,6 @@ final class TaskDescriptionTest extends TestCase
     {
         $desc = new TaskDescription('Valid description');
 
-        $this->assertInstanceOf(TaskDescription::class, $desc);
         $this->assertSame('Valid description', $desc->value());
         $this->assertSame('Valid description', (string) $desc);
     }
@@ -26,7 +25,6 @@ final class TaskDescriptionTest extends TestCase
     {
         $desc = TaskDescription::fromString('Another description');
 
-        $this->assertInstanceOf(TaskDescription::class, $desc);
         $this->assertSame('Another description', $desc->value());
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Functional\Repository;
+namespace App\Tests\Integration\Persistence;
 
 use App\Domain\Exception\User\UserAlreadyExistsException;
 use App\Domain\Model\User;

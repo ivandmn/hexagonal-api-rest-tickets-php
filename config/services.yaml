@@ -22,7 +22,6 @@ services:
           - '../src/**/Application/Command/**/*Command.php'
           - '../src/**/Application/Query/**/*Query.php'
           - '../src/**/Application/Event/**/*Event.php'
-          - '../src/Application/Service/'
           - '../src/Domain/Model/'
           - '../src/Domain/Exception/'
           - '../src/Domain/ValueObject/'
@@ -83,11 +82,6 @@ services:
 
   # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
-
-    App\Application\Service\LoggerInterface:
-      class: App\Infrastructure\Service\MonologLogger
-      arguments:
-        - '@logger'
 
     App\Domain\Repository\TaskRepositoryInterface:
       alias: 'App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTaskRepository'

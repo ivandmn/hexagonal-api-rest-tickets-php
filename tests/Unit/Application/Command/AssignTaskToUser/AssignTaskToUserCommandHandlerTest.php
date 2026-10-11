@@ -13,19 +13,19 @@ use App\Domain\ValueObject\User\UserId;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryTaskRepository;
 use App\Tests\Support\Double\InMemoryUserRepository;
-use App\Tests\Support\Double\SpyAppLogger;
 use App\Tests\Support\Mother;
+use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
 
 final class AssignTaskToUserCommandHandlerTest extends TestCase
 {
     use AssertsDomainError;
 
-    private SpyAppLogger $logger;
+    private SpyLogger $logger;
 
     protected function setUp(): void
     {
-        $this->logger = new SpyAppLogger();
+        $this->logger = new SpyLogger();
     }
 
     public function test_assigns_the_task_persists_and_logs(): void

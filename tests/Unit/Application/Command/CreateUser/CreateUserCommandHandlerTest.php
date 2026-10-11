@@ -10,8 +10,8 @@ use App\Domain\Exception\User\UserAlreadyExistsException;
 use App\Domain\ValueObject\User\UserId;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryUserRepository;
-use App\Tests\Support\Double\SpyAppLogger;
 use App\Tests\Support\Mother;
+use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
 
@@ -25,7 +25,7 @@ final class CreateUserCommandHandlerTest extends TestCase
     public function test_creates_the_user_with_the_given_id_and_logs(): void
     {
         $users   = new InMemoryUserRepository();
-        $logger  = new SpyAppLogger();
+        $logger  = new SpyLogger();
         $handler = new CreateUserCommandHandler($users, new MockClock(self::NOW), $logger);
 
         $handler(new CreateUserCommand(self::ID, 'user@example.com', 'User Name'));
@@ -42,7 +42,7 @@ final class CreateUserCommandHandlerTest extends TestCase
     public function test_refuses_an_email_that_is_already_taken(): void
     {
         $users   = new InMemoryUserRepository(Mother::user(email: 'user@example.com'));
-        $logger  = new SpyAppLogger();
+        $logger  = new SpyLogger();
         $handler = new CreateUserCommandHandler($users, new MockClock(self::NOW), $logger);
 
         $this->assertDomainError(

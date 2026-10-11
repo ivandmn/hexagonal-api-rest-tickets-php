@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Functional\Repository;
+namespace App\Tests\Integration\Persistence;
 
 use App\Domain\Model\Task;
 use App\Domain\Model\User;
@@ -10,6 +10,7 @@ use App\Domain\Repository\TaskCriteria;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\Task\TaskDescription;
+use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
@@ -17,16 +18,80 @@ use App\Domain\ValueObject\Task\TaskTitle;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class DoctrineTaskRepositoryTest extends KernelTestCase
 {
+    /**
+     * Every column through its DBAL type and back, read from the database rather than from the
+     * identity map. The due date has already passed: a stored one must still load.
+     */
+    public function test_a_task_round_trips_with_every_field(): void
+    {
+        $assignee = User::create(UserId::new(), UserEmail::fromString('Jane@Example.com'), UserName::fromString('Jane Doe'), new \DateTimeImmutable('2025-12-31T09:00:00+00:00'));
+        $this->users()->save($assignee);
+
+        $task = new Task(
+            TaskId::new(),
+            TaskTitle::fromString('Fix login redirect'),
+            TaskDescription::fromString('Users land on a 404'),
+            TaskStatus::IN_PROGRESS,
+            TaskPriority::HIGH,
+            $assignee,
+            TaskDueDate::fromString('2020-01-01T10:00:00+02:00'),
+            new \DateTimeImmutable('2026-01-01T10:00:00+00:00'),
+            new \DateTimeImmutable('2026-01-02T11:30:00+00:00'),
+        );
+        $this->tasks()->create($task);
+        $this->entityManager()->clear();
+
+        $loaded = $this->tasks()->findById($task->getId());
+
+        $this->assertNotNull($loaded);
+        $this->assertNotSame($task, $loaded);
+        $this->assertTrue($task->getId()->equals($loaded->getId()));
+        $this->assertSame('Fix login redirect', $loaded->getTitle()->value());
+        $this->assertSame('Users land on a 404', $loaded->getDescription()->value());
+        $this->assertSame(TaskStatus::IN_PROGRESS, $loaded->getStatus());
+        $this->assertSame(TaskPriority::HIGH, $loaded->getPriority());
+        $this->assertSame('2020-01-01T08:00:00+00:00', (string) $loaded->getDueDate());
+        $this->assertSame('2026-01-01T10:00:00+00:00', $loaded->getCreatedAt()->format(\DATE_ATOM));
+        $this->assertSame('2026-01-02T11:30:00+00:00', $loaded->getUpdatedAt()?->format(\DATE_ATOM));
+
+        $loadedAssignee = $loaded->getAssignedUser();
+        $this->assertNotNull($loadedAssignee);
+        $this->assertTrue($assignee->equals($loadedAssignee));
+        $this->assertSame('jane@example.com', $loadedAssignee->getEmail()->value());
+        $this->assertSame('Jane Doe', $loadedAssignee->getName()->value());
+    }
+
+    public function test_update_and_delete_reach_the_database(): void
+    {
+        $task = $this->task(TaskStatus::PENDING, null);
+        $this->tasks()->create($task);
+
+        $task->changeTitle(TaskTitle::fromString('Renamed task'));
+        $task->changeStatus(TaskStatus::IN_PROGRESS);
+        $this->tasks()->update($task);
+        $this->entityManager()->clear();
+
+        $updated = $this->tasks()->findById($task->getId());
+        $this->assertNotNull($updated);
+        $this->assertSame('Renamed task', $updated->getTitle()->value());
+        $this->assertSame(TaskStatus::IN_PROGRESS, $updated->getStatus());
+        $this->assertNotNull($updated->getUpdatedAt());
+
+        $this->tasks()->delete($updated);
+        $this->entityManager()->clear();
+
+        $this->assertNull($this->tasks()->findById($task->getId()));
+    }
+
     public function test_counts_the_tasks_of_a_user_by_completion(): void
     {
-        $users = static::getContainer()->get(UserRepositoryInterface::class);
-        $tasks = static::getContainer()->get(TaskRepositoryInterface::class);
-        $this->assertInstanceOf(UserRepositoryInterface::class, $users);
-        $this->assertInstanceOf(TaskRepositoryInterface::class, $tasks);
+        $users = $this->users();
+        $tasks = $this->tasks();
 
         $jane = User::create(UserId::new(), UserEmail::fromString('jane@example.com'), UserName::fromString('Jane Doe'), new \DateTimeImmutable());
         $john = User::create(UserId::new(), UserEmail::fromString('john@example.com'), UserName::fromString('John Doe'), new \DateTimeImmutable());
@@ -99,10 +164,32 @@ final class DoctrineTaskRepositoryTest extends KernelTestCase
 
     private function tasks(): TaskRepositoryInterface
     {
-        $tasks = static::getContainer()->get(TaskRepositoryInterface::class);
-        $this->assertInstanceOf(TaskRepositoryInterface::class, $tasks);
+        return $this->service(TaskRepositoryInterface::class);
+    }
 
-        return $tasks;
+    private function users(): UserRepositoryInterface
+    {
+        return $this->service(UserRepositoryInterface::class);
+    }
+
+    private function entityManager(): EntityManagerInterface
+    {
+        return $this->service(EntityManagerInterface::class);
+    }
+
+    /**
+     * @template T of object
+     *
+     * @param class-string<T> $id
+     *
+     * @return T
+     */
+    private function service(string $id): object
+    {
+        $service = static::getContainer()->get($id);
+        \assert($service instanceof $id);
+
+        return $service;
     }
 
     private function task(TaskStatus $status, ?User $assignee, TaskPriority $priority = TaskPriority::LOW, \DateTimeImmutable $createdAt = new \DateTimeImmutable()): Task

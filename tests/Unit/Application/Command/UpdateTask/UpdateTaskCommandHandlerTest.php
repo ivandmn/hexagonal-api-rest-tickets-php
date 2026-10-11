@@ -15,8 +15,8 @@ use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryTaskRepository;
-use App\Tests\Support\Double\SpyAppLogger;
 use App\Tests\Support\Mother;
+use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
 
@@ -27,12 +27,12 @@ final class UpdateTaskCommandHandlerTest extends TestCase
     private const string NOW = '2026-06-01T12:00:00+00:00';
 
     private InMemoryTaskRepository $tasks;
-    private SpyAppLogger $logger;
+    private SpyLogger $logger;
 
     protected function setUp(): void
     {
         $this->tasks  = new InMemoryTaskRepository();
-        $this->logger = new SpyAppLogger();
+        $this->logger = new SpyLogger();
     }
 
     public function test_updates_the_given_fields_persists_and_logs(): void

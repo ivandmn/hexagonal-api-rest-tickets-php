@@ -17,7 +17,6 @@ final class UserNameTest extends TestCase
     {
         $name = new UserName('Valid Name');
 
-        $this->assertInstanceOf(UserName::class, $name);
         $this->assertSame('Valid Name', $name->value());
         $this->assertSame('Valid Name', (string) $name);
     }
@@ -26,7 +25,6 @@ final class UserNameTest extends TestCase
     {
         $name = UserName::fromString('Another Name');
 
-        $this->assertInstanceOf(UserName::class, $name);
         $this->assertSame('Another Name', $name->value());
     }
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Application\Query\GetTaskDetails;
 
-use App\Application\DTO\Views\TaskView;
 use App\Application\Query\GetTaskDetails\GetTaskDetailsQuery;
 use App\Application\Query\GetTaskDetails\GetTaskDetailsQueryHandler;
 use App\Domain\Exception\Task\TaskNotFoundException;
@@ -24,7 +23,6 @@ final class GetTaskDetailsQueryHandlerTest extends TestCase
 
         $view = new GetTaskDetailsQueryHandler(new InMemoryTaskRepository($task))(new GetTaskDetailsQuery($task->getId()->value()));
 
-        $this->assertInstanceOf(TaskView::class, $view);
         $this->assertSame($task->getId()->value(), $view->id);
         $this->assertSame('Details Title', $view->title);
     }

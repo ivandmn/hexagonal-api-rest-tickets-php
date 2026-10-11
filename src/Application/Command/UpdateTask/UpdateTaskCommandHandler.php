@@ -6,10 +6,10 @@ namespace App\Application\Command\UpdateTask;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\DTO\Views\TaskView;
-use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
 
 final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
 {

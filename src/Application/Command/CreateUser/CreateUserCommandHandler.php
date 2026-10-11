@@ -6,11 +6,11 @@ namespace App\Application\Command\CreateUser;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\DTO\Views\UserView;
-use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\User\UserAlreadyExistsException;
 use App\Domain\Model\User;
 use App\Domain\Repository\UserRepositoryInterface;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
 
 final readonly class CreateUserCommandHandler implements CommandHandlerInterface
 {

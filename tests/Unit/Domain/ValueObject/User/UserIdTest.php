@@ -19,7 +19,6 @@ final class UserIdTest extends TestCase
         $uuidString = RamseyUuid::uuid4()->toString();
         $id         = new UserId($uuidString);
 
-        $this->assertInstanceOf(UserId::class, $id);
         $this->assertSame($uuidString, $id->value());
         $this->assertSame($uuidString, (string) $id);
     }
@@ -29,7 +28,6 @@ final class UserIdTest extends TestCase
         $uuidString = RamseyUuid::uuid4()->toString();
         $id         = UserId::fromString($uuidString);
 
-        $this->assertInstanceOf(UserId::class, $id);
         $this->assertSame($uuidString, $id->value());
     }
 
@@ -37,7 +35,6 @@ final class UserIdTest extends TestCase
     {
         $id = UserId::new();
 
-        $this->assertInstanceOf(UserId::class, $id);
         $this->assertTrue(RamseyUuid::isValid($id->value()));
         $this->assertSame(36, \strlen($id->value()));
     }

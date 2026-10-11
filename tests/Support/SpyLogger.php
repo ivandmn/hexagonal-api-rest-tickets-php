@@ -18,4 +18,18 @@ final class SpyLogger extends AbstractLogger
     {
         $this->records[] = ['level' => \is_string($level) ? $level : \get_debug_type($level), 'message' => (string) $message, 'context' => $context];
     }
+
+    /**
+     * @param array<array-key, mixed> $context expected subset of the logged context
+     */
+    public function has(string $level, string $message, array $context = []): bool
+    {
+        foreach ($this->records as $record) {
+            if ($record['level'] === $level && $record['message'] === $message && \array_intersect_key($record['context'], $context) == $context) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

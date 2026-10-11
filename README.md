@@ -296,8 +296,7 @@ src/
 │   ├── Query/                    # Read side: <UseCase>/<UseCase>Query + Handler
 │   ├── DTO/Views/                # Read models returned by queries and commands
 │   ├── Validation/               # Field::of(): tags a rejected input with its name
-│   ├── Event/                    # Event bus port
-│   └── Service/                  # Application ports (logger)
+│   └── Event/                    # Event bus port
 ├── Infrastructure/
 │   ├── Bus/Symfony/              # Messenger command, query and event buses
 │   ├── Persistence/Doctrine/
@@ -305,7 +304,6 @@ src/
 │   │   ├── Type/                 # DBAL types: one per value object
 │   │   ├── Repository/           # Repository adapters
 │   │   └── Migration/            # Doctrine migrations
-│   ├── Service/                  # Monolog adapter
 │   └── Symfony/                  # Kernel
 └── UI/
     ├── Http/
@@ -319,7 +317,8 @@ src/
 
 tests/
 ├── Unit/                         # Domain, Application, Infrastructure, UI (no database)
-├── Functional/                   # HTTP end to end and Doctrine repositories (test database)
+├── Integration/                  # Doctrine repositories, DBAL types and migrations (test database)
+├── Functional/                   # HTTP end to end (test database)
 └── Support/                      # Object mother, in-memory repositories, spies, assertions
 ```
 
@@ -336,12 +335,14 @@ tests/
 | Suite | Scope | Database |
 |-------|-------|----------|
 | `unit` | Domain rules, value objects, handlers (in-memory repositories and `MockClock`), error mapping | No |
-| `functional` | Every endpoint end to end, plus the Doctrine repositories | Yes |
+| `integration` | Doctrine repositories against Postgres (every DBAL type, round trips), migrations vs mapping | Yes |
+| `functional` | Every endpoint end to end, plus `/health` and `/api/docs.json` | Yes |
 
 ```bash
 make test-db          # once per `make up`: create the schema in the test database
 make test             # every suite
 make test-unit        # unit only (no database needed)
+make test-integration # integration only
 make test-functional  # functional only
 make test-coverage    # HTML/XML/text report in var/phpunit/coverage
 ```
@@ -449,7 +450,7 @@ Run `make` (or `make help`) for the full list. PHP commands run inside the app c
 | `make cache-clear` / `make purge` | Clear the Symfony cache / delete cache and logs |
 | `make fix-perms` | Give your user and group write access to `var/` |
 | `make test-db` | Create the schema in the test database |
-| `make test` / `make test-unit` / `make test-functional` | Run the test suites |
+| `make test` / `make test-unit` / `make test-integration` / `make test-functional` | Run the test suites |
 | `make test-coverage` | Coverage report |
 | `make cs` / `make cs-fix` | Check / fix code style |
 | `make phpstan` / `make deptrac` | Static analysis / architecture rules |

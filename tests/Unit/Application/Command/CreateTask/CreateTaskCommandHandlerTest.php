@@ -12,7 +12,7 @@ use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryTaskRepository;
-use App\Tests\Support\Double\SpyAppLogger;
+use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
 
@@ -24,13 +24,13 @@ final class CreateTaskCommandHandlerTest extends TestCase
     private const string NOW = '2026-06-01T12:00:00+00:00';
 
     private InMemoryTaskRepository $tasks;
-    private SpyAppLogger $logger;
+    private SpyLogger $logger;
     private CreateTaskCommandHandler $handler;
 
     protected function setUp(): void
     {
         $this->tasks   = new InMemoryTaskRepository();
-        $this->logger  = new SpyAppLogger();
+        $this->logger  = new SpyLogger();
         $this->handler = new CreateTaskCommandHandler($this->tasks, new MockClock(self::NOW), $this->logger);
     }
 

@@ -17,7 +17,6 @@ final class TaskTitleTest extends TestCase
     {
         $title = new TaskTitle('Valid Title');
 
-        $this->assertInstanceOf(TaskTitle::class, $title);
         $this->assertSame('Valid Title', $title->value());
         $this->assertSame('Valid Title', (string) $title);
     }
@@ -26,7 +25,6 @@ final class TaskTitleTest extends TestCase
     {
         $title = TaskTitle::fromString('Another Title');
 
-        $this->assertInstanceOf(TaskTitle::class, $title);
         $this->assertSame('Another Title', $title->value());
     }
 

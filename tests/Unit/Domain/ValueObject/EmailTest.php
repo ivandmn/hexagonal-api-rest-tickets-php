@@ -17,7 +17,6 @@ final class EmailTest extends TestCase
     {
         $email = new Email('test@example.com');
 
-        $this->assertInstanceOf(Email::class, $email);
         $this->assertSame('test@example.com', $email->value());
         $this->assertSame('test@example.com', (string) $email);
     }
@@ -26,7 +25,6 @@ final class EmailTest extends TestCase
     {
         $email = Email::fromString('user@domain.com');
 
-        $this->assertInstanceOf(Email::class, $email);
         $this->assertSame('user@domain.com', $email->value());
     }
 

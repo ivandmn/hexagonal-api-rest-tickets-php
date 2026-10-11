@@ -14,7 +14,7 @@ permissions:
 
 env:
   PHP_VERSION: '8.5'
-  PHP_EXTENSIONS: ctype, iconv, intl, mbstring, pdo_pgsql, apcu, opcache
+  PHP_EXTENSIONS: ctype, iconv, intl, mbstring, pdo_pgsql, opcache
 
 jobs:
   quality:
@@ -49,7 +49,7 @@ jobs:
           bin/phpstan analyse --memory-limit=512M --no-progress
 
   tests:
-    name: Unit and functional tests
+    name: Unit, integration and functional tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -91,6 +91,9 @@ jobs:
 
       - name: Unit tests
         run: bin/phpunit --testsuite unit
+
+      - name: Integration tests
+        run: bin/phpunit --testsuite integration
 
       - name: Functional tests
         run: bin/phpunit --testsuite functional

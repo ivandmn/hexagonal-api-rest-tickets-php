@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Application\DTO\Views;
 
-use App\Application\DTO\Views\AssignedUserView;
 use App\Application\DTO\Views\TaskView;
 use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskPriority;
@@ -32,7 +31,7 @@ final class TaskViewTest extends TestCase
         $this->assertSame('Some description', $view->description);
         $this->assertSame('in_progress', $view->status);
         $this->assertSame('high', $view->priority);
-        $this->assertInstanceOf(AssignedUserView::class, $view->assignedTo);
+        $this->assertNotNull($view->assignedTo);
         $this->assertSame($user->getId()->value(), $view->assignedTo->id);
         $this->assertSame('Jane Doe', $view->assignedTo->name);
         $this->assertSame('2026-07-01T09:00:00+00:00', $view->dueDate?->format(\DATE_ATOM));

@@ -17,7 +17,6 @@ final class UserEmailTest extends TestCase
     {
         $email = new UserEmail('Test@Example.COM');
 
-        $this->assertInstanceOf(UserEmail::class, $email);
         $this->assertSame('test@example.com', $email->value());
         $this->assertSame('test@example.com', (string) $email);
     }

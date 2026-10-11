@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Application\Query\GetUserDetails;
 
-use App\Application\DTO\Views\UserView;
 use App\Application\Query\GetUserDetails\GetUserDetailsQuery;
 use App\Application\Query\GetUserDetails\GetUserDetailsQueryHandler;
 use App\Domain\Exception\InvalidValueException;
@@ -25,7 +24,6 @@ final class GetUserDetailsQueryHandlerTest extends TestCase
 
         $view = new GetUserDetailsQueryHandler(new InMemoryUserRepository($user))(new GetUserDetailsQuery($user->getId()->value()));
 
-        $this->assertInstanceOf(UserView::class, $view);
         $this->assertSame($user->getId()->value(), $view->id);
         $this->assertSame($user->getEmail()->value(), $view->email);
     }

@@ -64,10 +64,7 @@ final class ErrorCodeCoverageTest extends KernelTestCase
 
     private function mapper(): ErrorCodeMapper
     {
-        $mapper = static::getContainer()->get(ErrorCodeMapper::class);
-        $this->assertInstanceOf(ErrorCodeMapper::class, $mapper);
-
-        return $mapper;
+        return static::getContainer()->get(ErrorCodeMapper::class);
     }
 
     /**

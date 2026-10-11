@@ -19,7 +19,6 @@ final class TaskIdTest extends TestCase
         $uuidString = RamseyUuid::uuid4()->toString();
         $id         = new TaskId($uuidString);
 
-        $this->assertInstanceOf(TaskId::class, $id);
         $this->assertSame($uuidString, $id->value());
         $this->assertSame($uuidString, (string) $id);
     }
@@ -29,7 +28,6 @@ final class TaskIdTest extends TestCase
         $uuidString = RamseyUuid::uuid4()->toString();
         $id         = TaskId::fromString($uuidString);
 
-        $this->assertInstanceOf(TaskId::class, $id);
         $this->assertSame($uuidString, $id->value());
     }
 
@@ -37,7 +35,6 @@ final class TaskIdTest extends TestCase
     {
         $id = TaskId::new();
 
-        $this->assertInstanceOf(TaskId::class, $id);
         $this->assertTrue(RamseyUuid::isValid($id->value()));
         $this->assertSame(36, \strlen($id->value()));
     }

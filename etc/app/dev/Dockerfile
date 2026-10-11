@@ -36,22 +36,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
     && rm -rf /var/lib/apt/lists/*
 
+# Same extensions as production (etc/app/prod/Dockerfile), plus Composer and Xdebug.
 RUN install-php-extensions \
     @composer \
-    openssl \
-    curl \
-    json \
-    amqp \
-    apcu \
-    exif \
-    gd \
     intl \
-    pcntl \
-    pdo \
     pdo_pgsql \
-    mbstring \
-    redis \
-    zip \
     xdebug \
     opcache
 

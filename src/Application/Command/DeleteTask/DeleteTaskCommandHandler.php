@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Application\Command\DeleteTask;
 
 use App\Application\Command\CommandHandlerInterface;
-use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskDeletionNotAllowedException;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
+use Psr\Log\LoggerInterface;
 
 final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
 {

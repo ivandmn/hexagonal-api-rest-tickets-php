@@ -15,21 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl libcap2-bi
     && apt-get purge -y --auto-remove libcap2-bin \
     && rm -rf /var/lib/apt/lists/*
 
+# Only what the app uses; ctype, iconv, mbstring, openssl, pdo... are already built into the image.
 RUN install-php-extensions \
-    openssl \
-    curl \
-    json \
-    amqp \
-    apcu \
-    exif \
-    gd \
     intl \
-    pcntl \
-    pdo \
     pdo_pgsql \
-    mbstring \
-    redis \
-    zip \
     opcache
 
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
@@ -70,7 +59,9 @@ COPY --chmod=755 etc/app/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 
 COPY --from=build --chown=www-data:www-data /web /web
 
-RUN chown -R www-data:www-data /config/caddy /data/caddy
+# `file` comes with the FrankenPHP base image and is only needed to build extensions.
+RUN apt-get purge -y --auto-remove file \
+    && chown -R www-data:www-data /config/caddy /data/caddy
 
 USER www-data
 

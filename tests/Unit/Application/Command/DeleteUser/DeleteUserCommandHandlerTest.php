@@ -14,8 +14,8 @@ use App\Domain\ValueObject\User\UserId;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryTaskRepository;
 use App\Tests\Support\Double\InMemoryUserRepository;
-use App\Tests\Support\Double\SpyAppLogger;
 use App\Tests\Support\Mother;
+use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
 
 final class DeleteUserCommandHandlerTest extends TestCase
@@ -24,13 +24,13 @@ final class DeleteUserCommandHandlerTest extends TestCase
 
     private User $user;
     private InMemoryUserRepository $users;
-    private SpyAppLogger $logger;
+    private SpyLogger $logger;
 
     protected function setUp(): void
     {
         $this->user   = Mother::user(email: 'jane@example.com');
         $this->users  = new InMemoryUserRepository($this->user);
-        $this->logger = new SpyAppLogger();
+        $this->logger = new SpyLogger();
     }
 
     public function test_deletes_a_user_whose_tasks_are_all_completed(): void

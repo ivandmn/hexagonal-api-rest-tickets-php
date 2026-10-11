@@ -6,7 +6,6 @@ namespace App\Tests\Unit\Application\Command\UpdateTask;
 
 use App\Application\Command\UpdateTask\UpdateTaskCommand;
 use App\Domain\Exception\InvalidValueException;
-use App\Domain\ValueObject\Task\TaskDueDate;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Tests\Support\AssertsDomainError;
@@ -32,7 +31,6 @@ final class UpdateTaskCommandTest extends TestCase
         $this->assertSame('Some description', $req->getDescription()?->value());
         $this->assertSame(TaskStatus::IN_PROGRESS, $req->getStatus());
         $this->assertSame(TaskPriority::HIGH, $req->getPriority());
-        $this->assertInstanceOf(TaskDueDate::class, $req->getDueDate());
         $this->assertSame('2030-01-01T00:00:00+00:00', (string) $req->getDueDate());
     }
 

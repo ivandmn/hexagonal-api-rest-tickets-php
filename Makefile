@@ -15,7 +15,7 @@ CONSOLE := $(EXEC) bin/console
 	up down build restart logs shell \
 	cache-clear db-diff db-migrate \
 	cs cs-fix phpstan deptrac \
-	test test-unit test-functional test-db test-coverage \
+	test test-unit test-integration test-functional test-db test-coverage \
 	code-check ci
 
 help: ## Outputs this help screen
@@ -75,7 +75,10 @@ test: ## Run every test suite (needs `make test-db` once per `make up`)
 test-unit: ## Run unit tests (no database needed)
 	$(EXEC) bin/phpunit --testsuite unit --testdox
 
-test-functional: ## Run functional tests: HTTP + Doctrine (needs `make test-db`)
+test-integration: ## Run integration tests: repositories, DBAL types and migrations against Postgres (needs `make test-db`)
+	$(EXEC) bin/phpunit --testsuite integration --testdox
+
+test-functional: ## Run functional tests: HTTP end to end (needs `make test-db`)
 	$(EXEC) bin/phpunit --testsuite functional --testdox
 
 test-db: ## Create the schema of the test database (TEST_DATABASE_URL in .env.test)

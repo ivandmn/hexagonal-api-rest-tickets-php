@@ -6,11 +6,11 @@ namespace App\Application\Command\AssignTaskToUser;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\DTO\Views\TaskView;
-use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Exception\User\UserNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use Psr\Log\LoggerInterface;
 
 final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInterface
 {

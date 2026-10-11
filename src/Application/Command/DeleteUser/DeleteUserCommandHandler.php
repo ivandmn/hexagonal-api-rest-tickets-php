@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Command\DeleteUser;
 
 use App\Application\Command\CommandHandlerInterface;
-use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\User\UserDeletionNotAllowedException;
 use App\Domain\Exception\User\UserNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * A user can only be deleted once all their tasks are completed. Their (completed) tasks are

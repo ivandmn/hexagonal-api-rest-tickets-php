@@ -12,8 +12,8 @@ use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Tests\Support\AssertsDomainError;
 use App\Tests\Support\Double\InMemoryTaskRepository;
-use App\Tests\Support\Double\SpyAppLogger;
 use App\Tests\Support\Mother;
+use App\Tests\Support\SpyLogger;
 use PHPUnit\Framework\TestCase;
 
 final class DeleteTaskCommandHandlerTest extends TestCase
@@ -24,7 +24,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
     {
         $task   = Mother::task(title: 'Deletable Task');
         $tasks  = new InMemoryTaskRepository($task);
-        $logger = new SpyAppLogger();
+        $logger = new SpyLogger();
 
         new DeleteTaskCommandHandler($tasks, $logger)(new DeleteTaskCommand($task->getId()->value()));
 
@@ -35,7 +35,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
     public function test_fails_when_the_task_does_not_exist(): void
     {
         $taskId  = TaskId::new()->value();
-        $handler = new DeleteTaskCommandHandler(new InMemoryTaskRepository(), new SpyAppLogger());
+        $handler = new DeleteTaskCommandHandler(new InMemoryTaskRepository(), new SpyLogger());
 
         $this->assertDomainError(TaskNotFoundException::ERROR_CODE, static fn () => $handler(new DeleteTaskCommand($taskId)), ['task_id' => $taskId]);
     }
@@ -44,7 +44,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
     {
         $task    = Mother::task(status: TaskStatus::IN_PROGRESS);
         $tasks   = new InMemoryTaskRepository($task);
-        $handler = new DeleteTaskCommandHandler($tasks, new SpyAppLogger());
+        $handler = new DeleteTaskCommandHandler($tasks, new SpyLogger());
 
         $this->assertDomainError(TaskDeletionNotAllowedException::ERROR_CODE, static fn () => $handler(new DeleteTaskCommand($task->getId()->value())), ['task_id' => $task->getId()->value(), 'status' => 'in_progress']);
         $this->assertCount(1, $tasks->all());

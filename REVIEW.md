@@ -112,15 +112,18 @@ Verificado: 191 tests unitarios y 58 funcionales en verde contra un Postgres lim
   ✅ Con otra solución, porque forzar `DATABASE_URL` en phpunit no cubre `bin/console --env=test`. `when@test` lee `TEST_DATABASE_URL`, que solo define `.env.test`, así que el `DATABASE_URL` real que inyecta el `env_file` del contenedor ya no puede ganar. Apunta al servicio `tickets-db-test` del compose de dev (Postgres 18 en tmpfs). `make test-db` crea el schema y migra; CI usa su propio servicio.
 - [x] **4.2 27 tests con el namespace mal** (`App\Tests\Application\…` sin `Unit`); PSR-4 no los resuelve.
   ✅ Todos los namespaces de `tests/` coinciden con su ruta.
-- [ ] **4.3 Suite de integración:** repositorios, los 9 tipos DBAL, leer una fecha pasada guardada, migraciones.
-  🟡 Parcial: tests del repositorio para `TaskCriteria` (filtros, totales, páginas sin solapes con el mismo `created_at`) y del tipo `TaskDueDate`. CI valida las migraciones contra el mapping (`doctrine:schema:validate`).
-- [ ] **4.4 Tests de los buses** (que desenvuelven `HandlerFailedException`) y del validador (JSON inválido).
+- [x] **4.3 Suite de integración:** repositorios, los 9 tipos DBAL, leer una fecha pasada guardada, migraciones.
+  ✅ Suite `integration` (`tests/Integration`, `make test-integration`, paso propio en CI): ida y vuelta de una tarea con todos los campos contra Postgres (con `clear()` del EntityManager y una fecha límite ya pasada), update y delete, `TaskCriteria` y paginación, email duplicado, y `MigrationsTest` (`doctrine:migrations:up-to-date` + `doctrine:schema:validate`). Los 9 tipos DBAL: `TaskDueDateTypeTest` y `ValueObjectTypesTest` (escritura, lectura, null, tipos inválidos y registro en `doctrine.yaml`).
+- [x] **4.4 Tests de los buses** (que desenvuelven `HandlerFailedException`) y del validador (JSON inválido).
+  ✅ `tests/Unit/Infrastructure/Bus/Symfony`: resultado del handler, excepción original (misma instancia), mensaje sin handler y eventos con varios handlers. El validador ya no existe: el JSON inválido lo cubren `PayloadTest` y `ApiErrorHandlingTest`.
 - [x] **4.5 Reloj falso (`MockClock`)** para quitar las dependencias de `now`.
   ✅ Los handlers que dependen del tiempo reciben `ClockInterface`; sus tests usan `MockClock` con un instante fijo.
 - [x] **4.6 Object mothers y repositorios en memoria** en lugar de 43 `new Task(...)` y mocks que comprueban textos de log.
   ✅ `tests/Support/Mother`, `Double/InMemoryTaskRepository`, `Double/InMemoryUserRepository` y `Double/SpyAppLogger`. Los tests de Application comprueban estado, no llamadas a mocks.
-- [ ] **4.7 Asserts más estrictos:** quitar los que comprueban `instanceof` de lo recién construido, los que aceptan `[404, 400]` y los tests `*_currently` que fijan bugs como si fueran comportamiento correcto.
-- [ ] **4.8 Smoke tests** de `/health` y `/api/docs.json`.
+- [x] **4.7 Asserts más estrictos:** quitar los que comprueban `instanceof` de lo recién construido, los que aceptan `[404, 400]` y los tests `*_currently` que fijan bugs como si fueran comportamiento correcto.
+  ✅ Fuera los `assertInstanceOf` sobre lo recién construido o con tipo de retorno declarado (`assertNotNull` donde el valor es nullable); solo quedan los que prueban algo (que un factory devuelve la subclase). Ya no quedan `[404, 400]` ni `*_currently`. De paso, `Task::getId()` devolvía `Uuid` en vez de `TaskId`.
+- [x] **4.8 Smoke tests** de `/health` y `/api/docs.json`.
+  ✅ `tests/Functional/SmokeTest.php`: `/health`, `/status` y `/` responden 200 sin cuerpo; `/api/docs.json` es OpenAPI 3 con exactamente las 10 operaciones y el body documentado de cada una; `/api/docs` renderiza.
 
 ---
 
@@ -135,10 +138,11 @@ Verificado: 191 tests unitarios y 58 funcionales en verde contra un Postgres lim
   ✅ Reescrito: capas Domain/Application/Infrastructure/UI más capas de vendor (`CoreLibraries` = ramsey/uuid y PSR-20, `Logging` = PSR-3, `Framework`). Así "nada de framework en el núcleo" se comprueba en vez de solo documentarse. Caché en `var/`. 0 violaciones, 0 sin cubrir.
 - [x] **5.3 CI con GitHub Actions:** cs-fixer, deptrac, PHPStan y tests unitarios y funcionales con un servicio Postgres (hoy no hay pipeline).
   ✅ `.github/workflows/ci.yml`: el job `quality` pasa cs-fixer, deptrac y PHPStan; el job `tests` levanta `postgres:18-alpine`, crea el schema, migra, valida el mapping y lanza unit y functional. Simulado en local en un directorio limpio y con entorno vacío: todo en verde.
-- [ ] **5.4 Composer:**
+- [x] **5.4 Composer:**
   - Quitar `guzzlehttp/guzzle`, `predis/predis` y `twig/extra-bundle` (no se usan).
   - Añadir `ext-pdo_pgsql`.
   - `"php": ">=8.5"` admite PHP 9: usar `~8.5.0` y fijar `config.platform`.
+  ✅ Quitados (y su `allow-plugins` de `php-http/discovery` y el bundle de `config/bundles.php`); `ext-pdo_pgsql`; `"php": "~8.5.0"` y `config.platform.php = 8.5.0`.
 - [x] **5.5 Makefile:**
   - Añadir `.PHONY`.
   - Prefijo `docker compose exec` para los comandos PHP cuando se lanzan desde el host.
@@ -152,7 +156,7 @@ Verificado: 191 tests unitarios y 58 funcionales en verde contra un Postgres lim
   - Quitar extensiones que no se usan (amqp, apcu, exif, gd, pcntl, redis, zip).
   - Quitar `git`, `acl`, `file` y Composer de la imagen final.
   - Una base común para dev y prod.
-  🟡 Parcial: multi-stage (`base` → `build` con Composer → `prod`). La imagen final no lleva Composer, git, acl, file ni gettext, y `libcap2-bin` se purga tras el `setcap`. Probada: arranca como `www-data` en :80, `/health` 200, `/api/docs` 200, `/info` 404. El entrypoint solo intenta `composer install` si existe Composer. Quedan las extensiones sobrantes y la base común con dev.
+  🟡 Parcial: multi-stage (`base` → `build` con Composer → `prod`). La imagen final no lleva Composer, git, acl, file (venía en la imagen base: se purga en la etapa final) ni gettext, y `libcap2-bin` se purga tras el `setcap`. Extensiones: solo `intl`, `pdo_pgsql` y `opcache` (fuera amqp, apcu, exif, gd, pcntl, redis y zip, también en dev y CI). Probada: arranca como `www-data` en :80, `/health` 200, `/api/docs.json` 200, `/info` 404. Queda la base común con dev (la imagen sigue en ~785 MB, casi todo es la base de FrankenPHP).
 - [x] **5.8 `.dockerignore`:** excluir `bin/*` salvo `bin/console` (los proxies de las herramientas de desarrollo acaban rotos en la imagen de prod), cachés y configs de tooling.
   ✅ `bin/*` salvo `bin/console`, tests, cachés (`.deptrac.cache`, `.php-cs-fixer.cache`, `.phpunit.cache`), configs de tooling, `.github/`, `*.md`, Makefile, compose y el `Caddyfile` de la raíz.
 - [ ] **5.9 Build de dev:** `USER_ID`/`GROUP_ID` sin valor por defecto rompen el build si falta `.env.local` (usar `${USER_ID:-1000}`).
