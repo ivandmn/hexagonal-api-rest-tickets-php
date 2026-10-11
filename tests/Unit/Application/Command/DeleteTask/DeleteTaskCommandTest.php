@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace App\Tests\Application\Command\DeleteTask;
 
 use App\Application\Command\DeleteTask\DeleteTaskCommand;
+use App\Domain\Exception\InvalidValueException;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class DeleteTaskCommandTest extends TestCase
 {
-    public function test_getter_returns_task_id(): void
+    use AssertsDomainError;
+
+    public function test_builds_the_task_id(): void
     {
-        $req = new DeleteTaskCommand('018f9f9a-aaaa-bbbb-cccc-000000000001');
-        $this->assertSame('018f9f9a-aaaa-bbbb-cccc-000000000001', $req->getTaskId());
+        $this->assertSame('018f9f9a-aaaa-bbbb-cccc-000000000001', new DeleteTaskCommand('018f9f9a-aaaa-bbbb-cccc-000000000001')->getTaskId()->value());
     }
 
-    public function test_allows_empty_string_currently(): void
+    public function test_rejects_an_invalid_id_when_built(): void
     {
-        $req = new DeleteTaskCommand('');
-        $this->assertSame('', $req->getTaskId());
+        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new DeleteTaskCommand(''), ['expected' => 'UUID']);
     }
 }

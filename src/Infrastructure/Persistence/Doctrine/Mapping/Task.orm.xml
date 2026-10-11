@@ -15,7 +15,8 @@
 
         <!-- EAGER: every task view shows the assignee (avoids N+1) and no lazy proxy is needed for the readonly User -->
         <many-to-one field="assignedUser" target-entity="App\Domain\Model\User" fetch="EAGER">
-            <join-column name="user_id" referenced-column-name="id" nullable="true" on-delete="SET NULL"/>
+            <!-- Deleting a user deletes their tasks (only allowed once all of them are completed). -->
+            <join-column name="user_id" referenced-column-name="id" nullable="true" on-delete="CASCADE"/>
         </many-to-one>
 
         <field name="dueDate" type="task_due_date" column="due_date" nullable="true"/>

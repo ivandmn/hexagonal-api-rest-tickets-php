@@ -46,5 +46,6 @@ parameters:
         TASK_DUE_DATE_IN_PAST:              { status: 422, message: 'The due date cannot be in the past.', field: dueDate }
 
         # --- Users (App\Domain\Exception\User) ---
-        USER_NOT_FOUND:      { status: 404, message: 'User {userId} does not exist.', field: userId }
-        USER_ALREADY_EXISTS: { status: 409, message: 'A user with email {email} already exists.', field: email }
+        USER_NOT_FOUND:            { status: 404, message: 'User {userId} does not exist.' }
+        USER_ALREADY_EXISTS:       { status: 409, message: 'A user with email {email} already exists.', field: email }
+        USER_DELETION_NOT_ALLOWED: { status: 409, message: 'User {userId} still has {unfinishedTasks} unfinished task(s); complete them before deleting the user.' }

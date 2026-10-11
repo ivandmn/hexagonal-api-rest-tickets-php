@@ -7,7 +7,6 @@ namespace App\Application\Query\GetTaskDetails;
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskId;
 
 final readonly class GetTaskDetailsQueryHandler implements QueryHandlerInterface
 {
@@ -16,9 +15,9 @@ final readonly class GetTaskDetailsQueryHandler implements QueryHandlerInterface
     ) {
     }
 
-    public function __invoke(GetTaskDetailsQuery $request): GetTaskDetailsResponse
+    public function __invoke(GetTaskDetailsQuery $query): GetTaskDetailsResponse
     {
-        $taskId = TaskId::fromString($request->getTaskId());
+        $taskId = $query->getTaskId();
 
         $task = $this->taskRepository->findById($taskId);
 

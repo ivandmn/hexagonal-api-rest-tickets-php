@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace App\Application\Command\DeleteTask;
 
 use App\Application\Command\CommandInterface;
+use App\Domain\ValueObject\Task\TaskId;
 
 final readonly class DeleteTaskCommand implements CommandInterface
 {
-    public function __construct(
-        private string $taskId,
-    ) {
+    private TaskId $taskId;
+
+    public function __construct(string $taskId)
+    {
+        $this->taskId = TaskId::fromString($taskId);
     }
 
-    public function getTaskId(): string
+    public function getTaskId(): TaskId
     {
         return $this->taskId;
     }

@@ -9,12 +9,7 @@ use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Model\Task;
 use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskDescription;
 use App\Domain\ValueObject\Task\TaskDueDate;
-use App\Domain\ValueObject\Task\TaskId;
-use App\Domain\ValueObject\Task\TaskPriority;
-use App\Domain\ValueObject\Task\TaskStatus;
-use App\Domain\ValueObject\Task\TaskTitle;
 
 final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
 {
@@ -24,36 +19,38 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
     ) {
     }
 
-    public function __invoke(UpdateTaskCommand $request): UpdateTaskResponse
+    public function __invoke(UpdateTaskCommand $command): UpdateTaskResponse
     {
-        $taskId = TaskId::fromString($request->getTaskId());
+        $taskId = $command->getTaskId();
         $task   = $this->taskRepository->findById($taskId);
 
         if (!$task) {
             throw new TaskNotFoundException($taskId);
         }
 
-        if (null !== $request->getTitle()) {
-            $task->changeTitle(TaskTitle::fromString($request->getTitle()));
+        if (null !== $title = $command->getTitle()) {
+            $task->changeTitle($title);
         }
 
-        if (null !== $request->getDescription()) {
-            $task->changeDescription(TaskDescription::fromString($request->getDescription()));
+        if (null !== $description = $command->getDescription()) {
+            $task->changeDescription($description);
         }
 
-        if (null !== $request->getStatus()) {
-            $task->changeStatus(TaskStatus::fromString($request->getStatus()));
+        if (null !== $status = $command->getStatus()) {
+            $task->changeStatus($status);
         }
 
-        if (null !== $request->getPriority()) {
-            $task->changePriority(TaskPriority::fromString($request->getPriority()));
+        if (null !== $priority = $command->getPriority()) {
+            $task->changePriority($priority);
         }
 
-        if ($request->shouldClearDueDate()) {
+        $dueDate = $command->getDueDate();
+        if ($command->shouldClearDueDate()) {
             $task->changeDueDate(null);
-        } elseif (null !== $request->getDueDate() && !$this->isCurrentDueDate($task, $request->getDueDate())) {
-            // Re-sending the due date the task already has is a no-op, even if it is in the past by now.
-            $task->changeDueDate(TaskDueDate::fromDate($request->getDueDate()));
+        } elseif (null !== $dueDate && !$this->isCurrentDueDate($task, $dueDate)) {
+            // Re-sending the due date the task already has is a no-op, even if it is in the past by now;
+            // a new one must be in the future (checked by TaskDueDate).
+            $task->changeDueDate(TaskDueDate::fromDate($dueDate));
         }
 
         if (!$task->isUpdated()) {

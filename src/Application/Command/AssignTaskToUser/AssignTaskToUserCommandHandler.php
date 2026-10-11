@@ -10,8 +10,6 @@ use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Exception\User\UserNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskId;
-use App\Domain\ValueObject\User\UserId;
 
 final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInterface
 {
@@ -22,10 +20,10 @@ final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInt
     ) {
     }
 
-    public function __invoke(AssignTaskToUserCommand $request): AssignTaskToUserResponse
+    public function __invoke(AssignTaskToUserCommand $command): AssignTaskToUserResponse
     {
-        $taskId = TaskId::fromString($request->getTaskId());
-        $userId = UserId::fromString($request->getUserId());
+        $taskId = $command->getTaskId();
+        $userId = $command->getUserId();
 
         $task = $this->taskRepository->findById($taskId);
 

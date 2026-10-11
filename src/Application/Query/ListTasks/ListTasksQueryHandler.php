@@ -6,8 +6,6 @@ namespace App\Application\Query\ListTasks;
 
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskPriority;
-use App\Domain\ValueObject\Task\TaskStatus;
 
 final readonly class ListTasksQueryHandler implements QueryHandlerInterface
 {
@@ -16,23 +14,18 @@ final readonly class ListTasksQueryHandler implements QueryHandlerInterface
     ) {
     }
 
-    public function __invoke(ListTasksQuery $request): ListTasksResponse
+    public function __invoke(ListTasksQuery $query): ListTasksResponse
     {
-        $filters = [];
-
-        if ($request->getStatus()) {
-            $filters['status'] = TaskStatus::fromString($request->getStatus())->value;
-        }
-
-        if ($request->getPriority()) {
-            $filters['priority'] = TaskPriority::fromString($request->getPriority())->value;
-        }
+        $filters = \array_filter(
+            ['status' => $query->getStatus(), 'priority' => $query->getPriority()],
+            static fn (?\BackedEnum $value): bool => null !== $value,
+        );
 
         return new ListTasksResponse(
-            $this->taskRepository->findByFilters($filters, $request->getPage(), $request->getLimit()),
+            $this->taskRepository->findByFilters($filters, $query->getPage(), $query->getLimit()),
             $this->taskRepository->countByFilters($filters),
-            $request->getPage(),
-            $request->getLimit(),
+            $query->getPage(),
+            $query->getLimit(),
         );
     }
 }

@@ -9,8 +9,6 @@ use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\User\UserAlreadyExistsException;
 use App\Domain\Factory\UserFactory;
 use App\Domain\Repository\UserRepositoryInterface;
-use App\Domain\ValueObject\User\UserEmail;
-use App\Domain\ValueObject\User\UserName;
 
 final readonly class CreateUserCommandHandler implements CommandHandlerInterface
 {
@@ -21,18 +19,15 @@ final readonly class CreateUserCommandHandler implements CommandHandlerInterface
     ) {
     }
 
-    public function __invoke(CreateUserCommand $request): CreateUserResponse
+    public function __invoke(CreateUserCommand $command): CreateUserResponse
     {
-        $emailUser = UserEmail::fromString($request->getEmail());
-        $nameUser  = UserName::fromString($request->getName());
-
-        if ($this->userRepository->findByEmail($emailUser)) {
-            throw new UserAlreadyExistsException($emailUser);
+        if ($this->userRepository->findByEmail($command->getEmail())) {
+            throw new UserAlreadyExistsException($command->getEmail());
         }
 
         $user = $this->userFactory->register(
-            $emailUser,
-            $nameUser,
+            $command->getEmail(),
+            $command->getName(),
         );
 
         $this->userRepository->save($user);

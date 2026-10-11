@@ -7,7 +7,10 @@ namespace App\Infrastructure\Persistence\Doctrine\Repository;
 use App\Domain\Model\Task;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\ValueObject\Task\TaskId;
+use App\Domain\ValueObject\Task\TaskStatus;
 use App\Domain\ValueObject\User\UserId;
+use App\Infrastructure\Persistence\Doctrine\Type\Task\TaskStatusType;
+use App\Infrastructure\Persistence\Doctrine\Type\User\UserIdType;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
@@ -63,5 +66,31 @@ final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
     public function countByFilters(array $filters): int
     {
         return $this->entityManager->getRepository(Task::class)->count($filters);
+    }
+
+    public function countByUser(UserId $userId): int
+    {
+        return $this->countAssignedTo($userId, onlyUnfinished: false);
+    }
+
+    public function countUnfinishedByUser(UserId $userId): int
+    {
+        return $this->countAssignedTo($userId, onlyUnfinished: true);
+    }
+
+    private function countAssignedTo(UserId $userId, bool $onlyUnfinished): int
+    {
+        $query = $this->entityManager->createQueryBuilder()
+            ->select('COUNT(t.id)')
+            ->from(Task::class, 't')
+            ->where('t.assignedUser = :user')
+            ->setParameter('user', $userId, UserIdType::NAME)
+        ;
+
+        if ($onlyUnfinished) {
+            $query->andWhere('t.status <> :completed')->setParameter('completed', TaskStatus::COMPLETED, TaskStatusType::NAME);
+        }
+
+        return (int) $query->getQuery()->getSingleScalarResult();
     }
 }

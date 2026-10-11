@@ -69,7 +69,7 @@ final class ListTasksQueryHandlerTest extends TestCase
 
         $repo->expects($this->once())
             ->method('findByFilters')
-            ->with($this->equalTo(['status' => 'pending']), 2, 10)
+            ->with(['status' => TaskStatus::PENDING], 2, 10)
             ->willReturn($expected)
         ;
 
@@ -96,7 +96,7 @@ final class ListTasksQueryHandlerTest extends TestCase
 
         $repo->expects($this->once())
             ->method('findByFilters')
-            ->with($this->equalTo(['priority' => 'high']), 1, 50)
+            ->with(['priority' => TaskPriority::HIGH], 1, 50)
             ->willReturn($expected)
         ;
 
@@ -118,7 +118,7 @@ final class ListTasksQueryHandlerTest extends TestCase
 
         $repo->expects($this->once())
             ->method('findByFilters')
-            ->with($this->equalTo(['status' => 'in_progress', 'priority' => 'medium']), 3, 5)
+            ->with(['status' => TaskStatus::IN_PROGRESS, 'priority' => TaskPriority::MEDIUM], 3, 5)
             ->willReturn($expected)
         ;
 

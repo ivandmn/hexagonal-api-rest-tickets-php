@@ -14,7 +14,7 @@ final readonly class ListUsersQueryHandler implements QueryHandlerInterface
     ) {
     }
 
-    public function __invoke(ListUsersQuery $request): ListUsersResponse
+    public function __invoke(ListUsersQuery $query): ListUsersResponse
     {
         $users = $this->userRepository->findAll();
 

@@ -35,4 +35,14 @@ interface TaskRepositoryInterface
      * @param array<string, mixed> $filters
      */
     public function countByFilters(array $filters): int;
+
+    /**
+     * Tasks assigned to the user, whatever their status.
+     */
+    public function countByUser(UserId $userId): int;
+
+    /**
+     * Tasks assigned to the user that are not completed yet (pending or in progress).
+     */
+    public function countUnfinishedByUser(UserId $userId): int;
 }

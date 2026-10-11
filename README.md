@@ -111,7 +111,7 @@ Clients must branch on `type` / `errors[].code`, never on the text.
 |--------|------|----------|
 | 400 | Malformed request | `REQUEST_MALFORMED_JSON`, `REQUEST_EMPTY_BODY`, `REQUEST_INVALID_BODY` |
 | 404 | Missing resource or unknown route | `TASK_NOT_FOUND`, `USER_NOT_FOUND`, `NOT_FOUND` |
-| 409 | State incompatible with the operation | `TASK_STATUS_TRANSITION_NOT_ALLOWED`, `TASK_DELETION_NOT_ALLOWED`, `USER_ALREADY_EXISTS` |
+| 409 | State incompatible with the operation | `TASK_STATUS_TRANSITION_NOT_ALLOWED`, `TASK_DELETION_NOT_ALLOWED`, `USER_ALREADY_EXISTS`, `USER_DELETION_NOT_ALLOWED` |
 | 415 | Body is not JSON | `UNSUPPORTED_MEDIA_TYPE` |
 | 422 | Invalid values (every invalid field listed) or broken business rule | `VALIDATION_ERROR`, `TASK_DUE_DATE_IN_PAST` |
 | 500 | Unexpected error (details only with `APP_DEBUG=1`) | `INTERNAL_ERROR` |

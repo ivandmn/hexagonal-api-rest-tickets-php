@@ -5,21 +5,26 @@ declare(strict_types=1);
 namespace App\Application\Command\AssignTaskToUser;
 
 use App\Application\Command\CommandInterface;
+use App\Domain\ValueObject\Task\TaskId;
+use App\Domain\ValueObject\User\UserId;
 
 final readonly class AssignTaskToUserCommand implements CommandInterface
 {
-    public function __construct(
-        private string $taskId,
-        private string $userId,
-    ) {
+    private TaskId $taskId;
+    private UserId $userId;
+
+    public function __construct(string $taskId, string $userId)
+    {
+        $this->taskId = TaskId::fromString($taskId);
+        $this->userId = UserId::fromString($userId);
     }
 
-    public function getTaskId(): string
+    public function getTaskId(): TaskId
     {
         return $this->taskId;
     }
 
-    public function getUserId(): string
+    public function getUserId(): UserId
     {
         return $this->userId;
     }

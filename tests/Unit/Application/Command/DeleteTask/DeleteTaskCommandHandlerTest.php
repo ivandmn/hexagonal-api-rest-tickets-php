@@ -56,7 +56,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
                 'Task deleted',
                 $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskId->value()
                         && isset($ctx['task_title'])
-                        && $ctx['task_title'] === $task->getTitle()),
+                        && $ctx['task_title'] === $task->getTitle()->value()),
             )
         ;
 

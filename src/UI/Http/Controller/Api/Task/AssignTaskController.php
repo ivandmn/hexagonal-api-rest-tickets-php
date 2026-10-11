@@ -35,7 +35,6 @@ final class AssignTaskController extends BaseController
         'USER_NOT_FOUND',
         'User b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e does not exist.',
         ['userId' => 'b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e'],
-        [['field' => 'userId', 'code' => 'USER_NOT_FOUND', 'message' => 'User b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e does not exist.', 'params' => ['userId' => 'b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e']]],
     )]
     #[ValidationErrorResponse([
         ['field' => 'userId', 'code' => 'VALUE_INVALID_FORMAT', 'message' => 'Invalid format, expected UUID.', 'params' => ['expected' => 'UUID']],

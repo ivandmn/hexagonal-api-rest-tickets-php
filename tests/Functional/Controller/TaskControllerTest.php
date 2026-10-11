@@ -519,7 +519,8 @@ final class TaskControllerTest extends WebTestCase
             content: \json_encode(['userId' => '018f63a8-bb93-7e5b-b0e1-49d24fa4ffff']),
         );
 
-        $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, UserNotFoundException::ERROR_CODE, ['userId' => UserNotFoundException::ERROR_CODE]);
+        $problem = $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, UserNotFoundException::ERROR_CODE);
+        $this->assertSame(['userId' => '018f63a8-bb93-7e5b-b0e1-49d24fa4ffff'], $problem['params']);
     }
 
     public function test_assign_returns_404_on_task_not_found(): void

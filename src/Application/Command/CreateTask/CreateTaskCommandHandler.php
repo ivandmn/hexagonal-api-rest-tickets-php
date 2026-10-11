@@ -8,10 +8,6 @@ use App\Application\Command\CommandHandlerInterface;
 use App\Application\Service\LoggerInterface;
 use App\Domain\Factory\TaskFactory;
 use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskDescription;
-use App\Domain\ValueObject\Task\TaskDueDate;
-use App\Domain\ValueObject\Task\TaskPriority;
-use App\Domain\ValueObject\Task\TaskTitle;
 
 final readonly class CreateTaskCommandHandler implements CommandHandlerInterface
 {
@@ -22,18 +18,13 @@ final readonly class CreateTaskCommandHandler implements CommandHandlerInterface
     ) {
     }
 
-    public function __invoke(CreateTaskCommand $request): CreateTaskResponse
+    public function __invoke(CreateTaskCommand $command): CreateTaskResponse
     {
-        $title       = TaskTitle::fromString($request->getTitle());
-        $description = TaskDescription::fromString($request->getDescription());
-        $priority    = TaskPriority::fromString($request->getPriority());
-        $dueDate     = $request->getDueDate() ? TaskDueDate::fromDate($request->getDueDate()) : null;
-
         $task = $this->taskFactory->register(
-            $title,
-            $description,
-            $priority,
-            $dueDate,
+            $command->getTitle(),
+            $command->getDescription(),
+            $command->getPriority(),
+            $command->getDueDate(),
         );
 
         $this->taskRepository->create($task);

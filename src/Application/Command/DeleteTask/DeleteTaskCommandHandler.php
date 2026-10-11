@@ -9,7 +9,6 @@ use App\Application\Service\LoggerInterface;
 use App\Domain\Exception\Task\TaskDeletionNotAllowedException;
 use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Domain\Repository\TaskRepositoryInterface;
-use App\Domain\ValueObject\Task\TaskId;
 
 final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
 {
@@ -19,9 +18,9 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
     ) {
     }
 
-    public function __invoke(DeleteTaskCommand $request): DeleteTaskResponse
+    public function __invoke(DeleteTaskCommand $command): DeleteTaskResponse
     {
-        $taskId = TaskId::fromString($request->getTaskId());
+        $taskId = $command->getTaskId();
 
         $task = $this->taskRepository->findById($taskId);
 
@@ -35,7 +34,7 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
 
         $this->taskRepository->delete($task);
 
-        $this->logger->info('Task deleted', ['task_id' => $taskId->value(), 'task_title' => $task->getTitle()]);
+        $this->logger->info('Task deleted', ['task_id' => $taskId->value(), 'task_title' => $task->getTitle()->value()]);
 
         return new DeleteTaskResponse($task);
     }
