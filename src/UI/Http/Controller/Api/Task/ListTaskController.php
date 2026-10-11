@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\UI\Http\Controller\Api\Task;
 
 use App\Application\Command\CommandBusInterface;
+use App\Application\Query\ListTasks\ListTasksQuery;
+use App\Application\Query\ListTasks\ListTasksResponse;
 use App\Application\Query\QueryBusInterface;
-use App\Application\UseCase\ListTasks\ListTasksRequest;
-use App\Application\UseCase\ListTasks\ListTasksResponse;
 use App\Domain\Exception\Task\InvalidTaskPriorityException;
 use App\Domain\Exception\Task\InvalidTaskStatusException;
 use App\Infrastructure\Exception\InvalidRequestException;
@@ -40,7 +40,7 @@ class ListTaskController extends BaseController
             /** @var ListTaskRequestDto $data */
             $data = $this->apiRequestValidator->validate($request, ListTaskRequestDto::class);
 
-            $query = new ListTasksRequest(
+            $query = new ListTasksQuery(
                 $data->status,
                 $data->priority,
                 $data->page ? (int) $data->page : 1,

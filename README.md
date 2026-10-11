@@ -141,7 +141,8 @@ If you prefer a lightweight version using ReDoc:
 ```
 /src
 ├── Application/
-│   ├── UseCase/
+│   ├── Command/   # Commands + CommandHandlers (write side)
+│   ├── Query/     # Queries + QueryHandlers (read side)
 │   └── Service/
 ├── Domain/
 │   ├── Model/

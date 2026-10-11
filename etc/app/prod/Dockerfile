@@ -18,15 +18,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN install-php-extensions \
     @composer \
+    openssl \
+    curl \
+    json \
     amqp \
     apcu \
     exif \
     gd \
     intl \
     pcntl \
+    pdo \
     pdo_pgsql \
+    mbstring \
     redis \
-    zip
+    zip \
+    opcache
 
 COPY etc/caddy/Caddyfile /etc/frankenphp/Caddyfile
 COPY --chmod=755 etc/app/docker-entrypoint.sh /usr/local/bin/docker-entrypoint

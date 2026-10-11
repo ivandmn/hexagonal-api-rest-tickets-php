@@ -86,6 +86,12 @@ services:
       arguments:
         - '@logger'
 
+    App\Domain\Repository\TaskRepositoryInterface:
+      alias: 'App\Infrastructure\Repository\DoctrineTaskRepository'
+
+    App\Domain\Repository\UserRepositoryInterface:
+      alias: 'App\Infrastructure\Repository\DoctrineUserRepository'
+
     App\Infrastructure\Service\ApiRequestValidator:
       arguments:
         - '@serializer'

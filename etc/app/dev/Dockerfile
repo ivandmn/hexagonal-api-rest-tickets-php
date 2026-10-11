@@ -21,10 +21,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gettext-base \
     git \
     libcap2-bin \
-    && setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     bash-completion \
     less \
@@ -32,20 +28,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     micro \
     openssh-client \
     unzip \
+    bat \
+    jq \
+    lnav \
+    libxml2-utils \
+    && ln -s /usr/bin/batcat /usr/local/bin/bat \
+    && setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
     && rm -rf /var/lib/apt/lists/*
 
 RUN install-php-extensions \
     @composer \
+    openssl \
+    curl \
+    json \
     amqp \
     apcu \
     exif \
     gd \
     intl \
     pcntl \
+    pdo \
     pdo_pgsql \
+    mbstring \
     redis \
     zip \
-    xdebug
+    xdebug \
+    opcache
 
 COPY etc/app/dev/php/php.ini $PHP_INI_DIR/app.conf.d/10-app.ini
 
