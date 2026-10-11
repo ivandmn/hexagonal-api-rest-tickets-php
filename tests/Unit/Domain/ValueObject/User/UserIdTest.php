@@ -13,7 +13,7 @@ final class UserIdTest extends TestCase
 {
     public function test_creates_valid_user_id(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $id         = new UserId($uuidString);
 
         $this->assertInstanceOf(UserId::class, $id);
@@ -23,7 +23,7 @@ final class UserIdTest extends TestCase
 
     public function test_from_string_creates_valid_user_id(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $id         = UserId::fromString($uuidString);
 
         $this->assertInstanceOf(UserId::class, $id);
@@ -49,7 +49,7 @@ final class UserIdTest extends TestCase
 
     public function test_equals_returns_true_for_same_value(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $a          = new UserId($uuidString);
         $b          = new UserId($uuidString);
 
@@ -58,8 +58,8 @@ final class UserIdTest extends TestCase
 
     public function test_equals_returns_false_for_different_values(): void
     {
-        $a = new UserId(RamseyUuid::uuid7()->toString());
-        $b = new UserId(RamseyUuid::uuid7()->toString());
+        $a = new UserId(RamseyUuid::uuid4()->toString());
+        $b = new UserId(RamseyUuid::uuid4()->toString());
 
         $this->assertFalse($a->equals($b));
     }

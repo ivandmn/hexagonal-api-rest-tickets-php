@@ -24,7 +24,7 @@ final class GetTaskDetailsQueryHandlerTest extends TestCase
     {
         $repo = $this->createMock(TaskRepositoryInterface::class);
 
-        $taskIdStr = RamseyUuid::uuid7()->toString();
+        $taskIdStr = RamseyUuid::uuid4()->toString();
         $task      = new Task(
             TaskId::fromString($taskIdStr),
             TaskTitle::fromString('Details Title'),
@@ -62,6 +62,6 @@ final class GetTaskDetailsQueryHandlerTest extends TestCase
         $uc = new GetTaskDetailsQueryHandler($repo);
 
         $this->expectException(TaskNotFoundException::class);
-        $uc(new GetTaskDetailsQuery(RamseyUuid::uuid7()->toString()));
+        $uc(new GetTaskDetailsQuery(RamseyUuid::uuid4()->toString()));
     }
 }

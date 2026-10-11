@@ -24,11 +24,18 @@ use App\Infrastructure\Http\Request\Task\UpdateTaskRequestDto;
 use App\Infrastructure\Service\ApiRequestValidator;
 use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
+use App\UI\Http\OpenApi\Attribute\ErrorResponse;
+use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\SuccessResponse;
+use App\UI\Http\OpenApi\Schema\Task;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[OA\Tag(name: 'Tasks')]
 class UpdateTaskController extends BaseController
 {
     public function __construct(
@@ -40,6 +47,17 @@ class UpdateTaskController extends BaseController
         parent::__construct($queryBus, $commandBus);
     }
 
+    #[OA\Put(
+        summary: 'Update a task',
+        description: 'Only the non-null fields sent are updated. Allowed status transitions: `pending` → `in_progress` → `completed`.',
+    )]
+    #[OA\Parameter(name: 'id', description: 'Task identifier', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
+    #[OA\RequestBody(required: true, content: new Model(type: UpdateTaskRequestDto::class))]
+    #[SuccessResponse(Task::class, 'Task updated')]
+    #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Invalid payload or task ID', 'Invalid Task ID')]
+    #[ErrorResponse(Response::HTTP_NOT_FOUND, 'Task not found', 'Task with this ID does not exist')]
+    #[ErrorResponse(Response::HTTP_CONFLICT, 'Status transition not allowed or due date in the past', 'Cannot transition from "completed" to "pending"')]
+    #[InternalErrorResponse]
     #[Route('/api/tasks/{id}', name: 'api_task_update', methods: ['PUT'])]
     public function __invoke(Request $request, string $id): JsonResponse
     {

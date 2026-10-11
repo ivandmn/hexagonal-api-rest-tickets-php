@@ -150,9 +150,11 @@ If you prefer a lightweight version using ReDoc:
 │   ├── ValueObject/
 │   └── Exception/
 └── Infrastructure/
-    ├── Controller/
-    ├── Repository/
-    ├── Persistence/
+    ├── Persistence/Doctrine/
+    │   ├── Mapping/     # XML mapping of the domain models (*.orm.xml)
+    │   ├── Type/        # DBAL types for the value objects
+    │   ├── Repository/
+    │   └── Migration/
     └── Http/
 ```
 

@@ -27,8 +27,8 @@ final class ListTasksQueryHandlerTest extends TestCase
         $repo = $this->createMock(TaskRepositoryInterface::class);
 
         $tasks = [
-            new Task(TaskId::fromString(RamseyUuid::uuid7()->toString()), TaskTitle::fromString('Title A'), TaskDescription::fromString('D')),
-            new Task(TaskId::fromString(RamseyUuid::uuid7()->toString()), TaskTitle::fromString('Title B'), TaskDescription::fromString('E')),
+            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Title A'), TaskDescription::fromString('D')),
+            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Title B'), TaskDescription::fromString('E')),
         ];
 
         $repo->expects($this->once())
@@ -52,7 +52,7 @@ final class ListTasksQueryHandlerTest extends TestCase
         $repo = $this->createMock(TaskRepositoryInterface::class);
 
         $expected = [
-            new Task(TaskId::fromString(RamseyUuid::uuid7()->toString()), TaskTitle::fromString('Pending 1'), TaskDescription::fromString('D1'), TaskStatus::PENDING, TaskPriority::LOW),
+            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Pending 1'), TaskDescription::fromString('D1'), TaskStatus::PENDING, TaskPriority::LOW),
         ];
 
         $repo->expects($this->once())
@@ -73,7 +73,7 @@ final class ListTasksQueryHandlerTest extends TestCase
 
         $expected = [
             new Task(
-                TaskId::fromString(Uuid::uuid7()->toString()),
+                TaskId::fromString(Uuid::uuid4()->toString()),
                 TaskTitle::fromString('High One'),
                 TaskDescription::fromString('D1'),
                 TaskStatus::IN_PROGRESS,
@@ -99,7 +99,7 @@ final class ListTasksQueryHandlerTest extends TestCase
         $repo = $this->createMock(TaskRepositoryInterface::class);
 
         $expected = [
-            new Task(TaskId::fromString(RamseyUuid::uuid7()->toString()), TaskTitle::fromString('Title X'), TaskDescription::fromString('Y Desc'), TaskStatus::IN_PROGRESS, TaskPriority::MEDIUM),
+            new Task(TaskId::fromString(RamseyUuid::uuid4()->toString()), TaskTitle::fromString('Title X'), TaskDescription::fromString('Y Desc'), TaskStatus::IN_PROGRESS, TaskPriority::MEDIUM),
         ];
 
         $repo->expects($this->once())

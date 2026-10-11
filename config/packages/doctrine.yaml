@@ -7,6 +7,21 @@ doctrine:
         #server_version: '16'
 
         profiling_collect_backtrace: '%kernel.debug%'
+
+        # Map columns straight to domain value objects
+        types:
+            # Task
+            task_id: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskIdType
+            task_title: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskTitleType
+            task_description: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskDescriptionType
+            task_status: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskStatusType
+            task_priority: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskPriorityType
+            task_due_date: App\Infrastructure\Persistence\Doctrine\Type\Task\TaskDueDateType
+
+            # User
+            user_id: App\Infrastructure\Persistence\Doctrine\Type\User\UserIdType
+            user_email: App\Infrastructure\Persistence\Doctrine\Type\User\UserEmailType
+            user_name: App\Infrastructure\Persistence\Doctrine\Type\User\UserNameType
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
@@ -15,10 +30,10 @@ doctrine:
         auto_mapping: true
         mappings:
             App:
-                type: attribute
+                type: xml
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Infrastructure/Persistence/Doctrine/Entity'
-                prefix: 'App\Infrastructure\Persistence\Doctrine\Entity'
+                dir: '%kernel.project_dir%/src/Infrastructure/Persistence/Doctrine/Mapping'
+                prefix: 'App\Domain\Model'
                 alias: App
 
 when@test:
@@ -26,8 +41,6 @@ when@test:
         dbal:
             # "TEST_TOKEN" is typically set by ParaTest
             # dbname_suffix: '_test%env(default::TEST_TOKEN)%'
-        orm:
-          auto_generate_proxy_classes: true
 
 when@prod:
     doctrine:

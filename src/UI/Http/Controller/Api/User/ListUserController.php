@@ -11,9 +11,15 @@ use App\Application\Query\QueryBusInterface;
 use App\Infrastructure\Http\ApiResponse;
 use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
+use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\SuccessResponse;
+use App\UI\Http\OpenApi\Schema\UserList;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[OA\Tag(name: 'Users')]
 class ListUserController extends BaseController
 {
     public function __construct(
@@ -24,6 +30,10 @@ class ListUserController extends BaseController
         parent::__construct($queryBus, $commandBus);
     }
 
+    #[OA\Get(summary: 'List users')]
+    #[SuccessResponse(UserList::class, 'Users found')]
+    #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'There are no users')]
+    #[InternalErrorResponse]
     #[Route('/api/users', name: 'api_user_list', methods: ['GET'])]
     public function __invoke(): JsonResponse
     {

@@ -33,8 +33,8 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
         $userRepo = $this->createMock(UserRepositoryInterface::class);
         $logger   = $this->createMock(LoggerInterface::class);
 
-        $taskIdStr = RamseyUuid::uuid7()->toString();
-        $userIdStr = RamseyUuid::uuid7()->toString();
+        $taskIdStr = RamseyUuid::uuid4()->toString();
+        $userIdStr = RamseyUuid::uuid4()->toString();
 
         $task = new Task(
             TaskId::fromString($taskIdStr),
@@ -92,8 +92,8 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
         $userRepo = $this->createMock(UserRepositoryInterface::class);
         $logger   = $this->createMock(LoggerInterface::class);
 
-        $taskIdStr = RamseyUuid::uuid7()->toString();
-        $userIdStr = RamseyUuid::uuid7()->toString();
+        $taskIdStr = RamseyUuid::uuid4()->toString();
+        $userIdStr = RamseyUuid::uuid4()->toString();
 
         $user = new User(
             UserId::fromString($userIdStr),
@@ -154,7 +154,7 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
         $uc = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
 
         $this->expectException(TaskNotFoundException::class);
-        $uc(new AssignTaskToUserCommand(RamseyUuid::uuid7()->toString(), RamseyUuid::uuid7()->toString()));
+        $uc(new AssignTaskToUserCommand(RamseyUuid::uuid4()->toString(), RamseyUuid::uuid4()->toString()));
     }
 
     public function test_throws_when_user_not_found(): void
@@ -163,7 +163,7 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
         $userRepo = $this->createMock(UserRepositoryInterface::class);
         $logger   = $this->createMock(LoggerInterface::class);
 
-        $taskIdStr = RamseyUuid::uuid7()->toString();
+        $taskIdStr = RamseyUuid::uuid4()->toString();
         $task      = new Task(
             TaskId::fromString($taskIdStr),
             TaskTitle::fromString('Test Title'),
@@ -178,6 +178,6 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
         $uc = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
 
         $this->expectException(UserNotFoundException::class);
-        $uc(new AssignTaskToUserCommand($taskIdStr, RamseyUuid::uuid7()->toString()));
+        $uc(new AssignTaskToUserCommand($taskIdStr, RamseyUuid::uuid4()->toString()));
     }
 }

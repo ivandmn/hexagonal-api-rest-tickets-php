@@ -29,7 +29,9 @@ services:
           - '../src/Domain/Event/'
           - '../src/Domain/Repository/'
           - '../src/Infrastructure/Persistence/Doctrine/Migration/'
+          - '../src/Infrastructure/Persistence/Doctrine/Type/'
           - '../src/Infrastructure/Symfony/Kernel.php'
+          - '../src/UI/Http/OpenApi/'
 
     command_handlers:
       namespace: App\Application\Command\
@@ -87,10 +89,10 @@ services:
         - '@logger'
 
     App\Domain\Repository\TaskRepositoryInterface:
-      alias: 'App\Infrastructure\Repository\DoctrineTaskRepository'
+      alias: 'App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTaskRepository'
 
     App\Domain\Repository\UserRepositoryInterface:
-      alias: 'App\Infrastructure\Repository\DoctrineUserRepository'
+      alias: 'App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository'
 
     App\Infrastructure\Service\ApiRequestValidator:
       arguments:

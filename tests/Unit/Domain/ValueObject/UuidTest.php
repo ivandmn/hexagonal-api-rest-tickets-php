@@ -13,7 +13,7 @@ final class UuidTest extends TestCase
 {
     public function test_creates_valid_uuid_from_string(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $uuid       = new Uuid($uuidString);
 
         $this->assertInstanceOf(Uuid::class, $uuid);
@@ -23,7 +23,7 @@ final class UuidTest extends TestCase
 
     public function test_from_string_creates_valid_uuid(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $uuid       = Uuid::fromString($uuidString);
 
         $this->assertInstanceOf(Uuid::class, $uuid);
@@ -49,7 +49,7 @@ final class UuidTest extends TestCase
 
     public function test_equals_returns_true_for_same_value(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $a          = new Uuid($uuidString);
         $b          = new Uuid($uuidString);
 
@@ -58,15 +58,15 @@ final class UuidTest extends TestCase
 
     public function test_equals_returns_false_for_different_value(): void
     {
-        $a = new Uuid(RamseyUuid::uuid7()->toString());
-        $b = new Uuid(RamseyUuid::uuid7()->toString());
+        $a = new Uuid(RamseyUuid::uuid4()->toString());
+        $b = new Uuid(RamseyUuid::uuid4()->toString());
 
         $this->assertFalse($a->equals($b));
     }
 
     public function test_value_object_is_immutable(): void
     {
-        $a = new Uuid(RamseyUuid::uuid7()->toString());
+        $a = new Uuid(RamseyUuid::uuid4()->toString());
         $b = new Uuid($a->value());
 
         $this->assertSame($a, $b);

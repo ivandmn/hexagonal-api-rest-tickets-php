@@ -13,7 +13,7 @@ final class TaskIdTest extends TestCase
 {
     public function test_creates_valid_task_id(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $id         = new TaskId($uuidString);
 
         $this->assertInstanceOf(TaskId::class, $id);
@@ -23,7 +23,7 @@ final class TaskIdTest extends TestCase
 
     public function test_from_string_creates_valid_task_id(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $id         = TaskId::fromString($uuidString);
 
         $this->assertInstanceOf(TaskId::class, $id);
@@ -49,7 +49,7 @@ final class TaskIdTest extends TestCase
 
     public function test_equals_returns_true_for_same_value(): void
     {
-        $uuidString = RamseyUuid::uuid7()->toString();
+        $uuidString = RamseyUuid::uuid4()->toString();
         $a          = new TaskId($uuidString);
         $b          = new TaskId($uuidString);
 
@@ -58,8 +58,8 @@ final class TaskIdTest extends TestCase
 
     public function test_equals_returns_false_for_different_values(): void
     {
-        $a = new TaskId(RamseyUuid::uuid7()->toString());
-        $b = new TaskId(RamseyUuid::uuid7()->toString());
+        $a = new TaskId(RamseyUuid::uuid4()->toString());
+        $b = new TaskId(RamseyUuid::uuid4()->toString());
 
         $this->assertFalse($a->equals($b));
     }

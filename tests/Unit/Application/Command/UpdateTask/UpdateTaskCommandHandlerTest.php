@@ -27,7 +27,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
         $repo   = $this->createMock(TaskRepositoryInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $taskIdStr = RamseyUuid::uuid7()->toString();
+        $taskIdStr = RamseyUuid::uuid4()->toString();
 
         $task = new Task(
             TaskId::fromString($taskIdStr),
@@ -84,7 +84,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
         $repo   = $this->createMock(TaskRepositoryInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $taskIdStr = RamseyUuid::uuid7()->toString();
+        $taskIdStr = RamseyUuid::uuid4()->toString();
 
         $task = new Task(
             TaskId::fromString($taskIdStr),
@@ -135,7 +135,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
         $this->expectException(TaskNotFoundException::class);
 
         $uc(new UpdateTaskCommand(
-            RamseyUuid::uuid7()->toString(),
+            RamseyUuid::uuid4()->toString(),
             null,
             null,
             null,

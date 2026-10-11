@@ -25,7 +25,7 @@ readonly class Uuid
 
     public static function new(): static
     {
-        return new static(RamseyUuid::uuid7()->toString());
+        return new static(RamseyUuid::uuid4()->toString());
     }
 
     public function value(): string

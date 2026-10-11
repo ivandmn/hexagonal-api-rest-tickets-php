@@ -10,6 +10,8 @@ use App\Application\Query\ListTasks\ListTasksResponse;
 use App\Application\Query\QueryBusInterface;
 use App\Domain\Exception\Task\InvalidTaskPriorityException;
 use App\Domain\Exception\Task\InvalidTaskStatusException;
+use App\Domain\ValueObject\Task\TaskPriority;
+use App\Domain\ValueObject\Task\TaskStatus;
 use App\Infrastructure\Exception\InvalidRequestException;
 use App\Infrastructure\Exception\InvalidRequestParameterException;
 use App\Infrastructure\Http\ApiResponse;
@@ -17,11 +19,17 @@ use App\Infrastructure\Http\Request\Task\ListTaskRequestDto;
 use App\Infrastructure\Service\ApiRequestValidator;
 use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
+use App\UI\Http\OpenApi\Attribute\ErrorResponse;
+use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\SuccessResponse;
+use App\UI\Http\OpenApi\Schema\TaskList;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[OA\Tag(name: 'Tasks')]
 class ListTaskController extends BaseController
 {
     public function __construct(
@@ -33,6 +41,18 @@ class ListTaskController extends BaseController
         parent::__construct($queryBus, $commandBus);
     }
 
+    #[OA\Get(
+        summary: 'List tasks',
+        description: 'Returns all tasks. `page` and `limit` are only applied when filtering by `status` or `priority`.',
+    )]
+    #[OA\Parameter(name: 'status', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: TaskStatus::class))]
+    #[OA\Parameter(name: 'priority', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: TaskPriority::class))]
+    #[OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 1, minimum: 1))]
+    #[OA\Parameter(name: 'limit', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 50, minimum: 1))]
+    #[SuccessResponse(TaskList::class, 'Tasks found')]
+    #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'No tasks match the filters')]
+    #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Invalid query parameters', 'Invalid task status')]
+    #[InternalErrorResponse]
     #[Route('/api/tasks', name: 'api_task_list', methods: ['GET'])]
     public function __invoke(Request $request): JsonResponse
     {

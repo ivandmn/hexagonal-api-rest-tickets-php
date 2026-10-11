@@ -14,7 +14,8 @@ final readonly class User
         private UserId $id,
         private UserEmail $email,
         private UserName $name,
-        private \DateTimeImmutable $createdAt = new \DateTimeImmutable()
+        private \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
+        private ?\DateTimeImmutable $updatedAt = null
     ) {
     }
 
@@ -36,6 +37,11 @@ final readonly class User
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
     }
 
     public function equals(self $other): bool

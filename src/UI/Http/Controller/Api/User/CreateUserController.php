@@ -18,11 +18,18 @@ use App\Infrastructure\Http\Request\User\CreateUserRequestDto;
 use App\Infrastructure\Service\ApiRequestValidator;
 use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
+use App\UI\Http\OpenApi\Attribute\ErrorResponse;
+use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\SuccessResponse;
+use App\UI\Http\OpenApi\Schema\User;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[OA\Tag(name: 'Users')]
 class CreateUserController extends BaseController
 {
     public function __construct(
@@ -34,6 +41,12 @@ class CreateUserController extends BaseController
         parent::__construct($queryBus, $commandBus);
     }
 
+    #[OA\Post(summary: 'Create a user')]
+    #[OA\RequestBody(required: true, content: new Model(type: CreateUserRequestDto::class))]
+    #[SuccessResponse(User::class, 'User created')]
+    #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Invalid payload', 'Invalid user email')]
+    #[ErrorResponse(Response::HTTP_CONFLICT, 'Email already registered', 'User with this email already exists')]
+    #[InternalErrorResponse]
     #[Route('/api/users', name: 'api_user_create', methods: ['POST'])]
     public function __invoke(Request $request): JsonResponse
     {

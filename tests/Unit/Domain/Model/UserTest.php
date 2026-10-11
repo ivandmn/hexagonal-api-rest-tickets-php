@@ -46,7 +46,7 @@ final class UserTest extends TestCase
 
     public function test_equals_true_when_same_id_even_if_other_fields_differ(): void
     {
-        $uuid = RamseyUuid::uuid7()->toString();
+        $uuid = RamseyUuid::uuid4()->toString();
         $id1  = UserId::fromString($uuid);
         $id2  = UserId::fromString($uuid);
 

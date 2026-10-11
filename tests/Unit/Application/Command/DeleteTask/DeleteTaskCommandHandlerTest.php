@@ -27,7 +27,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
         $repo   = $this->createMock(TaskRepositoryInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $taskId = TaskId::fromString(RamseyUuid::uuid7()->toString());
+        $taskId = TaskId::fromString(RamseyUuid::uuid4()->toString());
         $task   = new Task(
             $taskId,
             TaskTitle::fromString('Deletable Task'),
@@ -77,7 +77,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
         $uc = new DeleteTaskCommandHandler($repo, $logger);
 
         $this->expectException(TaskNotFoundException::class);
-        $uc(new DeleteTaskCommand(RamseyUuid::uuid7()->toString()));
+        $uc(new DeleteTaskCommand(RamseyUuid::uuid4()->toString()));
     }
 
     public function test_throws_when_task_cannot_be_deleted(): void
@@ -85,7 +85,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
         $repo   = $this->createMock(TaskRepositoryInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $taskId = TaskId::fromString(RamseyUuid::uuid7()->toString());
+        $taskId = TaskId::fromString(RamseyUuid::uuid4()->toString());
         $task   = new Task(
             $taskId,
             TaskTitle::fromString('In Progress'),

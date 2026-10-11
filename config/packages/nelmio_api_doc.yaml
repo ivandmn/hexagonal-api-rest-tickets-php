@@ -1,9 +1,21 @@
 nelmio_api_doc:
-    documentation:
-      info:
-        title: Ticket API
-        description: API for managing user tickets
-        version: 1.0.0
-    areas: # to filter documented areas
-        path_patterns:
-            - ^/api(?!/docs$) # Accepts routes under /api except /api/docs
+  documentation:
+    info:
+      title: Ticket API
+      description: API for managing user tickets
+      version: 1.0.0
+  areas: # to filter documented areas
+    path_patterns:
+      - ^/api(?!/docs$) # Accepts routes under /api except /api/docs
+  html_config:
+    assets_mode: bundle
+    scalar_config:
+      theme: purple             # otros: moon, purple, solarized, bluePlanet, saturn, kepler, mars, deepSpace
+      layout: modern             # o classic
+      darkMode: true
+      hideModels: true           # oculta la sección de modelos (schemas)
+      persistAuth: true          # recuerda el token al recargar
+      defaultOpenAllTags: false  # tags colapsados al abrir
+      defaultHttpClient:
+        targetKey: shell
+        clientKey: curl          # el ejemplo de código que se muestra por defecto

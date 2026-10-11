@@ -13,10 +13,16 @@ use App\Domain\Exception\Task\TaskNotFoundException;
 use App\Infrastructure\Http\ApiResponse;
 use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
+use App\UI\Http\OpenApi\Attribute\ErrorResponse;
+use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\SuccessResponse;
+use App\UI\Http\OpenApi\Schema\Task;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[OA\Tag(name: 'Tasks')]
 class GetByIdTaskController extends BaseController
 {
     public function __construct(
@@ -27,6 +33,12 @@ class GetByIdTaskController extends BaseController
         parent::__construct($queryBus, $commandBus);
     }
 
+    #[OA\Get(summary: 'Get task details')]
+    #[OA\Parameter(name: 'id', description: 'Task identifier', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
+    #[SuccessResponse(Task::class, 'Task details')]
+    #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Malformed task ID', 'Invalid Task ID')]
+    #[ErrorResponse(Response::HTTP_NOT_FOUND, 'Task not found', 'Task with this ID does not exist')]
+    #[InternalErrorResponse]
     #[Route('/api/tasks/{id}', name: 'api_task_detail', methods: ['GET'])]
     public function __invoke(string $id): JsonResponse
     {
