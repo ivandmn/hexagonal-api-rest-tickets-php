@@ -1,0 +1,50 @@
+# HTTP representation of every error code: status, public message and (optionally) the payload
+# field the error belongs to. Read by App\UI\Http\Exception\ErrorCodeMapper and used only by
+# App\UI\Http\Exception\ApiExceptionListener, the single place that builds error responses.
+#
+# - Codes are stable: never change their meaning or reuse them (clients branch on them).
+# - Messages are public (shown to API clients). `{placeholders}` are filled with the exception
+#   params, e.g. TaskNotFoundException exposes {taskId}.
+# - `field` is only for domain errors raised outside request validation that still belong to a
+#   payload field; during validation the field comes from the property being validated.
+# - Every code declared in src/ must be listed here, and nothing else: a test enforces it
+#   (tests/Unit/UI/Http/Exception/ErrorCodeCoverageTest.php).
+#
+# Status guide: 400 malformed request, 404 missing resource, 409 state incompatible with the
+# operation, 422 invalid value or broken business rule.
+parameters:
+    # Only requests under this path get Problem Details error responses (the rest keep Symfony's).
+    app.error_mapping.path_prefix: '/api'
+
+    app.error_mapping.codes:
+        # --- Error envelope (App\UI\Http\Exception\ApiErrorCode) ---
+        VALIDATION_ERROR:      { status: 422, message: 'The submitted data is not valid.' }
+        INTERNAL_ERROR:        { status: 500, message: 'An unexpected error occurred.' }
+
+        # --- Request structure (App\UI\Http\Exception\ApiErrorCode) ---
+        REQUEST_MALFORMED_JSON: { status: 400, message: 'The request body is not valid JSON.' }
+        REQUEST_EMPTY_BODY:     { status: 400, message: 'The request body cannot be empty.' }
+        REQUEST_INVALID_BODY:   { status: 400, message: 'The request body must be a JSON object.' }
+        REQUEST_UNKNOWN_FIELD:  { status: 422, message: 'This field is not allowed.' }
+        REQUEST_INVALID_TYPE:   { status: 422, message: 'This value should be of type {expected}.' }
+
+        # --- Generic values (App\Domain\Exception\InvalidValueException) ---
+        VALUE_REQUIRED:        { status: 422, message: 'This value is required.' }
+        VALUE_INVALID:         { status: 422, message: 'This value is not valid.' }
+        VALUE_INVALID_FORMAT:  { status: 422, message: 'Invalid format, expected {expected}.' }
+        VALUE_INVALID_CHOICE:  { status: 422, message: 'This value must be one of: {allowed}.' }
+        VALUE_OUT_OF_RANGE:    { status: 422, message: 'This value must be between {min} and {max}.' }
+        VALUE_BELOW_MINIMUM:   { status: 422, message: 'This value must be at least {min}.' }
+        VALUE_ABOVE_MAXIMUM:   { status: 422, message: 'This value must be at most {max}.' }
+        VALUE_TOO_SHORT:       { status: 422, message: 'This value must be at least {min} characters long.' }
+        VALUE_TOO_LONG:        { status: 422, message: 'This value cannot be longer than {max} characters.' }
+
+        # --- Tasks (App\Domain\Exception\Task) ---
+        TASK_NOT_FOUND:                     { status: 404, message: 'Task {taskId} does not exist.' }
+        TASK_STATUS_TRANSITION_NOT_ALLOWED: { status: 409, message: 'A task cannot move from "{from}" to "{to}".', field: status }
+        TASK_DELETION_NOT_ALLOWED:          { status: 409, message: 'Only pending tasks can be deleted; this one is "{status}".' }
+        TASK_DUE_DATE_IN_PAST:              { status: 422, message: 'The due date cannot be in the past.', field: dueDate }
+
+        # --- Users (App\Domain\Exception\User) ---
+        USER_NOT_FOUND:      { status: 404, message: 'User {userId} does not exist.', field: userId }
+        USER_ALREADY_EXISTS: { status: 409, message: 'A user with email {email} already exists.', field: email }

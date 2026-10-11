@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject\Task;
 
-use App\Domain\Exception\Task\InvalidTaskIdException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Task\TaskId;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class TaskIdTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_creates_valid_task_id(): void
     {
         $uuidString = RamseyUuid::uuid4()->toString();
@@ -41,10 +44,7 @@ final class TaskIdTest extends TestCase
 
     public function test_throws_invalid_task_id_exception_for_invalid_uuid(): void
     {
-        $this->expectException(InvalidTaskIdException::class);
-        $this->expectExceptionMessage('Invalid Task ID');
-
-        new TaskId('invalid-uuid');
+        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new TaskId('invalid-uuid'));
     }
 
     public function test_equals_returns_true_for_same_value(): void

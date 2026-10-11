@@ -16,6 +16,15 @@ framework:
     php_errors:
       log: true
 
+    # Log levels only (a status_code here would wrap the exception before the API error listener).
+    exceptions:
+      # Business errors are expected outcomes, not failures: keep them out of error alerts.
+      App\Domain\Exception\DomainException:
+        log_level: info
+      # Unknown payload fields are a client mistake (answered with 422), not a server error.
+      Symfony\Component\Serializer\Exception\ExtraAttributesException:
+        log_level: notice
+
     #esi: true
     #fragments: true
 

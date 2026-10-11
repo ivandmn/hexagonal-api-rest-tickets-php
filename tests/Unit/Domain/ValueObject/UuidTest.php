@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject;
 
-use App\Domain\Exception\InvalidUuidException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Uuid;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class UuidTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_creates_valid_uuid_from_string(): void
     {
         $uuidString = RamseyUuid::uuid4()->toString();
@@ -32,10 +35,7 @@ final class UuidTest extends TestCase
 
     public function test_throws_exception_for_invalid_uuid_format(): void
     {
-        $this->expectException(InvalidUuidException::class);
-        $this->expectExceptionMessage('Invalid Uuid format');
-
-        new Uuid('invalid-uuid');
+        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new Uuid('invalid-uuid'));
     }
 
     public function test_new_creates_valid_uuid(): void

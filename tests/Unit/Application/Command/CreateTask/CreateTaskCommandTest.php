@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Application\Command\CreateTask;
 
 use App\Application\Command\CreateTask\CreateTaskCommand;
-use App\Application\Exception\InvalidDateFormat;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Task\TaskDueDate;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class CreateTaskCommandTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_construct_with_valid_rfc3339_sets_properties(): void
     {
         $req = new CreateTaskCommand(
@@ -32,13 +35,12 @@ final class CreateTaskCommandTest extends TestCase
 
     public function test_construct_with_invalid_date_throws(): void
     {
-        $this->expectException(InvalidDateFormat::class);
-        new CreateTaskCommand(
+        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new CreateTaskCommand(
             'Test Title',
             'Test Description',
             'low',
             '01-01-2030 00:00:00',
-        );
+        ));
     }
 
     public function test_construct_without_due_date(): void

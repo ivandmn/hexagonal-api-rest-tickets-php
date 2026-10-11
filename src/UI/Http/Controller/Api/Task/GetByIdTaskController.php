@@ -4,62 +4,34 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\Command\CommandBusInterface;
 use App\Application\Query\GetTaskDetails\GetTaskDetailsQuery;
 use App\Application\Query\GetTaskDetails\GetTaskDetailsResponse;
-use App\Application\Query\QueryBusInterface;
-use App\Domain\Exception\Task\InvalidTaskIdException;
-use App\Domain\Exception\Task\TaskNotFoundException;
-use App\Infrastructure\Http\ApiResponse;
-use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
-use App\UI\Http\OpenApi\Attribute\ErrorResponse;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\ProblemResponse;
 use App\UI\Http\OpenApi\Attribute\SuccessResponse;
 use App\UI\Http\OpenApi\Schema\Task;
+use App\UI\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 
 #[OA\Tag(name: 'Tasks')]
-class GetByIdTaskController extends BaseController
+final class GetByIdTaskController extends BaseController
 {
-    public function __construct(
-        QueryBusInterface $queryBus,
-        CommandBusInterface $commandBus,
-        private readonly MonologLogger $logger,
-    ) {
-        parent::__construct($queryBus, $commandBus);
-    }
-
     #[OA\Get(summary: 'Get task details')]
     #[OA\Parameter(name: 'id', description: 'Task identifier', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
     #[SuccessResponse(Task::class, 'Task details')]
-    #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Malformed task ID', 'Invalid Task ID')]
-    #[ErrorResponse(Response::HTTP_NOT_FOUND, 'Task not found', 'Task with this ID does not exist')]
+    #[ProblemResponse(Response::HTTP_NOT_FOUND, 'Task not found (also for an id that is not a UUID)', 'TASK_NOT_FOUND', 'Task 3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63 does not exist.', ['taskId' => '3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63'])]
     #[InternalErrorResponse]
-    #[Route('/api/tasks/{id}', name: 'api_task_detail', methods: ['GET'])]
+    #[Route('/api/tasks/{id}', name: 'api_task_detail', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
     public function __invoke(string $id): JsonResponse
     {
-        try {
-            $query = new GetTaskDetailsQuery($id);
+        /** @var GetTaskDetailsResponse $response */
+        $response = $this->queryHandler(new GetTaskDetailsQuery($id));
 
-            /** @var GetTaskDetailsResponse $response */
-            $response = $this->queryHandler($query);
-
-            return ApiResponse::success($response);
-        } catch (InvalidTaskIdException $exception) {
-            return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
-        } catch (TaskNotFoundException $exception) {
-            return ApiResponse::error($exception->getMessage(), Response::HTTP_NOT_FOUND);
-        } catch (\Throwable $exception) {
-            $this->logger->error(
-                \sprintf('Error Getting Task Details: %s', $exception->getMessage()),
-                ['exception' => $exception],
-            );
-
-            return ApiResponse::internalError();
-        }
+        return ApiResponse::success($response);
     }
 }

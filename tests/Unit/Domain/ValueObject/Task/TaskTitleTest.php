@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject\Task;
 
-use App\Domain\Exception\Task\InvalidTaskTitleException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Task\TaskTitle;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class TaskTitleTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_creates_valid_task_title(): void
     {
         $title = new TaskTitle('Valid Title');
@@ -29,18 +32,12 @@ final class TaskTitleTest extends TestCase
 
     public function test_throws_exception_when_too_short(): void
     {
-        $this->expectException(InvalidTaskTitleException::class);
-        $this->expectExceptionMessage('Task title does not reach minimum characters length');
-
-        new TaskTitle('abcd');
+        $this->assertDomainError(InvalidValueException::TOO_SHORT, static fn () => new TaskTitle('abcd'));
     }
 
     public function test_throws_exception_when_too_long(): void
     {
-        $this->expectException(InvalidTaskTitleException::class);
-        $this->expectExceptionMessage('Task title exceeds maximum characters length');
-
-        new TaskTitle(\str_repeat('a', TaskTitle::MAX_LENGTH + 1));
+        $this->assertDomainError(InvalidValueException::TOO_LONG, static fn () => new TaskTitle(\str_repeat('a', TaskTitle::MAX_LENGTH + 1)));
     }
 
     public function test_equals_returns_true_for_same_value(): void

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Command\UpdateTask;
 
 use App\Application\Command\CommandInterface;
-use App\Application\Exception\InvalidDateFormat;
 use App\Domain\ValueObject\Task\TaskDueDate;
 
 final class UpdateTaskCommand implements CommandInterface
@@ -22,12 +21,7 @@ final class UpdateTaskCommand implements CommandInterface
         // null fields mean "leave unchanged", so removing the due date needs an explicit flag
         private bool $clearDueDate = false,
     ) {
-        $date = null !== $dueDate ? \DateTimeImmutable::createFromFormat(TaskDueDate::FORMAT, $dueDate) : null;
-        if (false === $date) {
-            throw new InvalidDateFormat(\sprintf('Invalid Due date, must be in format "%s"', TaskDueDate::FORMAT_NAME));
-        }
-
-        $this->dueDate = $date;
+        $this->dueDate = null !== $dueDate ? TaskDueDate::parse($dueDate) : null;
     }
 
     public function getTaskId(): string

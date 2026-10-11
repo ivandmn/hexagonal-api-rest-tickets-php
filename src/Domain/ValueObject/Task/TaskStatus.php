@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject\Task;
 
-use App\Domain\Exception\Task\InvalidTaskStatusException;
+use App\Domain\Exception\InvalidValueException;
 
 enum TaskStatus: string
 {
@@ -15,7 +15,7 @@ enum TaskStatus: string
     public static function fromString(string $value): self
     {
         return self::tryFrom($value)
-            ?? throw new InvalidTaskStatusException('Invalid task status');
+            ?? throw InvalidValueException::invalidChoice($value, \array_column(self::cases(), 'value'));
     }
 
     public function isPending(): bool

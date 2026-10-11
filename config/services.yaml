@@ -30,6 +30,7 @@ services:
           - '../src/Domain/Repository/'
           - '../src/Infrastructure/Persistence/Doctrine/Migration/'
           - '../src/Infrastructure/Persistence/Doctrine/Type/'
+          - '../src/UI/Http/Request/'
           - '../src/Infrastructure/Symfony/Kernel.php'
           - '../src/UI/Http/OpenApi/'
 

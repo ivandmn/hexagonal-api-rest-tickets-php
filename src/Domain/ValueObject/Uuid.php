@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject;
 
-use App\Domain\Exception\InvalidUuidException;
+use App\Domain\Exception\InvalidValueException;
 use Ramsey\Uuid\Uuid as RamseyUuid;
 
 readonly class Uuid
@@ -14,7 +14,7 @@ readonly class Uuid
     public function __construct(protected string $value)
     {
         if (!RamseyUuid::isValid($value)) {
-            throw new InvalidUuidException('Invalid Uuid format');
+            throw InvalidValueException::invalidFormat('UUID');
         }
     }
 

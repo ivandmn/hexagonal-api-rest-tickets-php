@@ -26,11 +26,11 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
         $task = $this->taskRepository->findById($taskId);
 
         if (!$task) {
-            throw new TaskNotFoundException('Task with this ID does not exist');
+            throw new TaskNotFoundException($taskId);
         }
 
         if (!$task->canBeDeleted()) {
-            throw new TaskDeletionNotAllowedException(\sprintf('Tasks with status "%s" cannot be deleted', $task->getStatus()->value));
+            throw new TaskDeletionNotAllowedException($taskId, $task->getStatus());
         }
 
         $this->taskRepository->delete($task);

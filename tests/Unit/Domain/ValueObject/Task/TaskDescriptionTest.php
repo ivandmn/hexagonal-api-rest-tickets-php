@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject\Task;
 
-use App\Domain\Exception\Task\InvalidTaskDescription;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Task\TaskDescription;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class TaskDescriptionTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_creates_valid_task_description(): void
     {
         $desc = new TaskDescription('Valid description');
@@ -37,10 +40,7 @@ final class TaskDescriptionTest extends TestCase
 
     public function test_throws_exception_when_too_long(): void
     {
-        $this->expectException(InvalidTaskDescription::class);
-        $this->expectExceptionMessage('Task description exceeds maximum characters length');
-
-        new TaskDescription(\str_repeat('a', TaskDescription::MAX_LENGTH + 1));
+        $this->assertDomainError(InvalidValueException::TOO_LONG, static fn () => new TaskDescription(\str_repeat('a', TaskDescription::MAX_LENGTH + 1)));
     }
 
     public function test_equals_returns_true_for_same_value(): void

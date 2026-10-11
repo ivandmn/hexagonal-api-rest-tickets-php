@@ -101,12 +101,9 @@ final class Task
             return;
         }
 
-        if ($this->isCompleted()) {
-            throw new InvalidTaskStatusTransitionException('Cannot change status of a completed task');
-        }
-
+        // Covers completed tasks too: nothing can transition out of "completed".
         if (!$this->status->canTransitionTo($newStatus)) {
-            throw new InvalidTaskStatusTransitionException(\sprintf('Task status transition from "%s" to "%s" is not allowed', $this->status->value, $newStatus->value));
+            throw new InvalidTaskStatusTransitionException($this->status, $newStatus);
         }
 
         $this->status = $newStatus;

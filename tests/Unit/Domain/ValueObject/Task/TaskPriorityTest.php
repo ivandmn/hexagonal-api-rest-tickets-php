@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject\Task;
 
-use App\Domain\Exception\Task\InvalidTaskPriorityException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Task\TaskPriority;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class TaskPriorityTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_from_string_returns_correct_cases(): void
     {
         $this->assertSame(TaskPriority::LOW, TaskPriority::fromString('low'));
@@ -19,9 +22,7 @@ final class TaskPriorityTest extends TestCase
 
     public function test_from_string_throws_for_invalid_value(): void
     {
-        $this->expectException(InvalidTaskPriorityException::class);
-        $this->expectExceptionMessage('Invalid task priority');
-        TaskPriority::fromString('LOW');
+        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => TaskPriority::fromString('LOW'));
     }
 
     public function test_predicates(): void

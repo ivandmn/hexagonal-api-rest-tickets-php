@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject\Task;
 
-use App\Domain\Exception\Task\InvalidTaskStatusException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Task\TaskStatus;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class TaskStatusTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_from_string_returns_correct_cases(): void
     {
         $this->assertSame(TaskStatus::PENDING, TaskStatus::fromString('pending'));
@@ -19,9 +22,7 @@ final class TaskStatusTest extends TestCase
 
     public function test_from_string_throws_for_invalid_value(): void
     {
-        $this->expectException(InvalidTaskStatusException::class);
-        $this->expectExceptionMessage('Invalid task status');
-        TaskStatus::fromString('PENDING');
+        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => TaskStatus::fromString('PENDING'));
     }
 
     public function test_predicates(): void

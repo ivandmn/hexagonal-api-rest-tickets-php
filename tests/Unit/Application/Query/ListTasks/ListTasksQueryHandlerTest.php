@@ -7,8 +7,7 @@ namespace App\Tests\Application\Query\ListTasks;
 use App\Application\Query\ListTasks\ListTasksQuery;
 use App\Application\Query\ListTasks\ListTasksQueryHandler;
 use App\Application\Query\ListTasks\ListTasksResponse;
-use App\Domain\Exception\Task\InvalidTaskPriorityException;
-use App\Domain\Exception\Task\InvalidTaskStatusException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\Model\Task;
 use App\Domain\Repository\TaskRepositoryInterface;
 use App\Domain\ValueObject\Task\TaskDescription;
@@ -16,12 +15,15 @@ use App\Domain\ValueObject\Task\TaskId;
 use App\Domain\ValueObject\Task\TaskPriority;
 use App\Domain\ValueObject\Task\TaskStatus;
 use App\Domain\ValueObject\Task\TaskTitle;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class ListTasksQueryHandlerTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_paginates_and_counts_all_tasks_when_no_filters(): void
     {
         $repo = $this->createMock(TaskRepositoryInterface::class);
@@ -132,8 +134,7 @@ final class ListTasksQueryHandlerTest extends TestCase
         $repo = $this->createStub(TaskRepositoryInterface::class);
         $uc   = new ListTasksQueryHandler($repo);
 
-        $this->expectException(InvalidTaskStatusException::class);
-        $uc(new ListTasksQuery('not_a_status', null));
+        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => $uc(new ListTasksQuery('not_a_status', null)));
     }
 
     public function test_throws_on_invalid_priority(): void
@@ -141,7 +142,6 @@ final class ListTasksQueryHandlerTest extends TestCase
         $repo = $this->createStub(TaskRepositoryInterface::class);
         $uc   = new ListTasksQueryHandler($repo);
 
-        $this->expectException(InvalidTaskPriorityException::class);
-        $uc(new ListTasksQuery(null, 'not_a_priority'));
+        $this->assertDomainError(InvalidValueException::INVALID_CHOICE, static fn () => $uc(new ListTasksQuery(null, 'not_a_priority')));
     }
 }

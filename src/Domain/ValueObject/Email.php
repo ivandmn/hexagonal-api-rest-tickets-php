@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject;
 
-use App\Domain\Exception\InvalidEmailException;
+use App\Domain\Exception\InvalidValueException;
 
 readonly class Email
 {
@@ -12,12 +12,13 @@ readonly class Email
 
     public function __construct(protected string $value)
     {
-        if (!\filter_var($value, \FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidEmailException('Invalid email format');
+        // Length first: filter_var() also rejects very long addresses, which would hide the real reason.
+        if (\strlen($value) > self::MAX_LENGTH) {
+            throw InvalidValueException::tooLong(self::MAX_LENGTH);
         }
 
-        if (\strlen($value) > self::MAX_LENGTH) {
-            throw new InvalidEmailException('Email exceeds maximum length');
+        if (!\filter_var($value, \FILTER_VALIDATE_EMAIL)) {
+            throw InvalidValueException::invalidFormat('email address');
         }
     }
 

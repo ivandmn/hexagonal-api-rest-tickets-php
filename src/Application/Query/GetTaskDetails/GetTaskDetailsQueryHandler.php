@@ -23,7 +23,7 @@ final readonly class GetTaskDetailsQueryHandler implements QueryHandlerInterface
         $task = $this->taskRepository->findById($taskId);
 
         if (!$task) {
-            throw new TaskNotFoundException('Task with this ID does not exist');
+            throw new TaskNotFoundException($taskId);
         }
 
         return new GetTaskDetailsResponse($task);

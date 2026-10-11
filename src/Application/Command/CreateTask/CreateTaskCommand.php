@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Command\CreateTask;
 
 use App\Application\Command\CommandInterface;
-use App\Application\Exception\InvalidDateFormat;
 use App\Domain\ValueObject\Task\TaskDueDate;
 
 final class CreateTaskCommand implements CommandInterface
@@ -18,12 +17,7 @@ final class CreateTaskCommand implements CommandInterface
         private string $priority,
         ?string $dueDate,
     ) {
-        $date = null !== $dueDate ? \DateTimeImmutable::createFromFormat(TaskDueDate::FORMAT, $dueDate) : null;
-        if (false === $date) {
-            throw new InvalidDateFormat(\sprintf('Invalid Due date, must be in format "%s"', TaskDueDate::FORMAT_NAME));
-        }
-
-        $this->dueDate = $date;
+        $this->dueDate = null !== $dueDate ? TaskDueDate::parse($dueDate) : null;
     }
 
     public function getTitle(): string

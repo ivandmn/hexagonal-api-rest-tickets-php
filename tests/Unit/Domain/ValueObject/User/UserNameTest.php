@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject\User;
 
-use App\Domain\Exception\User\InvalidUserNameException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class UserNameTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_creates_valid_user_name(): void
     {
         $name = new UserName('Valid Name');
@@ -29,18 +32,12 @@ final class UserNameTest extends TestCase
 
     public function test_throws_exception_when_too_short(): void
     {
-        $this->expectException(InvalidUserNameException::class);
-        $this->expectExceptionMessage('User name does not reach minimum characters length');
-
-        new UserName('abc');
+        $this->assertDomainError(InvalidValueException::TOO_SHORT, static fn () => new UserName('abc'));
     }
 
     public function test_throws_exception_when_too_long(): void
     {
-        $this->expectException(InvalidUserNameException::class);
-        $this->expectExceptionMessage('User name exceeds maximum characters length');
-
-        new UserName(\str_repeat('a', UserName::MAX_LENGTH + 1));
+        $this->assertDomainError(InvalidValueException::TOO_LONG, static fn () => new UserName(\str_repeat('a', UserName::MAX_LENGTH + 1)));
     }
 
     public function test_equals_returns_true_for_same_value(): void

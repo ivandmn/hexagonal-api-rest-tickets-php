@@ -30,13 +30,13 @@ final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInt
         $task = $this->taskRepository->findById($taskId);
 
         if (!$task) {
-            throw new TaskNotFoundException('Task with this ID does not exist');
+            throw new TaskNotFoundException($taskId);
         }
 
         $user = $this->userRepository->findById($userId);
 
         if (!$user) {
-            throw new UserNotFoundException('User with this ID does not exist');
+            throw new UserNotFoundException($userId);
         }
 
         $task->assignTo($user);

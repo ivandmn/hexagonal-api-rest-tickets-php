@@ -4,78 +4,52 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\Command\AssignTaskToUser\AssignTaskToUserCommand;
 use App\Application\Command\AssignTaskToUser\AssignTaskToUserResponse;
-use App\Application\Command\CommandBusInterface;
-use App\Application\Query\QueryBusInterface;
-use App\Domain\Exception\Task\InvalidTaskIdException;
-use App\Domain\Exception\Task\TaskNotFoundException;
-use App\Domain\Exception\User\InvalidUserIdException;
-use App\Domain\Exception\User\UserNotFoundException;
-use App\Infrastructure\Exception\InvalidRequestException;
-use App\Infrastructure\Exception\InvalidRequestParameterException;
-use App\Infrastructure\Http\ApiResponse;
-use App\Infrastructure\Http\Request\Task\AssignTaskToUserDto;
-use App\Infrastructure\Service\ApiRequestValidator;
-use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
-use App\UI\Http\OpenApi\Attribute\ErrorResponse;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\ProblemResponse;
 use App\UI\Http\OpenApi\Attribute\SuccessResponse;
+use App\UI\Http\OpenApi\Attribute\ValidationErrorResponse;
 use App\UI\Http\OpenApi\Schema\TaskAssignment;
+use App\UI\Http\Request\PayloadContext;
+use App\UI\Http\Request\Task\AssignTaskRequest;
+use App\UI\Http\Response\ApiResponse;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 
 #[OA\Tag(name: 'Tasks')]
-class AssignTaskController extends BaseController
+final class AssignTaskController extends BaseController
 {
-    public function __construct(
-        QueryBusInterface $queryBus,
-        CommandBusInterface $commandBus,
-        private readonly MonologLogger $logger,
-        private readonly ApiRequestValidator $apiRequestValidator,
-    ) {
-        parent::__construct($queryBus, $commandBus);
-    }
-
     #[OA\Patch(summary: 'Assign a task to a user')]
     #[OA\Parameter(name: 'id', description: 'Task identifier', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
-    #[OA\RequestBody(required: true, content: new Model(type: AssignTaskToUserDto::class))]
+    #[OA\RequestBody(required: true, content: new Model(type: AssignTaskRequest::class))]
     #[SuccessResponse(TaskAssignment::class, 'Task assigned')]
-    #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Invalid payload, task ID or user ID', 'Invalid User ID')]
-    #[ErrorResponse(Response::HTTP_NOT_FOUND, 'Task or user not found', 'User with this ID does not exist')]
+    #[ProblemResponse(
+        Response::HTTP_NOT_FOUND,
+        'Task or user not found (TASK_NOT_FOUND or USER_NOT_FOUND)',
+        'USER_NOT_FOUND',
+        'User b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e does not exist.',
+        ['userId' => 'b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e'],
+        [['field' => 'userId', 'code' => 'USER_NOT_FOUND', 'message' => 'User b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e does not exist.', 'params' => ['userId' => 'b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e']]],
+    )]
+    #[ValidationErrorResponse([
+        ['field' => 'userId', 'code' => 'VALUE_INVALID_FORMAT', 'message' => 'Invalid format, expected UUID.', 'params' => ['expected' => 'UUID']],
+    ])]
     #[InternalErrorResponse]
-    #[Route('/api/tasks/{id}/assign', name: 'api_task_assign', methods: ['PATCH'])]
-    public function __invoke(Request $request, string $id): JsonResponse
-    {
-        try {
-            /** @var AssignTaskToUserDto $data */
-            $data = $this->apiRequestValidator->validate($request, AssignTaskToUserDto::class);
+    #[Route('/api/tasks/{id}/assign', name: 'api_task_assign', requirements: ['id' => Requirement::UUID], methods: ['PATCH'])]
+    public function __invoke(
+        string $id,
+        #[MapRequestPayload(acceptFormat: 'json', serializationContext: PayloadContext::STRICT)]
+        AssignTaskRequest $payload,
+    ): JsonResponse {
+        /** @var AssignTaskToUserResponse $response */
+        $response = $this->commandHandler($payload->toCommand($id));
 
-            $command = new AssignTaskToUserCommand(
-                $id,
-                $data->userId,
-            );
-
-            /** @var AssignTaskToUserResponse $response */
-            $response = $this->commandHandler($command);
-
-            return ApiResponse::success($response);
-        } catch (InvalidRequestException|InvalidRequestParameterException|InvalidTaskIdException|InvalidUserIdException $exception) {
-            return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
-        } catch (TaskNotFoundException|UserNotFoundException $exception) {
-            return ApiResponse::error($exception->getMessage(), Response::HTTP_NOT_FOUND);
-        } catch (\Throwable $exception) {
-            $this->logger->error(
-                \sprintf('Error Assigning Task To User: %s', $exception->getMessage()),
-                ['exception' => $exception],
-            );
-
-            return ApiResponse::internalError();
-        }
+        return ApiResponse::success($response);
     }
 }

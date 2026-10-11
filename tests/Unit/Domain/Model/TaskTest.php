@@ -16,10 +16,13 @@ use App\Domain\ValueObject\Task\TaskTitle;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class TaskTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_constructs_with_defaults_and_getters(): void
     {
         $id          = TaskId::new();
@@ -221,8 +224,7 @@ final class TaskTest extends TestCase
     {
         $task = new Task(TaskId::new(), TaskTitle::fromString('Test Title'), TaskDescription::fromString('Test Description'));
 
-        $this->expectException(InvalidTaskStatusTransitionException::class);
-        $task->changeStatus(TaskStatus::COMPLETED);
+        $this->assertDomainError(InvalidTaskStatusTransitionException::ERROR_CODE, static fn () => $task->changeStatus(TaskStatus::COMPLETED));
     }
 
     public function test_status_change_after_completed_throws(): void
@@ -231,8 +233,7 @@ final class TaskTest extends TestCase
         $task->changeStatus(TaskStatus::IN_PROGRESS);
         $task->changeStatus(TaskStatus::COMPLETED);
 
-        $this->expectException(InvalidTaskStatusTransitionException::class);
-        $task->changeStatus(TaskStatus::IN_PROGRESS);
+        $this->assertDomainError(InvalidTaskStatusTransitionException::ERROR_CODE, static fn () => $task->changeStatus(TaskStatus::IN_PROGRESS));
     }
 
     public function test_change_status_noop_when_same_status_from_pending(): void

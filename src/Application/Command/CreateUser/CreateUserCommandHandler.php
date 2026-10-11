@@ -27,7 +27,7 @@ final readonly class CreateUserCommandHandler implements CommandHandlerInterface
         $nameUser  = UserName::fromString($request->getName());
 
         if ($this->userRepository->findByEmail($emailUser)) {
-            throw new UserAlreadyExistsException('User with this email already exists');
+            throw new UserAlreadyExistsException($emailUser);
         }
 
         $user = $this->userFactory->register(

@@ -30,7 +30,7 @@ final readonly class DoctrineUserRepository implements UserRepositoryInterface
             $this->entityManager->flush();
         } catch (UniqueConstraintViolationException $exception) {
             // The handler checks findByEmail() first, but two concurrent requests can both pass it.
-            throw new UserAlreadyExistsException('User with this email already exists', 0, $exception);
+            throw new UserAlreadyExistsException($user->getEmail(), $exception);
         }
     }
 

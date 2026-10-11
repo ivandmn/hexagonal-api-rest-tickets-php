@@ -89,6 +89,47 @@ If you prefer a lightweight version using ReDoc:
 
 ---
 
+## 🚨 Error Handling
+
+Every error under `/api` is a [Problem Details](https://www.rfc-editor.org/rfc/rfc9457) response (`application/problem+json`), built in a single place: `App\UI\Http\Exception\ApiExceptionListener`. Controllers never catch exceptions.
+
+```json
+{
+  "type": "VALIDATION_ERROR",
+  "title": "The submitted data is not valid.",
+  "status": 422,
+  "errors": [
+    { "field": "title", "code": "VALUE_TOO_SHORT", "message": "This value must be at least 5 characters long.", "params": { "min": 5 } }
+  ],
+  "traceId": "a3f9c2e17b4d8e05"
+}
+```
+
+Clients must branch on `type` / `errors[].code`, never on the text.
+
+| Status | When | Examples |
+|--------|------|----------|
+| 400 | Malformed request | `REQUEST_MALFORMED_JSON`, `REQUEST_EMPTY_BODY`, `REQUEST_INVALID_BODY` |
+| 404 | Missing resource or unknown route | `TASK_NOT_FOUND`, `USER_NOT_FOUND`, `NOT_FOUND` |
+| 409 | State incompatible with the operation | `TASK_STATUS_TRANSITION_NOT_ALLOWED`, `TASK_DELETION_NOT_ALLOWED`, `USER_ALREADY_EXISTS` |
+| 415 | Body is not JSON | `UNSUPPORTED_MEDIA_TYPE` |
+| 422 | Invalid values (every invalid field listed) or broken business rule | `VALIDATION_ERROR`, `TASK_DUE_DATE_IN_PAST` |
+| 500 | Unexpected error (details only with `APP_DEBUG=1`) | `INTERNAL_ERROR` |
+
+**How it fits together**
+
+- **Domain** exceptions extend `App\Domain\Exception\DomainException` and carry a stable `errorCode` plus `params`, with no HTTP knowledge. Value Objects throw the generic `InvalidValueException` (`VALUE_*` codes).
+- **Request DTOs** (`src/UI/Http/Request`) only check structure (`NotBlank`, `Range`); value rules are delegated to the Value Object with `#[ValidVO(...)]`, so each rule lives in one place.
+- **`config/packages/error_mapping.yaml`** maps every code to its HTTP status, public message (with `{placeholders}`) and optional field.
+
+**Adding an error**
+
+1. Create the exception in `src/Domain/Exception/<Context>/` with a `public const ERROR_CODE = 'CONTEXT_SOMETHING'` (UPPER_SNAKE_CASE, never reused).
+2. Map it in `config/packages/error_mapping.yaml`.
+3. `ErrorCodeCoverageTest` fails until every declared code is mapped (and nothing else is).
+
+---
+
 ## 🧠 Technical Decisions
 
 1. **Hexagonal Architecture**  

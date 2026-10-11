@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Application\Command\UpdateTask;
 
 use App\Application\Command\UpdateTask\UpdateTaskCommand;
-use App\Application\Exception\InvalidDateFormat;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\Task\TaskDueDate;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class UpdateTaskCommandTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_getters_return_values_and_parsed_due_date(): void
     {
         $req = new UpdateTaskCommand(
@@ -52,15 +55,13 @@ final class UpdateTaskCommandTest extends TestCase
 
     public function test_throws_on_invalid_due_date_format(): void
     {
-        $this->expectException(InvalidDateFormat::class);
-
-        new UpdateTaskCommand(
+        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new UpdateTaskCommand(
             '018f9f9a-aaaa-bbbb-cccc-000000000003',
             'Another Title',
             null,
             null,
             null,
             '01-01-2030 00:00:00',
-        );
+        ));
     }
 }

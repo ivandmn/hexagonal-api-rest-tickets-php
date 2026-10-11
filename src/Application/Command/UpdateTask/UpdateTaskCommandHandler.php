@@ -30,7 +30,7 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
         $task   = $this->taskRepository->findById($taskId);
 
         if (!$task) {
-            throw new TaskNotFoundException('Task with this ID does not exist');
+            throw new TaskNotFoundException($taskId);
         }
 
         if (null !== $request->getTitle()) {

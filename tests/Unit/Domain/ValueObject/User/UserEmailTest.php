@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\ValueObject\User;
 
-use App\Domain\Exception\User\InvalidUserEmailException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\ValueObject\User\UserEmail;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 
 final class UserEmailTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_creates_valid_user_email_and_converts_to_lowercase(): void
     {
         $email = new UserEmail('Test@Example.COM');
@@ -21,10 +24,7 @@ final class UserEmailTest extends TestCase
 
     public function test_throws_invalid_user_email_exception_for_invalid_format(): void
     {
-        $this->expectException(InvalidUserEmailException::class);
-        $this->expectExceptionMessage('Invalid user email');
-
-        new UserEmail('invalid-email');
+        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => new UserEmail('invalid-email'));
     }
 
     public function test_inherits_behavior_from_email_value_object(): void
@@ -38,11 +38,8 @@ final class UserEmailTest extends TestCase
 
     public function test_throws_exception_for_too_long_email(): void
     {
-        $this->expectException(InvalidUserEmailException::class);
-
         $localPart = \str_repeat('a', 250);
         $tooLong   = $localPart . '@example.com';
-
-        new UserEmail($tooLong);
+        $this->assertDomainError(InvalidValueException::TOO_LONG, static fn () => new UserEmail($tooLong));
     }
 }

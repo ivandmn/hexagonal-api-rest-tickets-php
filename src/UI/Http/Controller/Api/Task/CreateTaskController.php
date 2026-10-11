@@ -4,80 +4,43 @@ declare(strict_types=1);
 
 namespace App\UI\Http\Controller\Api\Task;
 
-use App\Application\Command\CommandBusInterface;
-use App\Application\Command\CreateTask\CreateTaskCommand;
 use App\Application\Command\CreateTask\CreateTaskResponse;
-use App\Application\Exception\InvalidDateFormat;
-use App\Application\Query\QueryBusInterface;
-use App\Domain\Exception\Task\InvalidTaskDescription;
-use App\Domain\Exception\Task\InvalidTaskPriorityException;
-use App\Domain\Exception\Task\InvalidTaskTitleException;
-use App\Domain\Exception\Task\TaskDueDateInPastException;
-use App\Infrastructure\Exception\InvalidRequestException;
-use App\Infrastructure\Exception\InvalidRequestParameterException;
-use App\Infrastructure\Http\ApiResponse;
-use App\Infrastructure\Http\Request\Task\CreateTaskRequestDto;
-use App\Infrastructure\Service\ApiRequestValidator;
-use App\Infrastructure\Service\MonologLogger;
 use App\Infrastructure\Symfony\Controller\BaseController;
-use App\UI\Http\OpenApi\Attribute\ErrorResponse;
 use App\UI\Http\OpenApi\Attribute\InternalErrorResponse;
+use App\UI\Http\OpenApi\Attribute\ProblemResponse;
 use App\UI\Http\OpenApi\Attribute\SuccessResponse;
+use App\UI\Http\OpenApi\Attribute\ValidationErrorResponse;
 use App\UI\Http\OpenApi\Schema\Task;
+use App\UI\Http\Request\PayloadContext;
+use App\UI\Http\Request\Task\CreateTaskRequest;
+use App\UI\Http\Response\ApiResponse;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[OA\Tag(name: 'Tasks')]
-class CreateTaskController extends BaseController
+final class CreateTaskController extends BaseController
 {
-    public function __construct(
-        QueryBusInterface $queryBus,
-        CommandBusInterface $commandBus,
-        private readonly MonologLogger $logger,
-        private readonly ApiRequestValidator $apiRequestValidator,
-    ) {
-        parent::__construct($queryBus, $commandBus);
-    }
-
     #[OA\Post(summary: 'Create a task', description: 'New tasks start with status `pending`.')]
-    #[OA\RequestBody(required: true, content: new Model(type: CreateTaskRequestDto::class))]
+    #[OA\RequestBody(required: true, content: new Model(type: CreateTaskRequest::class))]
     #[SuccessResponse(Task::class, 'Task created')]
-    #[ErrorResponse(Response::HTTP_BAD_REQUEST, 'Invalid payload', 'Task title does not reach minimum characters length')]
-    #[ErrorResponse(Response::HTTP_CONFLICT, 'Due date is in the past', 'Due date cannot be in the past')]
+    #[ProblemResponse(Response::HTTP_BAD_REQUEST, 'Malformed request body', 'REQUEST_MALFORMED_JSON', 'The request body is not valid JSON.')]
+    #[ValidationErrorResponse([
+        ['field' => 'title', 'code' => 'VALUE_TOO_SHORT', 'message' => 'This value must be at least 5 characters long.', 'params' => ['min' => 5]],
+        ['field' => 'dueDate', 'code' => 'TASK_DUE_DATE_IN_PAST', 'message' => 'The due date cannot be in the past.', 'params' => ['dueDate' => '2020-01-01T10:00:00+00:00']],
+    ])]
     #[InternalErrorResponse]
     #[Route('/api/tasks', name: 'api_task_create', methods: ['POST'])]
-    public function __invoke(Request $request): JsonResponse
-    {
-        try {
-            /** @var CreateTaskRequestDto $data */
-            $data = $this->apiRequestValidator->validate($request, CreateTaskRequestDto::class);
+    public function __invoke(
+        #[MapRequestPayload(acceptFormat: 'json', serializationContext: PayloadContext::STRICT)]
+        CreateTaskRequest $payload,
+    ): JsonResponse {
+        /** @var CreateTaskResponse $response */
+        $response = $this->commandHandler($payload->toCommand());
 
-            $command = new CreateTaskCommand(
-                $data->title,
-                $data->description,
-                $data->priority,
-                $data->dueDate,
-            );
-
-            /** @var CreateTaskResponse $response */
-            $response = $this->commandHandler($command);
-
-            return ApiResponse::success($response);
-        } catch (InvalidDateFormat|InvalidRequestException|InvalidRequestParameterException|InvalidTaskDescription|InvalidTaskPriorityException|InvalidTaskTitleException $exception) {
-            return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
-        } catch (TaskDueDateInPastException $exception) {
-            return ApiResponse::error($exception->getMessage(), Response::HTTP_CONFLICT);
-        } catch (\Throwable $exception) {
-            $this->logger->error(
-                \sprintf('Error Creating Task: %s', $exception->getMessage()),
-                ['exception' => $exception],
-            );
-
-            return ApiResponse::internalError();
-        }
+        return ApiResponse::success($response);
     }
 }

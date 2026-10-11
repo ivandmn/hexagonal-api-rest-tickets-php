@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Controller;
 
+use App\Domain\Exception\InvalidValueException;
+use App\Domain\Exception\User\UserAlreadyExistsException;
 use App\Domain\Model\User;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\AssertsProblemResponse;
+use App\UI\Http\Exception\ApiErrorCode;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 final class UserControllerTest extends WebTestCase
 {
+    use AssertsProblemResponse;
+
     private KernelBrowser $client;
 
     protected function setUp(): void
@@ -104,7 +110,7 @@ final class UserControllerTest extends WebTestCase
         $this->assertInstanceOf(User::class, $found);
     }
 
-    public function test_create_returns_400_on_missing_required_parameter(): void
+    public function test_create_returns_422_on_missing_required_parameter(): void
     {
         $this->client->request(
             'POST',
@@ -113,24 +119,10 @@ final class UserControllerTest extends WebTestCase
             content: \json_encode(['name' => 'Test Name']),
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $this->assertTrue(
-            $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON',
-        );
-        $content = $this->client->getResponse()->getContent();
-        $this->assertNotSame('', $content, 'Empty response body');
-
-        $json = \json_decode($content, true);
-        $this->assertIsArray($json, 'Invalid JSON response: ' . $content);
-
-        $this->assertSame('error', $json['status']);
-        $this->assertArrayHasKey('reason', $json);
-        $this->assertNotSame('', (string) $json['reason']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['email' => InvalidValueException::REQUIRED]);
     }
 
-    public function test_create_returns_400_on_extra_parameter_not_allowed(): void
+    public function test_create_returns_422_on_extra_parameter_not_allowed(): void
     {
         $this->client->request(
             'POST',
@@ -139,24 +131,10 @@ final class UserControllerTest extends WebTestCase
             content: \json_encode(['email' => 'test@example.com', 'name' => 'Test Name', 'age' => 30]),
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $this->assertTrue(
-            $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON',
-        );
-        $content = $this->client->getResponse()->getContent();
-        $this->assertNotSame('', $content, 'Empty response body');
-
-        $json = \json_decode($content, true);
-        $this->assertIsArray($json, 'Invalid JSON response: ' . $content);
-
-        $this->assertSame('error', $json['status']);
-        $this->assertArrayHasKey('reason', $json);
-        $this->assertNotSame('', (string) $json['reason']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['age' => ApiErrorCode::UNKNOWN_FIELD]);
     }
 
-    public function test_create_returns_400_on_invalid_parameter_type(): void
+    public function test_create_returns_422_on_invalid_parameter_type(): void
     {
         $this->client->request(
             'POST',
@@ -165,24 +143,10 @@ final class UserControllerTest extends WebTestCase
             content: \json_encode(['email' => 'test@example.com', 'name' => 12345]),
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $this->assertTrue(
-            $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON',
-        );
-        $content = $this->client->getResponse()->getContent();
-        $this->assertNotSame('', $content, 'Empty response body');
-
-        $json = \json_decode($content, true);
-        $this->assertIsArray($json, 'Invalid JSON response: ' . $content);
-
-        $this->assertSame('error', $json['status']);
-        $this->assertArrayHasKey('reason', $json);
-        $this->assertNotSame('', (string) $json['reason']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['name' => ApiErrorCode::INVALID_TYPE]);
     }
 
-    public function test_create_returns_400_on_invalid_email_format(): void
+    public function test_create_returns_422_on_invalid_email_format(): void
     {
         $this->client->request(
             'POST',
@@ -191,24 +155,10 @@ final class UserControllerTest extends WebTestCase
             content: \json_encode(['email' => 'invalid-email', 'name' => 'Valid Name']),
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $this->assertTrue(
-            $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON',
-        );
-        $content = $this->client->getResponse()->getContent();
-        $this->assertNotSame('', $content, 'Empty response body');
-
-        $json = \json_decode($content, true);
-        $this->assertIsArray($json, 'Invalid JSON response: ' . $content);
-
-        $this->assertSame('error', $json['status']);
-        $this->assertArrayHasKey('reason', $json);
-        $this->assertNotSame('', (string) $json['reason']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['email' => InvalidValueException::INVALID_FORMAT]);
     }
 
-    public function test_create_returns_400_on_name_too_short(): void
+    public function test_create_returns_422_on_name_too_short(): void
     {
         $this->client->request(
             'POST',
@@ -217,24 +167,11 @@ final class UserControllerTest extends WebTestCase
             content: \json_encode(['email' => 'ok@example.com', 'name' => 'John']),
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $this->assertTrue(
-            $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON',
-        );
-        $content = $this->client->getResponse()->getContent();
-        $this->assertNotSame('', $content, 'Empty response body');
-
-        $json = \json_decode($content, true);
-        $this->assertIsArray($json, 'Invalid JSON response: ' . $content);
-
-        $this->assertSame('error', $json['status']);
-        $this->assertArrayHasKey('reason', $json);
-        $this->assertNotSame('', (string) $json['reason']);
+        $problem = $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['name' => InvalidValueException::TOO_SHORT]);
+        $this->assertSame(['min' => UserName::MIN_LENGTH], $problem['errors'][0]['params']);
     }
 
-    public function test_create_returns_400_on_name_too_long(): void
+    public function test_create_returns_422_on_name_too_long(): void
     {
         $long = \str_repeat('a', 256);
 
@@ -245,21 +182,7 @@ final class UserControllerTest extends WebTestCase
             content: \json_encode(['email' => 'ok@example.com', 'name' => $long]),
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-
-        $this->assertTrue(
-            $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON',
-        );
-        $content = $this->client->getResponse()->getContent();
-        $this->assertNotSame('', $content, 'Empty response body');
-
-        $json = \json_decode($content, true);
-        $this->assertIsArray($json, 'Invalid JSON response: ' . $content);
-
-        $this->assertSame('error', $json['status']);
-        $this->assertArrayHasKey('reason', $json);
-        $this->assertNotSame('', (string) $json['reason']);
+        $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['name' => InvalidValueException::TOO_LONG]);
     }
 
     public function test_create_returns_409_when_already_exists(): void
@@ -283,19 +206,6 @@ final class UserControllerTest extends WebTestCase
             content: \json_encode(['email' => $email, 'name' => 'Anyone']),
         );
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-
-        $this->assertTrue(
-            $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON',
-        );
-        $content = $this->client->getResponse()->getContent();
-        $this->assertNotSame('', $content, 'Empty response body');
-
-        $json = \json_decode($content, true);
-        $this->assertIsArray($json, 'Invalid JSON response: ' . $content);
-
-        $this->assertSame('error', $json['status']);
-        $this->assertSame('User with this email already exists', $json['reason']);
+        $this->assertProblem($this->client, Response::HTTP_CONFLICT, UserAlreadyExistsException::ERROR_CODE, ['email' => UserAlreadyExistsException::ERROR_CODE]);
     }
 }

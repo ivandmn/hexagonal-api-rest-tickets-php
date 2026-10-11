@@ -8,7 +8,7 @@ use App\Application\Command\CreateUser\CreateUserCommand;
 use App\Application\Command\CreateUser\CreateUserCommandHandler;
 use App\Application\Command\CreateUser\CreateUserResponse;
 use App\Application\Service\LoggerInterface;
-use App\Domain\Exception\User\InvalidUserEmailException;
+use App\Domain\Exception\InvalidValueException;
 use App\Domain\Exception\User\UserAlreadyExistsException;
 use App\Domain\Factory\UserFactory;
 use App\Domain\Model\User;
@@ -16,11 +16,14 @@ use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\User\UserEmail;
 use App\Domain\ValueObject\User\UserId;
 use App\Domain\ValueObject\User\UserName;
+use App\Tests\Support\AssertsDomainError;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid as RamseyUuid;
 
 final class CreateUserCommandHandlerTest extends TestCase
 {
+    use AssertsDomainError;
+
     public function test_creates_user_persists_and_logs(): void
     {
         $repo   = $this->createMock(UserRepositoryInterface::class);
@@ -94,7 +97,6 @@ final class CreateUserCommandHandlerTest extends TestCase
 
         $uc = new CreateUserCommandHandler(new UserFactory(), $repo, $logger);
 
-        $this->expectException(InvalidUserEmailException::class);
-        $uc(new CreateUserCommand('not-an-email', 'User Name'));
+        $this->assertDomainError(InvalidValueException::INVALID_FORMAT, static fn () => $uc(new CreateUserCommand('not-an-email', 'User Name')));
     }
 }

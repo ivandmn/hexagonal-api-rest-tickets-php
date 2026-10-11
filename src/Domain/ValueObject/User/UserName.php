@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject\User;
 
-use App\Domain\Exception\User\InvalidUserNameException;
+use App\Domain\Exception\InvalidValueException;
 
 final readonly class UserName
 {
@@ -14,11 +14,11 @@ final readonly class UserName
     public function __construct(private string $value)
     {
         if (\strlen($value) < self::MIN_LENGTH) {
-            throw new InvalidUserNameException('User name does not reach minimum characters length');
+            throw InvalidValueException::tooShort(self::MIN_LENGTH);
         }
 
         if (\strlen($value) > self::MAX_LENGTH) {
-            throw new InvalidUserNameException('User name exceeds maximum characters length');
+            throw InvalidValueException::tooLong(self::MAX_LENGTH);
         }
     }
 

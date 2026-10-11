@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject\Task;
 
-use App\Domain\Exception\Task\InvalidTaskPriorityException;
+use App\Domain\Exception\InvalidValueException;
 
 enum TaskPriority: string
 {
@@ -15,7 +15,7 @@ enum TaskPriority: string
     public static function fromString(string $value): self
     {
         return self::tryFrom($value)
-            ?? throw new InvalidTaskPriorityException('Invalid task priority');
+            ?? throw InvalidValueException::invalidChoice($value, \array_column(self::cases(), 'value'));
     }
 
     public function isLow(): bool
