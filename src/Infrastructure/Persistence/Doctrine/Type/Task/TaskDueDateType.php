@@ -37,7 +37,7 @@ final class TaskDueDateType extends Type
             return $value;
         }
 
-        $date = \DateTime::createFromFormat($platform->getDateTimeTzFormatString(), (string) $value);
+        $date = \DateTimeImmutable::createFromFormat($platform->getDateTimeTzFormatString(), (string) $value);
 
         if (false === $date) {
             throw InvalidFormat::new((string) $value, self::NAME, $platform->getDateTimeTzFormatString());
@@ -56,7 +56,7 @@ final class TaskDueDateType extends Type
      * a stored due date legitimately ends up in the past. Hydrate it the way Doctrine hydrates
      * entities, without running the constructor invariant.
      */
-    private static function reconstitute(\DateTime $date): TaskDueDate
+    private static function reconstitute(\DateTimeImmutable $date): TaskDueDate
     {
         $dueDate = new \ReflectionClass(TaskDueDate::class)->newInstanceWithoutConstructor();
         new \ReflectionProperty(TaskDueDate::class, 'date')->setValue($dueDate, $date);

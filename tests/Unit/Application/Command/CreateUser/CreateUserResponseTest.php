@@ -40,7 +40,7 @@ final class CreateUserResponseTest extends TestCase
             UserId::fromString('018f9f9a-dead-beef-cafe-000000000999'),
             UserEmail::fromString('another@example.com'),
             UserName::fromString('Another User'),
-            new \DateTimeImmutable('2031-02-03T04:05:06+00:00')
+            new \DateTimeImmutable('2031-02-03T04:05:06+00:00'),
         );
 
         $response = new CreateUserResponse($user);

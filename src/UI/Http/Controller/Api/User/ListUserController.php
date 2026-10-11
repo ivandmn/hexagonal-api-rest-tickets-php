@@ -45,7 +45,7 @@ class ListUserController extends BaseController
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Listing Users: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();

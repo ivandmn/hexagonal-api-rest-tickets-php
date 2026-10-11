@@ -33,7 +33,8 @@ final class ListTasksQueryHandlerTest extends TestCase
 
         $repo->expects($this->once())
             ->method('findAll')
-            ->willReturn($tasks);
+            ->willReturn($tasks)
+        ;
 
         $repo->expects($this->never())->method('findByFilters');
 
@@ -58,7 +59,8 @@ final class ListTasksQueryHandlerTest extends TestCase
         $repo->expects($this->once())
             ->method('findByFilters')
             ->with($this->equalTo(['status' => 'pending']), 2, 10)
-            ->willReturn($expected);
+            ->willReturn($expected)
+        ;
 
         $uc       = new ListTasksQueryHandler($repo);
         $response = $uc(new ListTasksQuery('pending', null, 2, 10));
@@ -77,14 +79,15 @@ final class ListTasksQueryHandlerTest extends TestCase
                 TaskTitle::fromString('High One'),
                 TaskDescription::fromString('D1'),
                 TaskStatus::IN_PROGRESS,
-                TaskPriority::HIGH
+                TaskPriority::HIGH,
             ),
         ];
 
         $repo->expects($this->once())
             ->method('findByFilters')
             ->with($this->equalTo(['priority' => 'high']), 1, 50)
-            ->willReturn($expected);
+            ->willReturn($expected)
+        ;
 
         $uc = new ListTasksQueryHandler($repo);
 
@@ -105,7 +108,8 @@ final class ListTasksQueryHandlerTest extends TestCase
         $repo->expects($this->once())
             ->method('findByFilters')
             ->with($this->equalTo(['status' => 'in_progress', 'priority' => 'medium']), 3, 5)
-            ->willReturn($expected);
+            ->willReturn($expected)
+        ;
 
         $uc       = new ListTasksQueryHandler($repo);
         $response = $uc(new ListTasksQuery('in_progress', 'medium', 3, 5));
@@ -116,7 +120,7 @@ final class ListTasksQueryHandlerTest extends TestCase
 
     public function test_throws_on_invalid_status(): void
     {
-        $repo = $this->createMock(TaskRepositoryInterface::class);
+        $repo = $this->createStub(TaskRepositoryInterface::class);
         $uc   = new ListTasksQueryHandler($repo);
 
         $this->expectException(InvalidTaskStatusException::class);
@@ -125,7 +129,7 @@ final class ListTasksQueryHandlerTest extends TestCase
 
     public function test_throws_on_invalid_priority(): void
     {
-        $repo = $this->createMock(TaskRepositoryInterface::class);
+        $repo = $this->createStub(TaskRepositoryInterface::class);
         $uc   = new ListTasksQueryHandler($repo);
 
         $this->expectException(InvalidTaskPriorityException::class);

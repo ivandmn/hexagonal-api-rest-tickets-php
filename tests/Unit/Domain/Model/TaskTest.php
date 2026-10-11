@@ -55,9 +55,9 @@ final class TaskTest extends TestCase
         $status      = TaskStatus::IN_PROGRESS;
         $priority    = TaskPriority::HIGH;
         $user        = new User(UserId::new(), UserEmail::fromString('test@example.com'), UserName::fromString('Test User'));
-        $due         = TaskDueDate::fromDate(new \DateTime('now')->modify('+2 days'));
+        $due         = TaskDueDate::fromDate(new \DateTimeImmutable('now')->modify('+2 days'));
         $created     = new \DateTimeImmutable('2030-01-01T10:00:00+00:00');
-        $updated     = new \DateTime('2030-01-02T10:00:00+00:00');
+        $updated     = new \DateTimeImmutable('2030-01-02T10:00:00+00:00');
 
         $task = new Task($id, $title, $description, $status, $priority, $user, $due, $created, $updated);
 
@@ -82,7 +82,7 @@ final class TaskTest extends TestCase
 
         $this->assertSame('New Test Title', $task->getTitle()->value());
         $this->assertTrue($task->isUpdated());
-        $this->assertInstanceOf(\DateTime::class, $task->getUpdatedAt());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $task->getUpdatedAt());
     }
 
     public function test_change_title_noop_when_same_value(): void
@@ -101,7 +101,7 @@ final class TaskTest extends TestCase
 
         $this->assertSame('New Test Description', $task->getDescription()->value());
         $this->assertTrue($task->isUpdated());
-        $this->assertInstanceOf(\DateTime::class, $task->getUpdatedAt());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $task->getUpdatedAt());
     }
 
     public function test_change_description_noop_when_same_value(): void
@@ -153,7 +153,7 @@ final class TaskTest extends TestCase
     {
         $task = new Task(TaskId::new(), TaskTitle::fromString('Test Title'), TaskDescription::fromString('Test Description'));
 
-        $due1 = TaskDueDate::fromDate(new \DateTime('now')->modify('+1 day'));
+        $due1 = TaskDueDate::fromDate(new \DateTimeImmutable('now')->modify('+1 day'));
         $task->changeDueDate($due1);
 
         $this->assertSame($due1, $task->getDueDate());
@@ -165,7 +165,7 @@ final class TaskTest extends TestCase
         $this->assertSame($due1, $task->getDueDate());
         $this->assertSame($firstUpdatedAt, $task->getUpdatedAt());
 
-        $due2 = TaskDueDate::fromDate(new \DateTime('now')->modify('+2 days'));
+        $due2 = TaskDueDate::fromDate(new \DateTimeImmutable('now')->modify('+2 days'));
         $task->changeDueDate($due2);
 
         $this->assertSame($due2, $task->getDueDate());
@@ -175,7 +175,7 @@ final class TaskTest extends TestCase
     public function test_change_due_date_from_non_null_to_null_marks_updated(): void
     {
         $task = new Task(TaskId::new(), TaskTitle::fromString('Test Title'), TaskDescription::fromString('Test Description'));
-        $due  = TaskDueDate::fromDate(new \DateTime('now')->modify('+3 days'));
+        $due  = TaskDueDate::fromDate(new \DateTimeImmutable('now')->modify('+3 days'));
         $task->changeDueDate($due);
 
         $this->assertSame($due, $task->getDueDate());

@@ -58,21 +58,21 @@ class AssignTaskController extends BaseController
 
             $command = new AssignTaskToUserCommand(
                 $id,
-                $data->userId
+                $data->userId,
             );
 
             /** @var AssignTaskToUserResponse $response */
             $response = $this->commandHandler($command);
 
             return ApiResponse::success($response);
-        } catch (InvalidRequestParameterException|InvalidRequestException|InvalidUserIdException|InvalidTaskIdException $exception) {
+        } catch (InvalidRequestException|InvalidRequestParameterException|InvalidTaskIdException|InvalidUserIdException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
-        } catch (UserNotFoundException|TaskNotFoundException $exception) {
+        } catch (TaskNotFoundException|UserNotFoundException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_NOT_FOUND);
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Assigning Task To User: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();

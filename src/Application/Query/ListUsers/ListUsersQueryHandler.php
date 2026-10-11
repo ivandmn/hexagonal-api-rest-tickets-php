@@ -10,7 +10,7 @@ use App\Domain\Repository\UserRepositoryInterface;
 final readonly class ListUsersQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
     ) {
     }
 

@@ -10,7 +10,7 @@ final readonly class AssignTaskToUserCommand implements CommandInterface
 {
     public function __construct(
         private string $taskId,
-        private string $userId
+        private string $userId,
     ) {
     }
 

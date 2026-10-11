@@ -25,19 +25,20 @@ final class ListUsersQueryHandlerTest extends TestCase
                 UserId::fromString('018f9f9a-aaaa-bbbb-cccc-000000000111'),
                 UserEmail::fromString('u1@example.com'),
                 UserName::fromString('User One'),
-                new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+                new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
             ),
             new User(
                 UserId::fromString('018f9f9a-aaaa-bbbb-cccc-000000000222'),
                 UserEmail::fromString('u2@example.com'),
                 UserName::fromString('User Two'),
-                new \DateTimeImmutable('2030-02-01T00:00:00+00:00')
+                new \DateTimeImmutable('2030-02-01T00:00:00+00:00'),
             ),
         ];
 
         $repo->expects($this->once())
             ->method('findAll')
-            ->willReturn($users);
+            ->willReturn($users)
+        ;
 
         $uc = new ListUsersQueryHandler($repo);
 

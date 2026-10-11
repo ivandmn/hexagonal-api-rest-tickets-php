@@ -66,13 +66,16 @@ phpstan: ## Run PHPStan static analysis
 	bin/phpstan analyse --memory-limit=512M
 
 test-unit: ## Run unit tests
-	bin/phpunit --testsuite Unit --stop-on-failure --testdox
+	bin/phpunit --testsuite unit --stop-on-failure --testdox
 
 test-coverage: ## Generate test coverage
-	XDEBUG_MODE=coverage bin/phpunit --stop-on-failure --testdox --coverage-html var/coverage
+	XDEBUG_MODE=coverage bin/phpunit --stop-on-failure --testdox \
+		--coverage-html var/phpunit/coverage/html-coverage \
+		--coverage-xml var/phpunit/coverage/xml-coverage \
+		--coverage-text=var/phpunit/coverage/coverage.txt --only-summary-for-coverage-text
 
 deptrac: ## Check architectural dependencies
 	bin/deptrac analyze --fail-on-uncovered --report-uncovered
 
-code-check: cs deptrac phpstan test ## Run all code quality checks
+code-check: cs deptrac phpstan test-unit ## Run all code quality checks
 

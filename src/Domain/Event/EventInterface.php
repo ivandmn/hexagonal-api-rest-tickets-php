@@ -6,6 +6,8 @@ namespace App\Domain\Event;
 
 interface EventInterface
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function payload(): array;
 }

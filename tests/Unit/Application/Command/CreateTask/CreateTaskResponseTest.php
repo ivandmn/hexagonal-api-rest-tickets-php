@@ -31,11 +31,11 @@ final class CreateTaskResponseTest extends TestCase
             UserId::new(),
             UserEmail::fromString('user@example.com'),
             UserName::fromString('User Name'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
-        $due     = TaskDueDate::fromDate(new \DateTime('2030-01-02T10:20:30+00:00'));
+        $due     = TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-02T10:20:30+00:00'));
         $created = new \DateTimeImmutable('2030-01-01T10:00:00+00:00');
-        $updated = new \DateTime('2030-01-03T12:34:56+00:00');
+        $updated = new \DateTimeImmutable('2030-01-03T12:34:56+00:00');
 
         $task = new Task(
             $taskId,
@@ -46,7 +46,7 @@ final class CreateTaskResponseTest extends TestCase
             $assignee,
             $due,
             $created,
-            $updated
+            $updated,
         );
 
         $response = new CreateTaskResponse($task);
@@ -83,7 +83,7 @@ final class CreateTaskResponseTest extends TestCase
             null,
             null,
             $created,
-            null
+            null,
         );
 
         $response = new CreateTaskResponse($task);

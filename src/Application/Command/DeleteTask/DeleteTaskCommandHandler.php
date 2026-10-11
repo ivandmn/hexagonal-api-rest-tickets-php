@@ -15,7 +15,7 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
     }
 

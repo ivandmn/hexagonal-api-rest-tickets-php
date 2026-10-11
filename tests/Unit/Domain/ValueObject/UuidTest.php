@@ -69,7 +69,7 @@ final class UuidTest extends TestCase
         $a = new Uuid(RamseyUuid::uuid4()->toString());
         $b = new Uuid($a->value());
 
-        $this->assertSame($a, $b);
-        $this->assertNotSame($a, $b);
+        $this->assertTrue($a->equals($b), 'Same value must be equal');
+        $this->assertNotSame($a, $b, 'Equal value objects are still distinct instances');
     }
 }

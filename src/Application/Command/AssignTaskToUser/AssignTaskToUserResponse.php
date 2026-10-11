@@ -21,7 +21,7 @@ final readonly class AssignTaskToUserResponse implements \JsonSerializable
             'message' => \sprintf(
                 'Task "%s" has been assigned to "%s"',
                 $this->task->getTitle()->value(),
-                $this->user->getEmail()->value()
+                $this->user->getEmail()->value(),
             ),
             'task_id' => $this->task->getId()->value(),
             'user_id' => $this->user->getId()->value(),

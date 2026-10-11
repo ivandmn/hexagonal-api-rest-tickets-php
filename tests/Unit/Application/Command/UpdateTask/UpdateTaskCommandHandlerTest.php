@@ -37,13 +37,14 @@ final class UpdateTaskCommandHandlerTest extends TestCase
             TaskPriority::LOW,
             null,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $repo->expects($this->once())
             ->method('findById')
             ->with($this->callback(static fn (TaskId $id) => $id->value() === $taskIdStr))
-            ->willReturn($task);
+            ->willReturn($task)
+        ;
 
         $repo->expects($this->once())
             ->method('update')
@@ -51,12 +52,14 @@ final class UpdateTaskCommandHandlerTest extends TestCase
                     && $updated->getDescription()->equals(TaskDescription::fromString('New Desc'))
                     && $updated->getStatus()->equals(TaskStatus::IN_PROGRESS)
                     && $updated->getPriority()->equals(TaskPriority::HIGH)
-                    && true === $updated->getDueDate()?->equals(TaskDueDate::fromDate(new \DateTime('2030-01-02T00:00:00+00:00')))
-                    && true === $updated->isUpdated()));
+                    && true === $updated->getDueDate()?->equals(TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-02T00:00:00+00:00')))
+                    && true === $updated->isUpdated()))
+        ;
 
         $logger->expects($this->once())
             ->method('info')
-            ->with('Task Updated', $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr));
+            ->with('Task Updated', $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr))
+        ;
 
         $uc = new UpdateTaskCommandHandler($repo, $logger);
 
@@ -66,7 +69,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
             'New Desc',
             'in_progress',
             'high',
-            '2030-01-02T00:00:00+00:00'
+            '2030-01-02T00:00:00+00:00',
         );
 
         $response = $uc($request);
@@ -94,7 +97,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
             TaskPriority::LOW,
             null,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $repo->expects($this->once())->method('findById')->willReturn($task);
@@ -102,7 +105,8 @@ final class UpdateTaskCommandHandlerTest extends TestCase
 
         $logger->expects($this->once())
             ->method('info')
-            ->with('Task not updated (no changes detected)', $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr));
+            ->with('Task not updated (no changes detected)', $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr))
+        ;
 
         $uc = new UpdateTaskCommandHandler($repo, $logger);
 
@@ -112,7 +116,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
             'Keep Desc',
             'pending',
             'low',
-            null
+            null,
         );
 
         $response = $uc($request);
@@ -140,7 +144,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
             null,
             null,
             null,
-            null
+            null,
         ));
     }
 }

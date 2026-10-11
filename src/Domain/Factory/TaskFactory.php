@@ -20,7 +20,7 @@ final class TaskFactory
         TaskDescription $description,
         TaskPriority $priority = TaskPriority::LOW,
         ?TaskDueDate $dueDate = null,
-        ?User $assignedUser = null
+        ?User $assignedUser = null,
     ): Task {
         return new Task(
             TaskId::new(),
@@ -31,7 +31,7 @@ final class TaskFactory
             $assignedUser,
             $dueDate,
             new \DateTimeImmutable('now'),
-            null
+            null,
         );
     }
 }

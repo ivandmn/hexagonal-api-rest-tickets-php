@@ -31,12 +31,14 @@ final class CreateUserCommandHandlerTest extends TestCase
         $repo->expects($this->once())
             ->method('findByEmail')
             ->with($this->callback(static fn (UserEmail $e) => 'user@example.com' === $e->value()))
-            ->willReturn(null);
+            ->willReturn(null)
+        ;
 
         $repo->expects($this->once())
             ->method('save')
             ->with($this->callback(static fn (User $u) => 'user@example.com' === $u->getEmail()->value()
-                    && 'User Name' === $u->getName()->value()));
+                    && 'User Name' === $u->getName()->value()))
+        ;
 
         $logger->expects($this->once())
             ->method('info')
@@ -44,8 +46,9 @@ final class CreateUserCommandHandlerTest extends TestCase
                 'User Created',
                 $this->callback(static fn (array $ctx) => isset($ctx['user_id'], $ctx['user_email'])
                         && RamseyUuid::isValid($ctx['user_id'])
-                        && 'user@example.com' === $ctx['user_email'])
-            );
+                        && 'user@example.com' === $ctx['user_email']),
+            )
+        ;
 
         $uc       = new CreateUserCommandHandler(new UserFactory(), $repo, $logger);
         $response = $uc($request);
@@ -67,12 +70,13 @@ final class CreateUserCommandHandlerTest extends TestCase
             UserId::new(),
             UserEmail::fromString('user@example.com'),
             UserName::fromString('Existing User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $repo->expects($this->once())
             ->method('findByEmail')
-            ->willReturn($existing);
+            ->willReturn($existing)
+        ;
 
         $repo->expects($this->never())->method('save');
         $logger->expects($this->never())->method('info');
@@ -85,8 +89,8 @@ final class CreateUserCommandHandlerTest extends TestCase
 
     public function test_propagates_invalid_email_exception(): void
     {
-        $repo   = $this->createMock(UserRepositoryInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $repo   = $this->createStub(UserRepositoryInterface::class);
+        $logger = $this->createStub(LoggerInterface::class);
 
         $uc = new CreateUserCommandHandler(new UserFactory(), $repo, $logger);
 

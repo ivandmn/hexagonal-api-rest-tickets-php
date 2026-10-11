@@ -1,0 +1,21 @@
+{# Injected into the stock phpinfo() page so it matches /info; the parent page syncs data-theme. #}
+<style>
+    :root { --bg: #ffffff; --text: #1c2030; --muted: #5a6178; --head: #f1f3f9; --key: #f6f7fb; --border: #e3e6ef; --accent: #6d4aff; color-scheme: light; }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) { --bg: #171a23; --text: #e7e9f2; --muted: #a4aac0; --head: #1e2230; --key: #1b1f2b; --border: #272c3b; --accent: #9b85ff; color-scheme: dark; }
+    }
+    :root[data-theme="dark"] { --bg: #171a23; --text: #e7e9f2; --muted: #a4aac0; --head: #1e2230; --key: #1b1f2b; --border: #272c3b; --accent: #9b85ff; color-scheme: dark; }
+    body { background: var(--bg) !important; color: var(--text) !important; font: 13px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important; margin: 0; }
+    .center { text-align: left !important; padding: 16px; }
+    .center table { margin: 0 0 18px !important; width: 100% !important; max-width: none !important; border-collapse: collapse !important; box-shadow: none !important; }
+    td, th { border: 1px solid var(--border) !important; font-size: 12.5px !important; padding: 6px 10px !important; vertical-align: top !important; overflow-wrap: anywhere; }
+    .e { background: var(--key) !important; color: var(--muted) !important; font-weight: 500; width: 30%; }
+    .v { background: var(--bg) !important; color: var(--text) !important; font-family: ui-monospace, Menlo, Consolas, monospace; max-width: none !important; }
+    .h, .h th { background: var(--head) !important; color: var(--text) !important; }
+    .h td { background: var(--head) !important; color: var(--text) !important; }
+    h1, h2 { color: var(--text) !important; font-weight: 650; }
+    h2 { font-size: 15px !important; margin: 26px 0 8px !important; padding-top: 8px; border-top: 1px solid var(--border); }
+    h2 a, a:link, a:visited { color: var(--accent) !important; background: none !important; }
+    img { display: none; }
+    hr { display: none; }
+</style>

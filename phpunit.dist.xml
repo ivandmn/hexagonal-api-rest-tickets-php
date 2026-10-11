@@ -49,11 +49,6 @@
               pathCoverage="true"
               ignoreDeprecatedCodeUnits="true"
               disableCodeCoverageIgnore="true">
-        <report>
-            <html outputDirectory="var/phpunit/coverage/html-coverage" lowUpperBound="70" highLowerBound="90"/>
-            <text outputFile="var/phpunit/coverage/coverage.txt" showUncoveredFiles="true" showOnlySummary="true"/>
-            <xml outputDirectory="var/phpunit/coverage/xml-coverage"/>
-        </report>
     </coverage>
 
     <extensions>

@@ -66,7 +66,7 @@ final class EmailTest extends TestCase
         $a = new Email('original@example.com');
         $b = new Email('original@example.com');
 
-        $this->assertSame($a, $b);
-        $this->assertNotSame($a, $b);
+        $this->assertTrue($a->equals($b), 'Same value must be equal');
+        $this->assertNotSame($a, $b, 'Equal value objects are still distinct instances');
     }
 }

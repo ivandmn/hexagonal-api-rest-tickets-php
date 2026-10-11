@@ -26,7 +26,7 @@ final class CreateTaskResponse implements \JsonSerializable
 
     private \DateTimeImmutable $createdAt;
 
-    private ?\DateTime $updatedAt;
+    private ?\DateTimeImmutable $updatedAt;
 
     public function __construct(Task $task)
     {

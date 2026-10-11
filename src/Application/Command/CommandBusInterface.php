@@ -6,6 +6,8 @@ namespace App\Application\Command;
 
 interface CommandBusInterface
 {
-    /** @throws \Throwable */
+    /**
+     * @throws \Throwable
+     */
     public function dispatch(CommandInterface $command): mixed;
 }

@@ -1,0 +1,550 @@
+{% import 'info/_blocks.html.twig' as blocks %}
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>App info · {{ environment }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+    <script>
+        // Apply the saved theme before the first paint (no flash).
+        try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('info:theme')) || 'auto'; } catch (e) {}
+    </script>
+    <style>
+        :root {
+            --bg: #f6f7fb; --surface: #ffffff; --surface-2: #f1f3f9; --border: #e3e6ef; --border-strong: #cfd4e2;
+            --text: #1c2030; --text-2: #5a6178; --text-3: #8a90a6;
+            --accent: #6d4aff; --accent-soft: #efeaff; --accent-text: #5433e0;
+            --ok: #12805c; --ok-soft: #e3f6ee; --warn: #a15c00; --warn-soft: #fff2dc; --danger: #c2283b; --danger-soft: #fde7ea;
+            --info: #2557d6; --info-soft: #e6eeff; --muted: #6b7189; --muted-soft: #eef0f5;
+            --shadow: 0 1px 2px rgba(20, 24, 40, .06), 0 4px 16px rgba(20, 24, 40, .05);
+            --radius: 14px; --mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+            color-scheme: light;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0f1117; --surface: #171a23; --surface-2: #1e2230; --border: #272c3b; --border-strong: #353b4e;
+                --text: #e7e9f2; --text-2: #a4aac0; --text-3: #737a92;
+                --accent: #9b85ff; --accent-soft: #2a2347; --accent-text: #b8a8ff;
+                --ok: #4cd6a1; --ok-soft: #12322a; --warn: #f2b45a; --warn-soft: #3a2a12; --danger: #ff7d8d; --danger-soft: #3d1a20;
+                --info: #82a7ff; --info-soft: #1a2747; --muted: #9298ae; --muted-soft: #252a38;
+                --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 20px rgba(0, 0, 0, .25);
+                color-scheme: dark;
+            }
+        }
+        :root[data-theme="dark"] {
+            --bg: #0f1117; --surface: #171a23; --surface-2: #1e2230; --border: #272c3b; --border-strong: #353b4e;
+            --text: #e7e9f2; --text-2: #a4aac0; --text-3: #737a92;
+            --accent: #9b85ff; --accent-soft: #2a2347; --accent-text: #b8a8ff;
+            --ok: #4cd6a1; --ok-soft: #12322a; --warn: #f2b45a; --warn-soft: #3a2a12; --danger: #ff7d8d; --danger-soft: #3d1a20;
+            --info: #82a7ff; --info-soft: #1a2747; --muted: #9298ae; --muted-soft: #252a38;
+            --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 20px rgba(0, 0, 0, .25);
+            color-scheme: dark;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-padding-top: 150px; }
+        body {
+            margin: 0; background: var(--bg); color: var(--text);
+            font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--accent-text); }
+        button { font: inherit; color: inherit; }
+        code, pre, .v, .mono { font-family: var(--mono); font-size: 12.5px; }
+
+        /* ---------- Header ---------- */
+        .top {
+            position: sticky; top: 0; z-index: 20;
+            background: color-mix(in srgb, var(--bg) 82%, transparent);
+            backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        .top-inner, .picker-inner, main, footer { max-width: 1280px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }
+        .top-inner { display: flex; align-items: center; gap: 16px; padding-top: 14px; padding-bottom: 12px; flex-wrap: wrap; }
+        .brand { display: flex; align-items: center; gap: 12px; min-width: 0; margin-right: auto; }
+        .logo {
+            width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 22px;
+            background: linear-gradient(135deg, var(--accent), #c56bff); box-shadow: var(--shadow);
+        }
+        .brand h1 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+        .brand p { margin: 0; color: var(--text-3); font-size: 12px; }
+        .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .search { position: relative; display: inline-block; }
+        .search input {
+            width: 280px; max-width: 70vw; padding: 8px 12px 8px 32px; border-radius: 10px;
+            border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); outline: none;
+        }
+        .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .search::before { content: "⌕"; position: absolute; left: 11px; top: 50%; transform: translateY(-52%); color: var(--text-3); font-size: 16px; }
+        .search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+        .search-count { color: var(--text-3); font-size: 12px; min-width: 70px; }
+        .search-count:empty { display: none; }
+
+        kbd {
+            font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 6px;
+            border: 1px solid var(--border-strong); border-bottom-width: 2px; color: var(--text-2); background: var(--surface-2);
+        }
+        .btn, .ghost {
+            display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 10px; cursor: pointer;
+            border: 1px solid var(--border-strong); background: var(--surface); text-decoration: none; color: var(--text); white-space: nowrap;
+        }
+        .btn:hover, .ghost:hover { border-color: var(--accent); color: var(--accent-text); }
+        .ghost { background: transparent; border-color: transparent; }
+        .ghost.small { padding: 2px 7px; font-size: 13px; }
+        .btn.on { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+
+        /* ---------- Section picker ---------- */
+        .picker { border-bottom: 1px solid var(--border); }
+        .picker-inner { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding-top: 8px; padding-bottom: 10px; scrollbar-width: thin; }
+        .picker-label { color: var(--text-3); font-size: 12px; margin-right: 4px; white-space: nowrap; }
+        .toggle {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+            border: 1px solid var(--border); background: var(--surface); cursor: pointer; user-select: none; font-size: 13px; color: var(--text-2);
+        }
+        .toggle input { display: none; }
+        .toggle:has(input:checked) { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-text); }
+        .toggle:hover { border-color: var(--accent); }
+        .toggle.unavailable { opacity: .45; text-decoration: none; }
+        .picker .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex: none; }
+
+        /* ---------- Cards ---------- */
+        main { padding-top: 20px; padding-bottom: 40px; display: flex; flex-direction: column; gap: 14px; }
+        .filtered-note { margin: 0; }
+        .card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+            overflow: hidden; transition: border-color .15s;
+        }
+        .card[hidden] { display: none; }
+        .card:target, .card.flash { border-color: var(--accent); }
+        .card > summary {
+            list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 14px 18px; user-select: none;
+        }
+        .card > summary::-webkit-details-marker, .item > summary::-webkit-details-marker { display: none; }
+        .card > summary:hover { background: var(--surface-2); }
+        .card[open] > summary { border-bottom: 1px solid var(--border); }
+        .card-icon { font-size: 20px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-2); flex: none; }
+        .card-title { font-weight: 650; font-size: 15px; }
+        .card-summary { color: var(--text-2); font-size: 12.5px; font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+        .card-meta { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--text-3); font-size: 12px; flex: none; }
+        .anchor { color: var(--text-3); text-decoration: none; padding: 2px 6px; border-radius: 6px; }
+        .anchor:hover { color: var(--accent-text); background: var(--accent-soft); }
+        .chevron { width: 18px; height: 18px; flex: none; display: inline-grid; place-items: center; color: var(--text-3); transition: transform .15s; }
+        .chevron::before { content: "›"; font-size: 18px; line-height: 1; }
+        details[open] > summary > .chevron { transform: rotate(90deg); }
+        .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 18px; }
+        .card-body.error { padding-top: 12px; }
+
+        .block-title {
+            margin: 0 0 8px; font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3);
+        }
+
+        /* key/value */
+        .kv { margin: 0; display: grid; grid-template-columns: minmax(170px, max-content) 1fr; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+        .kv .row { display: contents; }
+        .kv dt, .kv dd { padding: 7px 12px; border-bottom: 1px solid var(--border); margin: 0; min-width: 0; }
+        .kv .row:last-child dt, .kv .row:last-child dd { border-bottom: 0; }
+        .kv dt { color: var(--text-2); background: var(--surface-2); font-weight: 500; overflow-wrap: anywhere; }
+        .kv dd { position: relative; overflow-wrap: anywhere; padding-right: 34px; }
+        .kv .row:hover dt, .kv .row:hover dd { background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface)); }
+        .copy {
+            position: absolute; right: 6px; top: 5px; opacity: 0; border: 1px solid var(--border-strong); background: var(--surface);
+            border-radius: 6px; cursor: pointer; font-size: 12px; padding: 0 6px; color: var(--text-2); transition: opacity .1s;
+        }
+        .kv .row:hover .copy, .code-wrap:hover .copy { opacity: 1; }
+        .copy.done { color: var(--ok); border-color: var(--ok); opacity: 1; }
+
+        /* tables */
+        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+        th { background: var(--surface-2); color: var(--text-2); font-weight: 600; font-size: 12px; position: sticky; top: 0; white-space: nowrap; }
+        tbody tr:last-child td { border-bottom: 0; }
+        tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface)); }
+
+        /* values */
+        .null { color: var(--text-3); }
+        .v { white-space: pre-wrap; }
+        .chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+        .chip { background: var(--surface-2); border: 1px solid var(--border); padding: 0 6px; border-radius: 6px; }
+        .json { margin: 0; white-space: pre-wrap; background: var(--surface-2); padding: 8px 10px; border-radius: 8px; max-height: 320px; overflow: auto; }
+        .badge {
+            display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 550;
+            background: var(--muted-soft); color: var(--muted); white-space: nowrap; line-height: 1.6;
+        }
+        .badge.ok { background: var(--ok-soft); color: var(--ok); }
+        .badge.warn { background: var(--warn-soft); color: var(--warn); }
+        .badge.danger { background: var(--danger-soft); color: var(--danger); }
+        .badge.info { background: var(--info-soft); color: var(--info); }
+        .badge.accent { background: var(--accent-soft); color: var(--accent-text); }
+        .badge.neutral { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+        .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tags .badge { font-family: var(--mono); font-weight: 500; }
+
+        /* nested items */
+        .items { display: flex; flex-direction: column; gap: 6px; }
+        .item { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+        .item > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; }
+        .item > summary:hover { background: var(--surface-2); }
+        .item[open] > summary { border-bottom: 1px solid var(--border); border-radius: 10px 10px 0 0; }
+        .item-title { font-weight: 600; font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+        .item .meta { color: var(--text-3); font-size: 12px; margin-left: auto; text-align: right; }
+        .item.tone-info { border-left: 3px solid var(--info); }
+        .item-body { padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+        .lazy > summary .refresh { margin-left: 4px; }
+
+        /* code */
+        .code-wrap { position: relative; }
+        .code { margin: 0; max-height: 520px; overflow: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+        .copy-code { top: 8px; right: 8px; padding: 2px 10px; }
+
+        /* meters */
+        .meter-head { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; margin-bottom: 6px; color: var(--text-2); flex-wrap: wrap; }
+        .meter-value { font-family: var(--mono); font-size: 12.5px; }
+        .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; border: 1px solid var(--border); }
+        .bar span { display: block; height: 100%; border-radius: 999px; background: var(--ok); }
+        .meter.tone-warn .bar span { background: var(--warn); }
+        .meter.tone-danger .bar span { background: var(--danger); }
+
+        /* notes */
+        .note { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 13px; background: var(--info-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--info) 30%, transparent); }
+        .note.tone-warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+        .note.tone-danger { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 35%, transparent); font-family: var(--mono); font-size: 12.5px; }
+        .note.tone-muted { background: var(--surface-2); border-color: var(--border); color: var(--text-2); }
+
+        /* phpinfo frame */
+        .frame-wrap iframe { width: 100%; height: 75vh; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+
+        /* search */
+        .nomatch { display: none !important; }
+
+        footer { color: var(--text-3); font-size: 12px; padding-bottom: 32px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+        footer p { margin: 0; }
+
+        @media (max-width: 760px) {
+            /* The header is tall on phones: let it scroll away instead of eating the screen. */
+            .top { position: static; }
+            html { scroll-padding-top: 12px; }
+            .top-inner, .picker-inner, main, footer { padding-left: 16px; padding-right: 16px; }
+            .search input { width: 100%; max-width: none; }
+            .search kbd { display: none; }
+            .search, .actions { width: 100%; }
+            .kv { grid-template-columns: 1fr; }
+            .kv dt { border-bottom: 0; padding-bottom: 2px; }
+            .card-summary { display: none; }
+            .card-meta .ms { display: none; }
+        }
+    </style>
+</head>
+<body>
+<header class="top">
+    <div class="top-inner">
+        <div class="brand">
+            <div class="logo" aria-hidden="true">🧭</div>
+            <div>
+                <h1>Application info</h1>
+                <p>Generated {{ 'now'|date('Y-m-d H:i:s T') }} · collected in {{ collect_ms }} ms</p>
+            </div>
+        </div>
+        <div class="pills">
+            <span class="badge {{ environment == 'prod' ? 'danger' : 'accent' }}">env: {{ environment }}</span>
+            <span class="badge {{ debug ? 'warn' : 'muted' }}">debug {{ debug ? 'on' : 'off' }}</span>
+            <span class="badge neutral">PHP {{ constant('PHP_VERSION') }}</span>
+            <span class="badge neutral">{{ constant('PHP_SAPI') }}</span>
+        </div>
+        <div class="actions">
+            <label class="search">
+                <input id="search" type="search" placeholder="Filter everything…" autocomplete="off" spellcheck="false" aria-label="Filter">
+                <kbd>/</kbd>
+            </label>
+            <span class="search-count" id="search-count" aria-live="polite"></span>
+            <button type="button" class="btn" id="expand" title="Expand all (e)">⊞ Expand</button>
+            <button type="button" class="btn" id="collapse" title="Collapse all (c)">⊟ Collapse</button>
+            {% if xdebug %}
+                <button type="button" class="btn" id="xdebug" title="Toggle the XDEBUG_TRIGGER cookie for this browser">🐞 Trigger <span id="xdebug-state">off</span></button>
+            {% endif %}
+            <button type="button" class="btn" id="theme" title="Theme (t)">◐ <span id="theme-label">auto</span></button>
+            <a class="btn" href="{{ path('info', app.request.query.all|merge({format: 'json'})) }}" target="_blank" title="Same data as JSON">{ } JSON</a>
+        </div>
+    </div>
+    <nav class="picker" aria-label="Sections">
+        <div class="picker-inner">
+            <span class="picker-label">Show</span>
+            <button type="button" class="ghost small" id="pick-all">all</button>
+            <button type="button" class="ghost small" id="pick-none">none</button>
+            <span class="sep"></span>
+            {% set collected = sections|map(s => s.id) %}
+            {% for s in available %}
+                {% if s.id in collected %}
+                    <label class="toggle"><input type="checkbox" value="{{ s.id }}" checked> <span>{{ s.icon }}</span> {{ s.title }}</label>
+                {% else %}
+                    <a class="toggle unavailable" href="{{ path('info', {sections: (collected|merge([s.id]))|join(',')}) }}" title="Not collected for this URL — click to add it">{{ s.icon }} {{ s.title }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </nav>
+</header>
+
+<main>
+    {% if filtered %}
+        <p class="note filtered-note">Showing only <strong>{{ collected|join(', ') }}</strong> (from <code>?sections=</code>). <a href="{{ path('info') }}">Show everything</a>.</p>
+    {% endif %}
+
+    {% for section in sections %}
+        <details class="card" id="{{ section.id }}" data-section="{{ section.id }}"{% if loop.first %} open{% endif %}>
+            <summary>
+                <span class="chevron" aria-hidden="true"></span>
+                <span class="card-icon" aria-hidden="true">{{ section.icon }}</span>
+                <span class="card-title">{{ section.title }}</span>
+                {% if section.summary %}<span class="card-summary">{{ section.summary }}</span>{% endif %}
+                <span class="card-meta">
+                    {% if section.error %}<span class="badge danger">error</span>{% endif %}
+                    <span class="ms">{{ section.ms }} ms</span>
+                    <a class="anchor" href="#{{ section.id }}" title="Link to this section">#</a>
+                </span>
+            </summary>
+            <div class="card-body{{ section.error ? ' error' : '' }}">
+                {% if section.error %}
+                    <p class="note tone-danger">{{ section.error }}</p>
+                {% endif %}
+                {% for block in section.blocks %}
+                    {{ blocks.block(block) }}
+                {% endfor %}
+            </div>
+        </details>
+    {% endfor %}
+</main>
+
+<footer>
+    <p>Personal debug page · only routed in <code>local</code>/<code>dev</code> · secrets masked</p>
+    <p><kbd>/</kbd> filter · <kbd>Esc</kbd> clear · <kbd>e</kbd> expand · <kbd>c</kbd> collapse · <kbd>t</kbd> theme</p>
+</footer>
+
+<script>
+(() => {
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+    const store = {
+        get(key, fallback) { try { const v = localStorage.getItem('info:' + key); return v === null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
+        set(key, value) { try { localStorage.setItem('info:' + key, JSON.stringify(value)); } catch (e) {} },
+    };
+    const cards = $$('.card');
+
+    /* ---------- Lazy content (phpinfo iframe, live probes) ---------- */
+    const theme = () => document.documentElement.dataset.theme || 'auto';
+    const syncFrameTheme = (frame) => { try { frame.contentDocument.documentElement.dataset.theme = theme(); } catch (e) {} };
+
+    function loadFrames(root) {
+        $$('.frame-wrap[data-src]', root).forEach((wrap) => {
+            const frame = $('iframe', wrap);
+            if (!frame.src) {
+                frame.addEventListener('load', () => syncFrameTheme(frame));
+                frame.src = wrap.dataset.src;
+            }
+        });
+    }
+
+    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    function renderValue(v) {
+        if (v === null || v === undefined) return '<span class="null">—</span>';
+        if (v === true) return '<span class="badge ok">true</span>';
+        if (v === false) return '<span class="badge muted">false</span>';
+        if (Array.isArray(v)) return v.length ? '<span class="chips">' + v.map((i) => '<code class="chip">' + escapeHtml(typeof i === 'object' ? JSON.stringify(i) : i) + '</code>').join('') + '</span>' : '<span class="null">none</span>';
+        if (typeof v === 'object' && '__badge' in v) return '<span class="badge ' + escapeHtml(v.tone) + '">' + escapeHtml(v.__badge) + '</span>';
+        if (typeof v === 'object') return '<pre class="json">' + escapeHtml(JSON.stringify(v, null, 2)) + '</pre>';
+        return '<span class="v">' + escapeHtml(v) + '</span>';
+    }
+
+    async function runLazy(details) {
+        const body = $('.lazy-body', details);
+        body.innerHTML = '<p class="note tone-muted">Running…</p>';
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10000);
+        const started = performance.now();
+        try {
+            const response = await fetch(details.dataset.url, { headers: { Accept: 'application/json' }, signal: controller.signal });
+            const data = await response.json();
+            const rows = Object.entries(data).map(([k, v]) => '<div class="row"><dt>' + escapeHtml(k) + '</dt><dd>' + renderValue(v) + '</dd></div>').join('');
+            body.innerHTML = '<dl class="kv">' + rows + '</dl><p class="note tone-muted">HTTP ' + response.status + ' · ' + Math.round(performance.now() - started) + ' ms</p>';
+        } catch (error) {
+            body.innerHTML = '<p class="note tone-danger">' + escapeHtml(error.name === 'AbortError' ? 'Timed out after 10 s' : error.message) + '</p>';
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    $$('details.lazy').forEach((details) => {
+        details.addEventListener('toggle', () => { if (details.open && !details.dataset.loaded) { details.dataset.loaded = '1'; runLazy(details); } });
+        $('.refresh', details).addEventListener('click', (event) => { event.preventDefault(); details.open = true; details.dataset.loaded = '1'; runLazy(details); });
+    });
+
+    /* ---------- Open state (remembered) & deep links ---------- */
+    const savedOpen = store.get('open', null);
+    if (Array.isArray(savedOpen)) cards.forEach((card) => { card.open = savedOpen.includes(card.id); });
+
+    function openFromHash() {
+        const card = location.hash && document.getElementById(location.hash.slice(1));
+        if (card && card.classList.contains('card')) {
+            card.hidden = false;
+            card.open = true;
+            card.classList.add('flash');
+            setTimeout(() => card.classList.remove('flash'), 1500);
+            card.scrollIntoView({ block: 'start' });
+        }
+    }
+
+    let searching = false;
+    cards.forEach((card) => card.addEventListener('toggle', () => {
+        if (card.open) loadFrames(card);
+        if (!searching) store.set('open', cards.filter((c) => c.open).map((c) => c.id));
+    }));
+    cards.filter((c) => c.open).forEach(loadFrames);
+    window.addEventListener('hashchange', openFromHash);
+    openFromHash();
+
+    /* ---------- Section picker ---------- */
+    const toggles = $$('.picker input[type="checkbox"]');
+    const hidden = new Set(store.get('hidden', []));
+    function applyPicker() {
+        toggles.forEach((input) => {
+            input.checked = !hidden.has(input.value);
+            const card = document.getElementById(input.value);
+            if (card) card.hidden = hidden.has(input.value);
+        });
+        store.set('hidden', [...hidden]);
+    }
+    toggles.forEach((input) => input.addEventListener('change', () => {
+        input.checked ? hidden.delete(input.value) : hidden.add(input.value);
+        applyPicker();
+        if (input.checked) { const card = document.getElementById(input.value); card.open = true; card.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    }));
+    $('#pick-all').addEventListener('click', () => { hidden.clear(); applyPicker(); });
+    $('#pick-none').addEventListener('click', () => { toggles.forEach((i) => hidden.add(i.value)); applyPicker(); });
+    applyPicker();
+
+    /* ---------- Expand / collapse ---------- */
+    const setAll = (open) => cards.filter((c) => !c.hidden).forEach((card) => {
+        card.open = open;
+        $$('details.item:not(.lazy)', card).forEach((d) => { d.open = open; });
+    });
+    $('#expand').addEventListener('click', () => setAll(true));
+    $('#collapse').addEventListener('click', () => setAll(false));
+
+    /* ---------- Search ---------- */
+    const search = $('#search');
+    const counter = $('#search-count');
+    let openBeforeSearch = null;
+
+    function filter(query) {
+        const q = query.trim().toLowerCase();
+        $$('.nomatch').forEach((el) => el.classList.remove('nomatch'));
+
+        if (!q) {
+            if (openBeforeSearch) cards.forEach((card) => { card.open = openBeforeSearch.has(card.id); });
+            $$('details.item').forEach((d) => { d.open = d.dataset.openBeforeSearch === '1'; delete d.dataset.openBeforeSearch; });
+            openBeforeSearch = null;
+            searching = false;
+            counter.textContent = '';
+            return;
+        }
+
+        if (!openBeforeSearch) {
+            openBeforeSearch = new Set(cards.filter((c) => c.open).map((c) => c.id));
+            $$('details.item').forEach((d) => { d.dataset.openBeforeSearch = d.open ? '1' : '0'; });
+        }
+        searching = true;
+
+        let matches = 0;
+        cards.filter((card) => !card.hidden).forEach((card) => {
+            const titleHit = $(':scope > summary', card).textContent.toLowerCase().includes(q);
+            let hits = 0;
+
+            // Rows (key/value + tables) and tags.
+            $$('.row, .tags .badge', card).forEach((row) => {
+                const hit = row.textContent.toLowerCase().includes(q);
+                row.classList.toggle('nomatch', !hit && !titleHit);
+                if (hit) hits++;
+            });
+
+            // Nested items: keep the ones whose title or content matches, and open them.
+            $$('details.item:not(.lazy)', card).reverse().forEach((item) => {
+                const ownHit = $(':scope > summary', item).textContent.toLowerCase().includes(q);
+                const childHit = $$('.row:not(.nomatch), .tags .badge:not(.nomatch), details.item:not(.nomatch)', item).length > 0;
+                if (ownHit) { $$('.nomatch', item).forEach((el) => el.classList.remove('nomatch')); hits++; }
+                item.classList.toggle('nomatch', !ownHit && !childHit && !titleHit);
+                item.open = ownHit || childHit;
+            });
+
+            // Hide block titles/tables left without visible rows.
+            $$('.block', card).forEach((block) => {
+                const candidates = $$('.row, .tags .badge, details.item', block);
+                if (candidates.length) block.classList.toggle('nomatch', !titleHit && candidates.every((el) => el.classList.contains('nomatch')));
+            });
+
+            const visible = titleHit || hits > 0;
+            card.classList.toggle('nomatch', !visible);
+            card.open = visible;
+            matches += hits;
+        });
+        counter.textContent = matches + (matches === 1 ? ' match' : ' matches');
+    }
+
+    let debounce;
+    search.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => filter(search.value), 120); });
+    search.addEventListener('keydown', (event) => { if (event.key === 'Escape') { search.value = ''; filter(''); search.blur(); } });
+
+    /* ---------- Theme ---------- */
+    const themes = ['auto', 'light', 'dark'];
+    const themeLabel = $('#theme-label');
+    function applyTheme(value) {
+        document.documentElement.dataset.theme = value;
+        themeLabel.textContent = value;
+        store.set('theme', value);
+        $$('.frame-wrap iframe').forEach(syncFrameTheme);
+    }
+    applyTheme(themes.includes(theme()) ? theme() : 'auto');
+    $('#theme').addEventListener('click', () => applyTheme(themes[(themes.indexOf(theme()) + 1) % themes.length]));
+
+    /* ---------- Xdebug trigger cookie ---------- */
+    const xdebugButton = $('#xdebug');
+    if (xdebugButton) {
+        const isOn = () => document.cookie.split('; ').some((c) => c.startsWith('XDEBUG_TRIGGER='));
+        const render = () => { xdebugButton.classList.toggle('on', isOn()); $('#xdebug-state').textContent = isOn() ? 'on' : 'off'; };
+        xdebugButton.addEventListener('click', () => {
+            document.cookie = isOn() ? 'XDEBUG_TRIGGER=; path=/; max-age=0; SameSite=Lax' : 'XDEBUG_TRIGGER=1; path=/; SameSite=Lax';
+            render();
+        });
+        render();
+    }
+
+    /* ---------- Copy ---------- */
+    async function copy(text, button) {
+        try { await navigator.clipboard.writeText(text); } catch (e) {
+            const area = Object.assign(document.createElement('textarea'), { value: text });
+            document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove();
+        }
+        button.classList.add('done');
+        setTimeout(() => button.classList.remove('done'), 900);
+    }
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('.copy');
+        if (!button) return;
+        event.preventDefault();
+        copy(button.dataset.copy ?? button.parentElement.querySelector('code').textContent, button);
+    });
+
+    /* ---------- Keyboard ---------- */
+    document.addEventListener('keydown', (event) => {
+        if (event.target.closest('input, textarea') || event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.key === '/') { event.preventDefault(); search.focus(); search.select(); }
+        if (event.key === 'e') setAll(true);
+        if (event.key === 'c') setAll(false);
+        if (event.key === 't') $('#theme').click();
+    });
+})();
+</script>
+</body>
+</html>

@@ -40,13 +40,13 @@ final class UserControllerTest extends WebTestCase
             UserId::new(),
             UserEmail::fromString('u1@example.com'),
             UserName::fromString('User One'),
-            new \DateTimeImmutable('2030-01-01T10:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T10:00:00+00:00'),
         );
         $u2 = new User(
             UserId::new(),
             UserEmail::fromString('u2@example.com'),
             UserName::fromString('User Two'),
-            new \DateTimeImmutable('2030-02-01T10:00:00+00:00')
+            new \DateTimeImmutable('2030-02-01T10:00:00+00:00'),
         );
         $repo->save($u1);
         $repo->save($u2);
@@ -57,7 +57,7 @@ final class UserControllerTest extends WebTestCase
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -79,14 +79,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode($payload)
+            content: \json_encode($payload),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -110,14 +110,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['name' => 'Test Name'])
+            content: \json_encode(['name' => 'Test Name']),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -136,14 +136,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['email' => 'test@example.com', 'name' => 'Test Name', 'age' => 30])
+            content: \json_encode(['email' => 'test@example.com', 'name' => 'Test Name', 'age' => 30]),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -162,14 +162,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['email' => 'test@example.com', 'name' => 12345])
+            content: \json_encode(['email' => 'test@example.com', 'name' => 12345]),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -188,14 +188,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['email' => 'invalid-email', 'name' => 'Valid Name'])
+            content: \json_encode(['email' => 'invalid-email', 'name' => 'Valid Name']),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -214,14 +214,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['email' => 'ok@example.com', 'name' => 'John'])
+            content: \json_encode(['email' => 'ok@example.com', 'name' => 'John']),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -242,14 +242,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['email' => 'ok@example.com', 'name' => $long])
+            content: \json_encode(['email' => 'ok@example.com', 'name' => $long]),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');
@@ -272,7 +272,7 @@ final class UserControllerTest extends WebTestCase
             UserId::new(),
             UserEmail::fromString($email),
             UserName::fromString('Existing User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
         $repo->save($existing);
 
@@ -280,14 +280,14 @@ final class UserControllerTest extends WebTestCase
             'POST',
             '/api/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['email' => $email, 'name' => 'Anyone'])
+            content: \json_encode(['email' => $email, 'name' => 'Anyone']),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
 
         $this->assertTrue(
             $this->client->getResponse()->headers->contains('Content-Type', 'application/json'),
-            'Response is not JSON'
+            'Response is not JSON',
         );
         $content = $this->client->getResponse()->getContent();
         $this->assertNotSame('', $content, 'Empty response body');

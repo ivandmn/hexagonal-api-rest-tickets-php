@@ -9,7 +9,7 @@ use App\Domain\Model\User;
 final readonly class ListUsersResponse implements \JsonSerializable, \Countable, \IteratorAggregate
 {
     public function __construct(
-        private array $users
+        private array $users,
     ) {
     }
 
@@ -23,7 +23,7 @@ final readonly class ListUsersResponse implements \JsonSerializable, \Countable,
                     'name'      => $user->getName()->value(),
                     'createdAt' => $user->getCreatedAt()->format(\DATE_ATOM),
                 ],
-                $this->users
+                $this->users,
             ),
             'meta' => [
                 'total' => $this->count(),

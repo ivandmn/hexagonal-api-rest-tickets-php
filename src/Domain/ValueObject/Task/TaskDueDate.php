@@ -11,19 +11,19 @@ final class TaskDueDate
     public const FORMAT      = \DATE_RFC3339;
     public const FORMAT_NAME = 'RFC3339';
 
-    public function __construct(private \DateTime $date)
+    public function __construct(private \DateTimeImmutable $date)
     {
-        if ($date < new \DateTime('now')) {
+        if ($date < new \DateTimeImmutable('now')) {
             throw new TaskDueDateInPastException('Due date cannot be in the past');
         }
     }
 
-    public static function fromDate(\DateTime $date): self
+    public static function fromDate(\DateTimeImmutable $date): self
     {
         return new self($date);
     }
 
-    public function value(): \DateTime
+    public function value(): \DateTimeImmutable
     {
         return $this->date;
     }

@@ -19,7 +19,7 @@ final class UpdateTaskCommandTest extends TestCase
             'Some description',
             'in_progress',
             'high',
-            '2030-01-01T00:00:00+00:00'
+            '2030-01-01T00:00:00+00:00',
         );
 
         $this->assertSame('018f9f9a-aaaa-bbbb-cccc-000000000001', $req->getTaskId());
@@ -27,7 +27,7 @@ final class UpdateTaskCommandTest extends TestCase
         $this->assertSame('Some description', $req->getDescription());
         $this->assertSame('in_progress', $req->getStatus());
         $this->assertSame('high', $req->getPriority());
-        $this->assertInstanceOf(\DateTime::class, $req->getDueDate());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $req->getDueDate());
         $this->assertSame('2030-01-01T00:00:00+00:00', $req->getDueDate()->format(TaskDueDate::FORMAT));
     }
 
@@ -39,7 +39,7 @@ final class UpdateTaskCommandTest extends TestCase
             null,
             null,
             null,
-            null
+            null,
         );
 
         $this->assertSame('018f9f9a-aaaa-bbbb-cccc-000000000002', $req->getTaskId());
@@ -60,7 +60,7 @@ final class UpdateTaskCommandTest extends TestCase
             null,
             null,
             null,
-            '01-01-2030 00:00:00'
+            '01-01-2030 00:00:00',
         );
     }
 }

@@ -32,8 +32,8 @@ final class UserEmailTest extends TestCase
         $a = new UserEmail('user@example.com');
         $b = new UserEmail('user@example.com');
 
-        $this->assertSame($a, $b);
-        $this->assertNotSame($a, $b);
+        $this->assertTrue($a->equals($b), 'Same value must be equal');
+        $this->assertNotSame($a, $b, 'Equal value objects are still distinct instances');
     }
 
     public function test_throws_exception_for_too_long_email(): void

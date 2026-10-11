@@ -12,17 +12,17 @@ final class TaskDueDateTest extends TestCase
 {
     public function test_creates_valid_future_due_date(): void
     {
-        $future = new \DateTime('now')->modify('+1 day');
+        $future = new \DateTimeImmutable('now')->modify('+1 day');
         $due    = new TaskDueDate($future);
 
         $this->assertInstanceOf(TaskDueDate::class, $due);
-        $this->assertInstanceOf(\DateTime::class, $due->value());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $due->value());
         $this->assertSame($future->getTimestamp(), $due->value()->getTimestamp());
     }
 
     public function test_from_date_creates_valid_due_date(): void
     {
-        $future = new \DateTime('now')->modify('+2 days');
+        $future = new \DateTimeImmutable('now')->modify('+2 days');
         $due    = TaskDueDate::fromDate($future);
 
         $this->assertInstanceOf(TaskDueDate::class, $due);
@@ -34,13 +34,13 @@ final class TaskDueDateTest extends TestCase
         $this->expectException(TaskDueDateInPastException::class);
         $this->expectExceptionMessage('Due date cannot be in the past');
 
-        $past = new \DateTime('now')->modify('-1 second');
+        $past = new \DateTimeImmutable('now')->modify('-1 second');
         new TaskDueDate($past);
     }
 
     public function test_equals_returns_true_for_same_timestamp(): void
     {
-        $base = new \DateTime('2030-01-01T00:00:00+00:00');
+        $base = new \DateTimeImmutable('2030-01-01T00:00:00+00:00');
         $a    = new TaskDueDate(clone $base);
         $b    = new TaskDueDate(clone $base);
 
@@ -49,7 +49,7 @@ final class TaskDueDateTest extends TestCase
 
     public function test_equals_returns_false_for_different_timestamp(): void
     {
-        $base = new \DateTime('2030-01-01T00:00:00+00:00');
+        $base = new \DateTimeImmutable('2030-01-01T00:00:00+00:00');
         $a    = new TaskDueDate(clone $base);
         $b    = new TaskDueDate((clone $base)->modify('+1 second'));
 
@@ -58,13 +58,13 @@ final class TaskDueDateTest extends TestCase
 
     public function test_string_representation_is_rfc3339(): void
     {
-        $future = new \DateTime('2040-05-06T12:34:56+02:00');
+        $future = new \DateTimeImmutable('2040-05-06T12:34:56+02:00');
         $due    = new TaskDueDate(clone $future);
 
         $this->assertSame($future->format(TaskDueDate::FORMAT), (string) $due);
 
-        $parsed = \DateTime::createFromFormat(TaskDueDate::FORMAT, (string) $due);
-        $this->assertInstanceOf(\DateTime::class, $parsed);
+        $parsed = \DateTimeImmutable::createFromFormat(TaskDueDate::FORMAT, (string) $due);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $parsed);
         $this->assertSame((string) $due, $parsed->format(TaskDueDate::FORMAT));
     }
 }

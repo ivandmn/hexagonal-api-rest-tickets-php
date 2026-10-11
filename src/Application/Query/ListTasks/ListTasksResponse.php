@@ -33,7 +33,7 @@ final readonly class ListTasksResponse implements \JsonSerializable, \Countable,
                     'createdAt' => $task->getCreatedAt()->format(\DATE_ATOM),
                     'updatedAt' => $task->getUpdatedAt()?->format(\DATE_ATOM),
                 ],
-                $this->tasks
+                $this->tasks,
             ),
             'meta' => [
                 'total' => $this->count(),

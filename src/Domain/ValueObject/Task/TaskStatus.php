@@ -42,7 +42,7 @@ enum TaskStatus: string
     {
         return match ([$this, $newStatus]) {
             [self::PENDING, self::IN_PROGRESS], [self::IN_PROGRESS, self::COMPLETED] => true,
-            default                                                                  => false
+            default                                                                  => false,
         };
     }
 }

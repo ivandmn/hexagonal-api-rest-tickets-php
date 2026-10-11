@@ -13,7 +13,7 @@ final class AssignTaskToUserCommandTest extends TestCase
     {
         $req = new AssignTaskToUserCommand(
             '018f9f9a-aaaa-bbbb-cccc-000000000001',
-            '018f9f9a-dddd-eeee-ffff-000000000002'
+            '018f9f9a-dddd-eeee-ffff-000000000002',
         );
 
         $this->assertSame('018f9f9a-aaaa-bbbb-cccc-000000000001', $req->getTaskId());

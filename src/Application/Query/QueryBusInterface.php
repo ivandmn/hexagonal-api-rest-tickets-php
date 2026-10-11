@@ -6,6 +6,8 @@ namespace App\Application\Query;
 
 interface QueryBusInterface
 {
-    /** @throws \Throwable */
+    /**
+     * @throws \Throwable
+     */
     public function dispatch(QueryInterface $query): mixed;
 }

@@ -19,7 +19,7 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
     }
 

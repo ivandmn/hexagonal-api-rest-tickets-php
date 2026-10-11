@@ -26,7 +26,7 @@ final class UpdateTaskResponseTest extends TestCase
             UserId::fromString('018f9f9a-aaaa-bbbb-cccc-0000000000aa'),
             UserEmail::fromString('user@example.com'),
             UserName::fromString('User Name'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $task = new Task(
@@ -36,9 +36,9 @@ final class UpdateTaskResponseTest extends TestCase
             TaskStatus::IN_PROGRESS,
             TaskPriority::HIGH,
             $assignee,
-            TaskDueDate::fromDate(new \DateTime('2030-01-02T10:20:30+00:00')),
+            TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-02T10:20:30+00:00')),
             new \DateTimeImmutable('2030-01-01T10:00:00+00:00'),
-            new \DateTime('2030-01-03T12:34:56+00:00')
+            new \DateTimeImmutable('2030-01-03T12:34:56+00:00'),
         );
 
         $resp = new UpdateTaskResponse($task);
@@ -70,7 +70,7 @@ final class UpdateTaskResponseTest extends TestCase
             null,
             null,
             new \DateTimeImmutable('2031-01-01T10:00:00+00:00'),
-            null
+            null,
         );
 
         $resp = new UpdateTaskResponse($task);

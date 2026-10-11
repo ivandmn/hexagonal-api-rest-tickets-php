@@ -26,7 +26,7 @@ final class Task
         private ?User $assignedUser = null,
         private ?TaskDueDate $dueDate = null,
         private readonly \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
-        private ?\DateTime $updatedAt = null
+        private ?\DateTimeImmutable $updatedAt = null,
     ) {
     }
 
@@ -70,7 +70,7 @@ final class Task
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?\DateTime
+    public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
     }
@@ -169,6 +169,6 @@ final class Task
     private function markAsUpdated(): void
     {
         $this->isUpdated = true;
-        $this->updatedAt = new \DateTime('now');
+        $this->updatedAt = new \DateTimeImmutable('now');
     }
 }

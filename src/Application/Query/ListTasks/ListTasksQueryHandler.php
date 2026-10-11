@@ -12,7 +12,7 @@ use App\Domain\ValueObject\Task\TaskStatus;
 final readonly class ListTasksQueryHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private TaskRepositoryInterface $taskRepository
+        private TaskRepositoryInterface $taskRepository,
     ) {
     }
 

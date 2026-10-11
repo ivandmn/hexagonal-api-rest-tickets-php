@@ -10,7 +10,7 @@ final readonly class CreateUserCommand implements CommandInterface
 {
     public function __construct(
         private string $email,
-        private string $name
+        private string $name,
     ) {
     }
 

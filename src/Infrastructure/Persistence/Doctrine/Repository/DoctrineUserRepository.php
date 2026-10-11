@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 final readonly class DoctrineUserRepository implements UserRepositoryInterface
 {
     public function __construct(
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
     ) {
     }
 

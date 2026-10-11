@@ -17,16 +17,16 @@ final class CreateTaskCommandTest extends TestCase
             'Test Title',
             'Test Description',
             'medium',
-            '2030-01-01T00:00:00+00:00'
+            '2030-01-01T00:00:00+00:00',
         );
 
         $this->assertSame('Test Title', $req->getTitle());
         $this->assertSame('Test Description', $req->getDescription());
         $this->assertSame('medium', $req->getPriority());
-        $this->assertInstanceOf(\DateTime::class, $req->getDueDate());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $req->getDueDate());
         $this->assertSame(
             '2030-01-01T00:00:00+00:00',
-            $req->getDueDate()->format(TaskDueDate::FORMAT)
+            $req->getDueDate()->format(TaskDueDate::FORMAT),
         );
     }
 
@@ -37,7 +37,7 @@ final class CreateTaskCommandTest extends TestCase
             'Test Title',
             'Test Description',
             'low',
-            '01-01-2030 00:00:00'
+            '01-01-2030 00:00:00',
         );
     }
 
@@ -48,7 +48,7 @@ final class CreateTaskCommandTest extends TestCase
             'Test Title',
             'Test Description',
             'high',
-            null
+            null,
         );
     }
 }

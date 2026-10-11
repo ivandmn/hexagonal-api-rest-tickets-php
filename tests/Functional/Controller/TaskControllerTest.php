@@ -36,7 +36,7 @@ final class TaskControllerTest extends WebTestCase
         string $title = 'Test Task',
         string $description = 'Valid Description',
         TaskPriority $priority = TaskPriority::LOW,
-        ?\DateTime $due = null
+        ?\DateTimeImmutable $due = null,
     ): Task {
         /** @var TaskFactory $factory */
         $factory = static::getContainer()->get(TaskFactory::class);
@@ -46,7 +46,7 @@ final class TaskControllerTest extends WebTestCase
             TaskDescription::fromString($description),
             $priority,
             $due ? TaskDueDate::fromDate($due) : null,
-            null
+            null,
         );
 
         /** @var TaskRepositoryInterface $repo */
@@ -76,8 +76,8 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_list_returns_200_with_payload(): void
     {
-        $this->createTask('Task One', 'Desc 1', TaskPriority::LOW, new \DateTime('now')->modify('+2 days'));
-        $this->createTask('Task Two', 'Desc 2', TaskPriority::HIGH, new \DateTime('now')->modify('+3 days'));
+        $this->createTask('Task One', 'Desc 1', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+2 days'));
+        $this->createTask('Task Two', 'Desc 2', TaskPriority::HIGH, new \DateTimeImmutable('now')->modify('+3 days'));
 
         $this->client->request('GET', '/api/tasks');
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -91,8 +91,8 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_list_with_filters_and_pagination(): void
     {
-        $this->createTask('High P1', 'Desc', TaskPriority::HIGH, new \DateTime('now')->modify('+2 days'));
-        $this->createTask('High P2', 'Desc', TaskPriority::HIGH, new \DateTime('now')->modify('+3 days'));
+        $this->createTask('High P1', 'Desc', TaskPriority::HIGH, new \DateTimeImmutable('now')->modify('+2 days'));
+        $this->createTask('High P2', 'Desc', TaskPriority::HIGH, new \DateTimeImmutable('now')->modify('+3 days'));
 
         $this->client->request('GET', '/api/tasks?status=pending&priority=high&page=1&limit=1');
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -139,7 +139,7 @@ final class TaskControllerTest extends WebTestCase
             'POST',
             '/api/tasks',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode($payload)
+            content: \json_encode($payload),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -155,7 +155,7 @@ final class TaskControllerTest extends WebTestCase
             'POST',
             '/api/tasks',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['description' => 'Missing Title.'])
+            content: \json_encode(['description' => 'Missing Title.']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
@@ -172,7 +172,7 @@ final class TaskControllerTest extends WebTestCase
                 'priority'    => 'low',
                 'dueDate'     => '2030-01-01T10:00:00+00:00',
                 'unexpected'  => 'value',
-            ])
+            ]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
@@ -188,7 +188,7 @@ final class TaskControllerTest extends WebTestCase
                 'description' => 'x',
                 'priority'    => 'low',
                 'dueDate'     => '2030-01-01T10:00:00+00:00',
-            ])
+            ]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
@@ -204,7 +204,7 @@ final class TaskControllerTest extends WebTestCase
                 'description' => 'Priority must be low, medium or high.',
                 'priority'    => 'urgent',
                 'dueDate'     => '2030-01-01T10:00:00+00:00',
-            ])
+            ]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
@@ -220,7 +220,7 @@ final class TaskControllerTest extends WebTestCase
                 'description' => 'Invalid Due Date Format.',
                 'priority'    => 'high',
                 'dueDate'     => '2030-01-01 10:00:00',
-            ])
+            ]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
@@ -236,14 +236,14 @@ final class TaskControllerTest extends WebTestCase
                 'description' => 'Due date cannot be in the past.',
                 'priority'    => 'medium',
                 'dueDate'     => '2020-01-01T10:00:00+00:00',
-            ])
+            ]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
 
     public function test_get_details_returns_200_on_valid_id(): void
     {
-        $task = $this->createTask('Details Task', 'D', TaskPriority::MEDIUM, new \DateTime('now')->modify('+3 days'));
+        $task = $this->createTask('Details Task', 'D', TaskPriority::MEDIUM, new \DateTimeImmutable('now')->modify('+3 days'));
 
         $this->client->request('GET', '/api/tasks/' . $task->getId()->value());
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -267,7 +267,7 @@ final class TaskControllerTest extends WebTestCase
     // ---------- UPDATE ----------
     public function test_update_returns_200_on_full_update(): void
     {
-        $task = $this->createTask('Updatable Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Updatable Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $payload = [
             'title'       => 'Updated Task Title',
@@ -281,46 +281,46 @@ final class TaskControllerTest extends WebTestCase
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode($payload)
+            content: \json_encode($payload),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
     }
 
     public function test_update_returns_200_on_partial_update(): void
     {
-        $task = $this->createTask('Partial Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Partial Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $this->client->request(
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['title' => 'Only Update Title'])
+            content: \json_encode(['title' => 'Only Update Title']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
     }
 
     public function test_update_returns_400_on_unexpected_field(): void
     {
-        $task = $this->createTask('Unexpected Field Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Unexpected Field Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $this->client->request(
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['title' => 'Updated Task Title', 'unexpected' => 'value'])
+            content: \json_encode(['title' => 'Updated Task Title', 'unexpected' => 'value']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_update_returns_400_on_invalid_field_type(): void
     {
-        $task = $this->createTask('Type Error Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Type Error Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $this->client->request(
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['title' => 12345])
+            content: \json_encode(['title' => 12345]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
@@ -331,7 +331,7 @@ final class TaskControllerTest extends WebTestCase
             'PUT',
             '/api/tasks/invalid-id',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['title' => 'Updated Task Title'])
+            content: \json_encode(['title' => 'Updated Task Title']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
@@ -342,59 +342,59 @@ final class TaskControllerTest extends WebTestCase
             'PUT',
             '/api/tasks/018f63a8-bb93-7e5b-b0e1-49d24fa4ffff',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['title' => 'Updated Task Title'])
+            content: \json_encode(['title' => 'Updated Task Title']),
         );
         $this->assertTrue(\in_array($this->client->getResponse()->getStatusCode(), [Response::HTTP_NOT_FOUND, Response::HTTP_BAD_REQUEST], true));
     }
 
     public function test_update_returns_400_on_invalid_status_enum(): void
     {
-        $task = $this->createTask('Bad Status Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Bad Status Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $this->client->request(
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['status' => 'unknown_status'])
+            content: \json_encode(['status' => 'unknown_status']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_update_returns_400_on_invalid_priority_enum(): void
     {
-        $task = $this->createTask('Bad Priority Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Bad Priority Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $this->client->request(
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['priority' => 'urgent'])
+            content: \json_encode(['priority' => 'urgent']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_update_returns_400_on_invalid_due_date_format(): void
     {
-        $task = $this->createTask('Bad Date Format Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Bad Date Format Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $this->client->request(
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['dueDate' => '2030-01-01 10:00:00'])
+            content: \json_encode(['dueDate' => '2030-01-01 10:00:00']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_update_returns_409_on_due_date_in_past(): void
     {
-        $task = $this->createTask('Past Date Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+4 days'));
+        $task = $this->createTask('Past Date Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+4 days'));
 
         $this->client->request(
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['dueDate' => '2020-01-01T10:00:00+00:00'])
+            content: \json_encode(['dueDate' => '2020-01-01T10:00:00+00:00']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
@@ -408,9 +408,9 @@ final class TaskControllerTest extends WebTestCase
             TaskStatus::PENDING,
             TaskPriority::LOW,
             null,
-            TaskDueDate::fromDate(new \DateTime('now')->modify('+3 days')),
+            TaskDueDate::fromDate(new \DateTimeImmutable('now')->modify('+3 days')),
             new \DateTimeImmutable('now'),
-            null
+            null,
         );
         /** @var TaskRepositoryInterface $repo */
         $repo = static::getContainer()->get(TaskRepositoryInterface::class);
@@ -420,7 +420,7 @@ final class TaskControllerTest extends WebTestCase
             'PUT',
             '/api/tasks/' . $task->getId()->value(),
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['status' => 'completed'])
+            content: \json_encode(['status' => 'completed']),
         );
 
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
@@ -431,67 +431,67 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_assign_returns_200_on_success(): void
     {
-        $task = $this->createTask('Assignable Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $task = $this->createTask('Assignable Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
         $user = $this->createUser('assign@example.com', 'Assign Target');
 
         $this->client->request(
             'PATCH',
             '/api/tasks/' . $task->getId()->value() . '/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['userId' => $user->getId()->value()])
+            content: \json_encode(['userId' => $user->getId()->value()]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_OK);
     }
 
     public function test_assign_returns_400_on_missing_required_parameter(): void
     {
-        $task = $this->createTask('Assign Missing', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $task = $this->createTask('Assign Missing', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
 
         $this->client->request(
             'PATCH',
             '/api/tasks/' . $task->getId()->value() . '/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode([])
+            content: \json_encode([]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_assign_returns_400_on_extra_parameter_not_allowed(): void
     {
-        $task = $this->createTask('Assign Extra', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $task = $this->createTask('Assign Extra', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
         $user = $this->createUser('extra@example.com', 'Extra User');
 
         $this->client->request(
             'PATCH',
             '/api/tasks/' . $task->getId()->value() . '/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['userId' => $user->getId()->value(), 'extra' => 'x'])
+            content: \json_encode(['userId' => $user->getId()->value(), 'extra' => 'x']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_assign_returns_400_on_invalid_user_id_type(): void
     {
-        $task = $this->createTask('Assign Type', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $task = $this->createTask('Assign Type', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
 
         $this->client->request(
             'PATCH',
             '/api/tasks/' . $task->getId()->value() . '/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['userId' => 12345])
+            content: \json_encode(['userId' => 12345]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_assign_returns_404_on_user_not_found(): void
     {
-        $task = $this->createTask('Assign Not Found', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $task = $this->createTask('Assign Not Found', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
 
         $this->client->request(
             'PATCH',
             '/api/tasks/' . $task->getId()->value() . '/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['userId' => '018f63a8-bb93-7e5b-b0e1-49d24fa4ffff'])
+            content: \json_encode(['userId' => '018f63a8-bb93-7e5b-b0e1-49d24fa4ffff']),
         );
         $this->assertTrue(\in_array($this->client->getResponse()->getStatusCode(), [Response::HTTP_NOT_FOUND, Response::HTTP_BAD_REQUEST], true));
     }
@@ -504,7 +504,7 @@ final class TaskControllerTest extends WebTestCase
             'PATCH',
             '/api/tasks/018f63a8-bb93-7e5b-b0e1-49d24fa4ffff/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['userId' => $user->getId()->value()])
+            content: \json_encode(['userId' => $user->getId()->value()]),
         );
         $this->assertTrue(\in_array($this->client->getResponse()->getStatusCode(), [Response::HTTP_NOT_FOUND, Response::HTTP_BAD_REQUEST], true));
     }
@@ -517,23 +517,23 @@ final class TaskControllerTest extends WebTestCase
             'PATCH',
             '/api/tasks/12345/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['userId' => $user->getId()->value()])
+            content: \json_encode(['userId' => $user->getId()->value()]),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
 
-        $task = $this->createTask('Assign Invalid UserId', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $task = $this->createTask('Assign Invalid UserId', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
         $this->client->request(
             'PATCH',
             '/api/tasks/' . $task->getId()->value() . '/assign',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
-            content: \json_encode(['userId' => 'invalid-uuid'])
+            content: \json_encode(['userId' => 'invalid-uuid']),
         );
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_delete_returns_200_or_204_on_pending_task(): void
     {
-        $pending = $this->createTask('Deletable Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $pending = $this->createTask('Deletable Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
 
         $this->client->request('DELETE', '/api/tasks/' . $pending->getId()->value());
         $this->assertTrue(\in_array($this->client->getResponse()->getStatusCode(), [Response::HTTP_OK, Response::HTTP_NO_CONTENT], true));
@@ -553,7 +553,7 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_delete_returns_409_on_in_progress_task(): void
     {
-        $t = $this->createTask('Undeletable Task', 'D', TaskPriority::LOW, new \DateTime('now')->modify('+3 days'));
+        $t = $this->createTask('Undeletable Task', 'D', TaskPriority::LOW, new \DateTimeImmutable('now')->modify('+3 days'));
         /** @var TaskRepositoryInterface $tasks */
         $tasks  = static::getContainer()->get(TaskRepositoryInterface::class);
         $loaded = $tasks->findById(TaskId::fromString($t->getId()->value()));

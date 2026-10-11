@@ -63,7 +63,7 @@ deptrac:
       collectors:
         -
           type: classLike
-          value: ^(Symfony|Doctrine|Google|OpenApi|Firebase|Psr\\(Http|Cache))\\
+          value: ^(Symfony|Doctrine|Composer|Nelmio|Google|OpenApi|Firebase|Psr\\(Http|Cache))\\
 
   ruleset:
     # The domain is the core: it knows no other layer.

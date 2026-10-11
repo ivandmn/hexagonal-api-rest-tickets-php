@@ -55,6 +55,7 @@ docker compose exec app php bin/console doctrine:migrations:migrate
 |--------------|-----|
 | API Base     | [http://localhost:8080/api](http://localhost:8080/api) |
 | API Docs     | [http://localhost:8080/](http://localhost:8080/) |
+| App info (local/dev only) | [http://localhost:8080/info](http://localhost:8080/info) — PHP, extensions, OPcache, Xdebug, FrankenPHP, Symfony, Doctrine… (`?format=json`, `?sections=php,doctrine`) |
 
 ---
 

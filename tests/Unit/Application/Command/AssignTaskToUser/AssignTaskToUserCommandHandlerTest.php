@@ -44,29 +44,32 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
             TaskPriority::LOW,
             null,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $user = new User(
             UserId::fromString($userIdStr),
             UserEmail::fromString('assignee@example.com'),
             UserName::fromString('Assignee User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $taskRepo->expects($this->once())
             ->method('findById')
             ->with($this->callback(static fn (TaskId $id) => $id->value() === $taskIdStr))
-            ->willReturn($task);
+            ->willReturn($task)
+        ;
 
         $userRepo->expects($this->once())
             ->method('findById')
             ->with($this->callback(static fn (UserId $id) => $id->value() === $userIdStr))
-            ->willReturn($user);
+            ->willReturn($user)
+        ;
 
         $taskRepo->expects($this->once())
             ->method('update')
-            ->with($this->callback(static fn (Task $updated) => true === $updated->getAssignedUser()?->equals($user) && true === $updated->isUpdated()));
+            ->with($this->callback(static fn (Task $updated) => true === $updated->getAssignedUser()?->equals($user) && true === $updated->isUpdated()))
+        ;
 
         $logger->expects($this->once())
             ->method('info')
@@ -75,8 +78,9 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
                 $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr
                         && ($ctx['task_title'] ?? null) === 'Test Title'
                         && ($ctx['user_id'] ?? null) === $userIdStr
-                        && ($ctx['user_email'] ?? null) === 'assignee@example.com')
-            );
+                        && ($ctx['user_email'] ?? null) === 'assignee@example.com'),
+            )
+        ;
 
         $uc = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
 
@@ -99,7 +103,7 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
             UserId::fromString($userIdStr),
             UserEmail::fromString('assignee@example.com'),
             UserName::fromString('Assignee User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $task = new Task(
@@ -110,16 +114,18 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
             TaskPriority::LOW,
             $user,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $taskRepo->expects($this->once())
             ->method('findById')
-            ->willReturn($task);
+            ->willReturn($task)
+        ;
 
         $userRepo->expects($this->once())
             ->method('findById')
-            ->willReturn($user);
+            ->willReturn($user)
+        ;
 
         $taskRepo->expects($this->never())->method('update');
 
@@ -130,8 +136,9 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
                 $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskIdStr
                         && ($ctx['task_title'] ?? null) === 'Test Title'
                         && ($ctx['user_id'] ?? null) === $userIdStr
-                        && ($ctx['user_email'] ?? null) === 'assignee@example.com')
-            );
+                        && ($ctx['user_email'] ?? null) === 'assignee@example.com'),
+            )
+        ;
 
         $uc       = new AssignTaskToUserCommandHandler($taskRepo, $userRepo, $logger);
         $response = $uc(new AssignTaskToUserCommand($taskIdStr, $userIdStr));
@@ -167,7 +174,7 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
         $task      = new Task(
             TaskId::fromString($taskIdStr),
             TaskTitle::fromString('Test Title'),
-            TaskDescription::fromString('Test Description')
+            TaskDescription::fromString('Test Description'),
         );
 
         $taskRepo->expects($this->once())->method('findById')->willReturn($task);

@@ -13,7 +13,7 @@ final class ListTasksQuery implements QueryInterface
         private ?string $status,
         private ?string $priority,
         private ?int $page = 1,
-        private ?int $limit = 50
+        private ?int $limit = 50,
     ) {
     }
 

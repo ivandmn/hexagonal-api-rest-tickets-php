@@ -32,14 +32,14 @@ final class AssignTaskToUserResponseTest extends TestCase
             TaskPriority::LOW,
             null,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $user = new User(
             $userId,
             UserEmail::fromString('assignee@example.com'),
             UserName::fromString('Assignee User'),
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $response = new AssignTaskToUserResponse($task, $user);
@@ -50,7 +50,7 @@ final class AssignTaskToUserResponseTest extends TestCase
 
         $this->assertSame(
             'Task "Test Title" has been assigned to "assignee@example.com"',
-            $data['message']
+            $data['message'],
         );
         $this->assertSame($taskId->value(), $data['task_id']);
         $this->assertSame($userId->value(), $data['user_id']);
@@ -61,13 +61,13 @@ final class AssignTaskToUserResponseTest extends TestCase
         $task = new Task(
             TaskId::fromString('018f9f9a-aaaa-bbbb-cccc-000000000333'),
             TaskTitle::fromString('Another Title'),
-            TaskDescription::fromString('Another Description')
+            TaskDescription::fromString('Another Description'),
         );
 
         $user = new User(
             UserId::fromString('018f9f9a-dddd-eeee-ffff-000000000444'),
             UserEmail::fromString('user@example.com'),
-            UserName::fromString('User Name')
+            UserName::fromString('User Name'),
         );
 
         $response = new AssignTaskToUserResponse($task, $user);

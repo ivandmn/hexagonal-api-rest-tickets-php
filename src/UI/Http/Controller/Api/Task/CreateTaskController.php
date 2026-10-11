@@ -60,21 +60,21 @@ class CreateTaskController extends BaseController
                 $data->title,
                 $data->description,
                 $data->priority,
-                $data->dueDate
+                $data->dueDate,
             );
 
             /** @var CreateTaskResponse $response */
             $response = $this->commandHandler($command);
 
             return ApiResponse::success($response);
-        } catch (InvalidRequestParameterException|InvalidRequestException|InvalidTaskTitleException|InvalidTaskDescription|InvalidDateFormat|InvalidTaskPriorityException $exception) {
+        } catch (InvalidDateFormat|InvalidRequestException|InvalidRequestParameterException|InvalidTaskDescription|InvalidTaskPriorityException|InvalidTaskTitleException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (TaskDueDateInPastException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_CONFLICT);
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Creating Task: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();

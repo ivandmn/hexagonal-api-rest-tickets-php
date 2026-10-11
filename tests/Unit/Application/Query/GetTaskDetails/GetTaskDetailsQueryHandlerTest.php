@@ -33,13 +33,14 @@ final class GetTaskDetailsQueryHandlerTest extends TestCase
             TaskPriority::LOW,
             null,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $repo->expects($this->once())
             ->method('findById')
             ->with($this->callback(static fn (TaskId $id) => $id->value() === $taskIdStr))
-            ->willReturn($task);
+            ->willReturn($task)
+        ;
 
         $uc = new GetTaskDetailsQueryHandler($repo);
 
@@ -57,7 +58,8 @@ final class GetTaskDetailsQueryHandlerTest extends TestCase
 
         $repo->expects($this->once())
             ->method('findById')
-            ->willReturn(null);
+            ->willReturn(null)
+        ;
 
         $uc = new GetTaskDetailsQueryHandler($repo);
 

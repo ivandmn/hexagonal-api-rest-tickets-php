@@ -28,7 +28,7 @@ final class CreateTaskCommandHandlerTest extends TestCase
             'Test Title',
             'Test Description',
             'medium',
-            '2030-01-01T00:00:00+00:00'
+            '2030-01-01T00:00:00+00:00',
         );
 
         $repo->expects($this->once())
@@ -36,14 +36,16 @@ final class CreateTaskCommandHandlerTest extends TestCase
             ->with($this->callback(static fn (Task $task) => $task->getTitle()->equals(TaskTitle::fromString('Test Title'))
                     && $task->getDescription()->equals(TaskDescription::fromString('Test Description'))
                     && $task->getPriority()->equals(TaskPriority::fromString('medium'))
-                    && true === $task->getDueDate()?->equals(TaskDueDate::fromDate(new \DateTime('2030-01-01T00:00:00+00:00')))));
+                    && true === $task->getDueDate()?->equals(TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-01T00:00:00+00:00')))))
+        ;
 
         $logger->expects($this->once())
             ->method('info')
             ->with(
                 'Task Created',
-                $this->callback(static fn (array $ctx) => isset($ctx['task_id'], $ctx['task_title']) && 'Test Title' === $ctx['task_title'])
-            );
+                $this->callback(static fn (array $ctx) => isset($ctx['task_id'], $ctx['task_title']) && 'Test Title' === $ctx['task_title']),
+            )
+        ;
 
         $uc       = new CreateTaskCommandHandler(new TaskFactory(), $repo, $logger);
         $response = $uc($request);
@@ -53,8 +55,8 @@ final class CreateTaskCommandHandlerTest extends TestCase
 
     public function test_propagates_domain_exception_on_invalid_title(): void
     {
-        $repo   = $this->createMock(TaskRepositoryInterface::class);
-        $logger = $this->createMock(LoggerInterface::class);
+        $repo   = $this->createStub(TaskRepositoryInterface::class);
+        $logger = $this->createStub(LoggerInterface::class);
 
         $uc = new CreateTaskCommandHandler(new TaskFactory(), $repo, $logger);
 
@@ -64,7 +66,7 @@ final class CreateTaskCommandHandlerTest extends TestCase
             'bad',
             'Ok description',
             'low',
-            '2030-01-01T00:00:00+00:00'
+            '2030-01-01T00:00:00+00:00',
         ));
     }
 }

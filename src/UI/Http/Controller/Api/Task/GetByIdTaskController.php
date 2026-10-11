@@ -56,7 +56,7 @@ class GetByIdTaskController extends BaseController
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Getting Task Details: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();

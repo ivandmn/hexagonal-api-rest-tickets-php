@@ -9,7 +9,7 @@ use App\Application\Query\QueryInterface;
 final readonly class GetTaskDetailsQuery implements QueryInterface
 {
     public function __construct(
-        private string $taskId
+        private string $taskId,
     ) {
     }
 

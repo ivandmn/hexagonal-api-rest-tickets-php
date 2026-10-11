@@ -10,7 +10,7 @@ use Psr\Log\LoggerInterface as PsrLogger;
 final readonly class MonologLogger implements LoggerInterface
 {
     public function __construct(
-        private PsrLogger $logger
+        private PsrLogger $logger,
     ) {
     }
 

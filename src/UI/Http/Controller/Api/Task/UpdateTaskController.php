@@ -71,23 +71,23 @@ class UpdateTaskController extends BaseController
                 $data->description,
                 $data->status,
                 $data->priority,
-                $data->dueDate
+                $data->dueDate,
             );
 
             /** @var UpdateTaskResponse $response */
             $response = $this->commandHandler($command);
 
             return ApiResponse::success($response);
-        } catch (InvalidRequestParameterException|InvalidRequestException|InvalidTaskIdException|InvalidTaskTitleException|InvalidTaskDescription|InvalidDateFormat|InvalidTaskStatusException|InvalidTaskPriorityException $exception) {
+        } catch (InvalidDateFormat|InvalidRequestException|InvalidRequestParameterException|InvalidTaskDescription|InvalidTaskIdException|InvalidTaskPriorityException|InvalidTaskStatusException|InvalidTaskTitleException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (TaskNotFoundException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_NOT_FOUND);
-        } catch (TaskDueDateInPastException|InvalidTaskStatusTransitionException $exception) {
+        } catch (InvalidTaskStatusTransitionException|TaskDueDateInPastException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_CONFLICT);
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Updating Task: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();

@@ -1,0 +1,137 @@
+{# Renders the blocks built by App\UI\Http\Info\Block. #}
+
+{% macro value(v) %}
+    {%- if v is null -%}
+        <span class="null">—</span>
+    {%- elseif v is same as(true) -%}
+        <span class="badge ok">true</span>
+    {%- elseif v is same as(false) -%}
+        <span class="badge muted">false</span>
+    {%- elseif v is iterable and v.__badge is defined -%}
+        <span class="badge {{ v.tone }}">{{ v.__badge }}</span>
+    {%- elseif v is iterable and v.__link is defined -%}
+        <a class="link" href="{{ v.__link }}" target="_blank" rel="noopener noreferrer">{{ v.label }}</a>
+    {%- elseif v is iterable -%}
+        {%- if v is empty -%}
+            <span class="null">none</span>
+        {%- elseif v|keys == range(0, v|length - 1) -%}
+            <span class="chips">
+                {%- for item in v -%}
+                    {%- if item is iterable and item.__badge is defined -%}
+                        <span class="badge {{ item.tone }}">{{ item.__badge }}</span>
+                    {%- else -%}
+                        <code class="chip">{{ item is iterable ? item|json_encode : item }}</code>
+                    {%- endif -%}
+                {%- endfor -%}
+            </span>
+        {%- else -%}
+            <pre class="json">{{ v|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+        {%- endif -%}
+    {%- else -%}
+        <span class="v">{{ v }}</span>
+    {%- endif -%}
+{% endmacro %}
+
+{% macro copyable(v) %}
+    {%- if v is not null and v is not iterable and v is not same as(true) and v is not same as(false) and v ~ '' != '' -%}
+        <button type="button" class="copy" data-copy="{{ v }}" title="Copy value" aria-label="Copy value">⧉</button>
+    {%- endif -%}
+{% endmacro %}
+
+{% macro block(b) %}
+    {% import _self as m %}
+    <div class="block block-{{ b.type }}">
+        {% if b.title is defined and b.title %}
+            <h4 class="block-title">{{ b.title }}</h4>
+        {% endif %}
+
+        {% if b.type == 'kv' %}
+            {% if b.rows is empty %}
+                <p class="note tone-muted">Nothing to show.</p>
+            {% else %}
+                <dl class="kv">
+                    {% for key, v in b.rows %}
+                        <div class="row">
+                            <dt>{{ key }}</dt>
+                            <dd>{{ m.value(v) }}{{ m.copyable(v) }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            {% endif %}
+
+        {% elseif b.type == 'table' %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>{% for column in b.columns %}<th>{{ column }}</th>{% endfor %}</tr>
+                    </thead>
+                    <tbody>
+                        {% for row in b.rows %}
+                            <tr class="row">
+                                {% for cell in row %}<td>{{ m.value(cell) }}</td>{% endfor %}
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="{{ b.columns|length }}" class="null">No rows.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% elseif b.type == 'items' %}
+            <div class="items">
+                {% for item in b.items %}
+                    <details class="item tone-{{ item.tone }}">
+                        <summary>
+                            <span class="chevron" aria-hidden="true"></span>
+                            <span class="item-title">{{ item.title }}</span>
+                            {% if item.badge %}<span class="badge {{ item.tone == 'neutral' ? 'muted' : item.tone }}">{{ item.badge }}</span>{% endif %}
+                            {% if item.meta %}<span class="meta">{{ item.meta }}</span>{% endif %}
+                        </summary>
+                        <div class="item-body">
+                            {% for child in item.blocks %}{{ m.block(child) }}{% endfor %}
+                        </div>
+                    </details>
+                {% endfor %}
+            </div>
+
+        {% elseif b.type == 'code' %}
+            <div class="code-wrap">
+                <button type="button" class="copy copy-code" title="Copy">Copy</button>
+                <pre class="code"><code>{{ b.content }}</code></pre>
+            </div>
+
+        {% elseif b.type == 'meter' %}
+            <div class="meter tone-{{ b.tone }}">
+                <div class="meter-head">
+                    <span>{{ b.label }}</span>
+                    <span class="meter-value">{{ b.used }} / {{ b.total }} · <strong>{{ b.percent }}%</strong></span>
+                </div>
+                <div class="bar"><span style="width: {{ b.percent }}%"></span></div>
+            </div>
+
+        {% elseif b.type == 'tags' %}
+            <div class="tags">
+                {% for tag in b.tags %}<span class="badge {{ tag.tone }}">{{ tag.label }}</span>{% endfor %}
+            </div>
+
+        {% elseif b.type == 'note' %}
+            <p class="note tone-{{ b.tone }}">{{ b.text }}</p>
+
+        {% elseif b.type == 'lazy' %}
+            <details class="item lazy" data-url="{{ b.url }}">
+                <summary>
+                    <span class="chevron" aria-hidden="true"></span>
+                    <span class="item-title">{{ b.label }}</span>
+                    <span class="meta">runs when opened</span>
+                    <button type="button" class="ghost small refresh" title="Run again">↻</button>
+                </summary>
+                <div class="item-body lazy-body"><p class="note tone-muted">Loading…</p></div>
+            </details>
+
+        {% elseif b.type == 'frame' %}
+            <div class="frame-wrap" data-src="{{ b.url }}">
+                <iframe title="{{ b.label }}"></iframe>
+            </div>
+        {% endif %}
+    </div>
+{% endmacro %}

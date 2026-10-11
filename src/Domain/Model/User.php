@@ -15,7 +15,7 @@ final readonly class User
         private UserEmail $email,
         private UserName $name,
         private \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
-        private ?\DateTimeImmutable $updatedAt = null
+        private ?\DateTimeImmutable $updatedAt = null,
     ) {
     }
 

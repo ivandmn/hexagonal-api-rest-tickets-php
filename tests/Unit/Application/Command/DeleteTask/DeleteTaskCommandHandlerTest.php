@@ -36,17 +36,19 @@ final class DeleteTaskCommandHandlerTest extends TestCase
             TaskPriority::LOW,
             null,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $repo->expects($this->once())
             ->method('findById')
             ->with($this->callback(static fn (TaskId $id) => $id->value() === $taskId->value()))
-            ->willReturn($task);
+            ->willReturn($task)
+        ;
 
         $repo->expects($this->once())
             ->method('delete')
-            ->with($this->identicalTo($task));
+            ->with($this->identicalTo($task))
+        ;
 
         $logger->expects($this->once())
             ->method('info')
@@ -54,8 +56,9 @@ final class DeleteTaskCommandHandlerTest extends TestCase
                 'Task deleted',
                 $this->callback(static fn (array $ctx) => ($ctx['task_id'] ?? null) === $taskId->value()
                         && isset($ctx['task_title'])
-                        && $ctx['task_title'] === $task->getTitle())
-            );
+                        && $ctx['task_title'] === $task->getTitle()),
+            )
+        ;
 
         $uc       = new DeleteTaskCommandHandler($repo, $logger);
         $response = $uc(new DeleteTaskCommand($taskId->value()));
@@ -94,7 +97,7 @@ final class DeleteTaskCommandHandlerTest extends TestCase
             TaskPriority::LOW,
             null,
             null,
-            new \DateTimeImmutable('2030-01-01T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
         );
 
         $repo->expects($this->once())->method('findById')->willReturn($task);

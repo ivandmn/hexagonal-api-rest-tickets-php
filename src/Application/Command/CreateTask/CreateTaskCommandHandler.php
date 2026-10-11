@@ -18,7 +18,7 @@ final readonly class CreateTaskCommandHandler implements CommandHandlerInterface
     public function __construct(
         private TaskFactory $taskFactory,
         private TaskRepositoryInterface $taskRepository,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
     }
 

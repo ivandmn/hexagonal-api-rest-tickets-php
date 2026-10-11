@@ -10,7 +10,7 @@ use App\Domain\Model\DomainEntity;
 final readonly class EventDispatcher
 {
     public function __construct(
-        private EventBusInterface $eventBus
+        private EventBusInterface $eventBus,
     ) {
     }
 

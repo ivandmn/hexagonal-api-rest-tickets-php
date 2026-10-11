@@ -14,7 +14,7 @@ class BaseController extends AbstractController
 {
     public function __construct(
         private readonly QueryBusInterface $queryBus,
-        private readonly CommandBusInterface $commandBus
+        private readonly CommandBusInterface $commandBus,
     ) {
     }
 

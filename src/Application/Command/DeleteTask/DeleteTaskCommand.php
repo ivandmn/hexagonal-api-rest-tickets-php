@@ -9,7 +9,7 @@ use App\Application\Command\CommandInterface;
 final readonly class DeleteTaskCommand implements CommandInterface
 {
     public function __construct(
-        private string $taskId
+        private string $taskId,
     ) {
     }
 

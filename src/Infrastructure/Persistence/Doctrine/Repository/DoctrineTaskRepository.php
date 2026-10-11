@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
 {
     public function __construct(
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -56,7 +56,7 @@ final readonly class DoctrineTaskRepository implements TaskRepositoryInterface
             $filters,
             ['createdAt' => 'DESC'],
             $maxItems,
-            ($page - 1) * $maxItems
+            ($page - 1) * $maxItems,
         );
     }
 }

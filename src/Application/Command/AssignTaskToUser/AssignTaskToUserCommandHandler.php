@@ -18,7 +18,7 @@ final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInt
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
         private UserRepositoryInterface $userRepository,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -61,7 +61,7 @@ final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInt
                 'task_title' => $task->getTitle()->value(),
                 'user_id'    => $task->getAssignedUser()?->getId()->value(),
                 'user_email' => $user->getEmail()->value(),
-            ]
+            ],
         );
 
         return new AssignTaskToUserResponse($task, $user);

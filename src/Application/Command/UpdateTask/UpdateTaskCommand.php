@@ -10,7 +10,7 @@ use App\Domain\ValueObject\Task\TaskDueDate;
 
 final class UpdateTaskCommand implements CommandInterface
 {
-    private ?\DateTime $dueDate;
+    private ?\DateTimeImmutable $dueDate;
 
     public function __construct(
         private string $taskId,
@@ -18,9 +18,9 @@ final class UpdateTaskCommand implements CommandInterface
         private ?string $description,
         private ?string $stauts,
         private ?string $priority,
-        ?string $dueDate
+        ?string $dueDate,
     ) {
-        $date = null !== $dueDate ? \DateTime::createFromFormat(TaskDueDate::FORMAT, $dueDate) : null;
+        $date = null !== $dueDate ? \DateTimeImmutable::createFromFormat(TaskDueDate::FORMAT, $dueDate) : null;
         if (false === $date) {
             throw new InvalidDateFormat(\sprintf('Invalid Due date, must be in format "%s"', TaskDueDate::FORMAT_NAME));
         }
@@ -53,7 +53,7 @@ final class UpdateTaskCommand implements CommandInterface
         return $this->priority;
     }
 
-    public function getDueDate(): ?\DateTime
+    public function getDueDate(): ?\DateTimeImmutable
     {
         return $this->dueDate;
     }

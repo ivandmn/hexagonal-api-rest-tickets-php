@@ -60,7 +60,7 @@ class DeleteTaskController extends BaseController
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Deleting Task: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();

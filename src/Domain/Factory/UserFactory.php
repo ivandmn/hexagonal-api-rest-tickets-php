@@ -17,7 +17,7 @@ final class UserFactory
             UserId::new(),
             $email,
             $name,
-            new \DateTimeImmutable('now')
+            new \DateTimeImmutable('now'),
         );
     }
 }

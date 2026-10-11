@@ -25,9 +25,9 @@ final class DeleteTaskResponseTest extends TestCase
             TaskStatus::PENDING,
             TaskPriority::LOW,
             null,
-            TaskDueDate::fromDate(new \DateTime('2030-01-01T00:00:00+00:00')),
+            TaskDueDate::fromDate(new \DateTimeImmutable('2030-01-01T00:00:00+00:00')),
             new \DateTimeImmutable('2030-01-01T00:00:00+00:00'),
-            new \DateTime('2030-01-02T00:00:00+00:00')
+            new \DateTimeImmutable('2030-01-02T00:00:00+00:00'),
         );
 
         $response = new DeleteTaskResponse($task);
@@ -45,7 +45,7 @@ final class DeleteTaskResponseTest extends TestCase
             TaskTitle::fromString('Another Task'),
             TaskDescription::fromString('Another'),
             TaskStatus::PENDING,
-            TaskPriority::LOW
+            TaskPriority::LOW,
         );
 
         $response = new DeleteTaskResponse($task);

@@ -56,21 +56,21 @@ class CreateUserController extends BaseController
 
             $command = new CreateUserCommand(
                 $data->email,
-                $data->name
+                $data->name,
             );
 
             /** @var CreateUserResponse $response */
             $response = $this->commandHandler($command);
 
             return ApiResponse::success($response);
-        } catch (InvalidRequestParameterException|InvalidRequestException|InvalidUserEmailException|InvalidUserNameException $exception) {
+        } catch (InvalidRequestException|InvalidRequestParameterException|InvalidUserEmailException|InvalidUserNameException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (UserAlreadyExistsException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_CONFLICT);
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Creating User: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();

@@ -71,12 +71,12 @@ class ListTaskController extends BaseController
             $response = $this->queryHandler($query);
 
             return $response->isEmpty() ? ApiResponse::empty() : ApiResponse::success($response);
-        } catch (InvalidRequestParameterException|InvalidRequestException|InvalidTaskStatusException|InvalidTaskPriorityException $exception) {
+        } catch (InvalidRequestException|InvalidRequestParameterException|InvalidTaskPriorityException|InvalidTaskStatusException $exception) {
             return ApiResponse::error($exception->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $exception) {
             $this->logger->error(
                 \sprintf('Error Listing Tasks: %s', $exception->getMessage()),
-                ['exception' => $exception]
+                ['exception' => $exception],
             );
 
             return ApiResponse::internalError();
