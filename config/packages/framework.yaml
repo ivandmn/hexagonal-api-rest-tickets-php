@@ -2,9 +2,14 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Traefik (Dokploy) terminates TLS: without this Symfony would see plain HTTP and the proxy's IP
+    # Traefik (Dokploy) terminates TLS: without this Symfony would see plain HTTP and the proxy's IP.
+    # Only the headers Traefik sends; no port (it follows from proto) and no prefix (no sub-path).
     trusted_proxies: '%env(TRUSTED_PROXIES)%'
-    trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto']
+    # Trusting X-Forwarded-Host needs a host allow-list, or a request that skips Traefik can set
+    # any host (absolute URLs, cache poisoning). Comma-separated regexes, e.g. '^api\.example\.com$';
+    # unset (dev, tests) means any host.
+    trusted_hosts: '%env(default::TRUSTED_HOSTS)%'
 
     # Note that the session will be started ONLY if you read or write from it.
     session:

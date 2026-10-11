@@ -5,14 +5,16 @@ ifneq ($(wildcard .env.local),)
 export COMPOSE_ENV_FILES := .env,.env.local
 endif
 
+DC := docker compose
+
 # PHP targets run in the app container; from inside it (`make shell`) they run directly.
-EXEC := $(if $(wildcard /.dockerenv),,docker compose exec app-tickets)
+EXEC := $(if $(wildcard /.dockerenv),,$(DC) exec app-tickets)
 CONSOLE := $(EXEC) bin/console
 
 .DEFAULT_GOAL := help
 
 .PHONY: help install update fix-perms purge \
-	up down build restart logs shell \
+	up down build build-fresh build-prod restart logs shell \
 	cache-clear db-diff db-migrate \
 	cs cs-fix phpstan deptrac \
 	test test-unit test-integration test-functional test-db test-coverage \
@@ -37,22 +39,28 @@ purge: ## Purge cache and logs
 ## ———— Docker ————
 
 up: ## Start the stack docker containers
-	docker compose up -d --wait
+	$(DC) up -d --wait
 
 down: ## Down the stack docker containers
-	docker compose down
+	$(DC) down
 
-build: ## Rebuild the docker images
-	docker compose build --no-cache
+build: ## Build the dev image (reuses the layer cache)
+	$(DC) build
+
+build-fresh: ## Rebuild the dev image from scratch, pulling the base image again
+	$(DC) build --no-cache --pull
+
+build-prod: ## Build the production image locally (what CI pushes to GHCR) as tickets-api:prod
+	docker build --target prod -t tickets-api:prod .
 
 restart: ## Restart the app container (FrankenPHP workers reload the code)
-	docker compose restart app-tickets
+	$(DC) restart app-tickets
 
 logs: ## Show logs of container
-	docker compose logs -f app-tickets
+	$(DC) logs -f app-tickets
 
 shell: ## Access app container shell
-	docker compose exec -it app-tickets bash
+	$(DC) exec -it app-tickets bash
 
 ## ———— Symfony ————
 

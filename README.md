@@ -42,9 +42,8 @@ The boundaries are not just a convention: deptrac enforces the layer rules on ev
 
 - Docker with Compose v2
 - GNU Make
-- A PostgreSQL database reachable from the Docker network named in `EXTERNAL_NET` (`app` by default)
 
-The dev stack bundles a throwaway database **for the tests only**; it does not include the app's database.
+The dev stack is self-contained: it runs the app, its PostgreSQL (`database`, data in the `db_data` volume) and a throwaway PostgreSQL for the tests (`tickets-db-test`, in memory). You can still point `.env` at another database.
 
 ### 1. Clone and configure
 
@@ -56,14 +55,16 @@ cp .env.example .env              # app settings: DATABASE_URL, APP_SECRET...
 cp .env.local.example .env.local  # your machine: USER/USER_ID/GROUP_ID, Xdebug, ports (not committed)
 ```
 
-Edit `.env` with your database credentials. The app owns a single PostgreSQL schema, `tickets`, and ignores everything else in that database.
+`.env.example` already points at the stack's `database` service. The app owns a single PostgreSQL schema, `tickets`, and ignores everything else in that database.
+
+Git over SSH inside the container uses your SSH agent, not your `~/.ssh`: start it on the host (`eval "$(ssh-agent)" && ssh-add`) before `make up`.
 
 ### 2. Start
 
 ```bash
 docker network create app   # once: the stack joins this external network
 make build                  # build the dev image
-make up                     # start the app and the test database
+make up                     # start the app and both databases
 make install                # composer install
 make db-migrate             # create the "tickets" schema and run the migrations
 ```
@@ -397,16 +398,26 @@ Your IDE listens on port 9003, with the server name `ticket-api` (`PHP_IDE_CONFI
 
 ## Deployment (Dokploy)
 
-The base `docker-compose.yml` is the production definition, built from `etc/app/prod/Dockerfile`. `docker-compose.override.yml` adds the dev setup on top of it, and is never used in production.
+The base `docker-compose.yml` is the production definition: it runs the image from GHCR, it does not build anything. `docker-compose.override.yml` adds the dev setup on top of it (it builds the `dev` target), and is never used in production.
 
-### The production image
+### The image
 
-The production Dockerfile is a multi-stage build.
+A single `Dockerfile` builds every environment from the same base (FrankenPHP, PHP, extensions, Caddyfile, healthcheck), so dev and prod cannot drift apart:
+
+| Target | Used by | Adds |
+|--------|---------|------|
+| `base` | every stage | FrankenPHP with `intl`, `pdo_pgsql`, `opcache` |
+| `dev` | `make build` | Composer, Xdebug, shell tools, your UID |
+| `build` | `prod` only | vendors, autoloader, compiled `.env`, warm cache |
+| `prod` | CI → GHCR | the app from `build`, nothing else |
+
+On every push to `main` that passes all checks, CI builds `prod` and pushes it as `ghcr.io/<owner>/tickets-api:<git sha>` and `:latest`. The image that passed the tests is the one that runs; rolling back means deploying an older tag. `make build-prod` builds the same image locally.
 
 **What the image ships:**
 - **The final image:** FrankenPHP and the PHP extensions only. No Composer, git or build tools.
 - **The application:** `prod` dependencies only, an authoritative classmap, a compiled `.env.local.php` and a pre-warmed cache.
-- **The FrankenPHP setup:** it runs as `www-data` on port 80, with 4 workers.
+- **The FrankenPHP setup:** it runs as `www-data` on port 80, with 4 workers, each recycled every 500 requests (`FRANKENPHP_LOOP_MAX`).
+- **Caddy:** security headers (`nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, no `Server`), bodies over 2 MB cut before PHP, `/health` left out of the access log, and the client IP taken from Traefik's `X-Forwarded-For`.
 
 **How it behaves at runtime:**
 - **Health:** the healthcheck calls `/health` through Caddy, the worker and Symfony.
@@ -414,7 +425,7 @@ The production Dockerfile is a multi-stage build.
 
 ### Steps
 
-1. **Create a Compose service** in Dokploy, pointing to this repository. The compose path is `docker-compose.yml`.
+1. **Create a Compose service** in Dokploy, pointing to this repository. The compose path is `docker-compose.yml`. If the GHCR package is private, add `ghcr.io` under Dokploy's Registry with a token that has `read:packages`.
 2. **Add a PostgreSQL database** in the same Dokploy project.
 3. **Fill the Environment tab** using [`.env.prod.example`](.env.prod.example) as a template:
 
@@ -423,6 +434,8 @@ The production Dockerfile is a multi-stage build.
    | `EXTERNAL_NET` | `dokploy-network`: the network shared with Traefik and the database |
    | `APP_SECRET` | A random value: `php -r 'echo bin2hex(random_bytes(16)), PHP_EOL;'` |
    | `DEFAULT_URI` | The public URL, e.g. `https://api.example.com` |
+   | `TRUSTED_HOSTS` | The hosts the app answers to, as regexes: `^api\.example\.com$,^localhost$` (`localhost` is for the healthcheck) |
+   | `IMAGE_TAG` | The git SHA to deploy (`latest` if unset) |
    | `DATABASE_URL` | The database's **internal** host from Dokploy's "Internal Credentials" (URL-encode special characters in the password) |
    | `RUN_MIGRATIONS` | `true` |
    | `INFO_USER` / `INFO_PASSWORD` | Optional: enables `/info` behind Basic Auth |
@@ -442,7 +455,8 @@ Run `make` (or `make help`) for the full list. PHP commands run inside the app c
 
 | Command | Description |
 |---------|-------------|
-| `make build` / `make up` / `make down` | Build the images / start the stack (and wait until healthy) / stop it |
+| `make build` / `make up` / `make down` | Build the dev image / start the stack (and wait until healthy) / stop it |
+| `make build-fresh` / `make build-prod` | Rebuild the dev image without cache / build the production image locally |
 | `make restart` | Restart the app container |
 | `make logs` / `make shell` | Follow the app logs / open a shell in the container |
 | `make install` / `make update` | `composer install` / `composer update` |
@@ -468,7 +482,6 @@ These improvements are still open; `REVIEW.md` has the full checklist.
 - **Domain events:** either emit them, or remove the event bus wiring.
 - **DBAL types:** base classes for the near-identical ones.
 - **Domain details:**
-  - `Task::getId()` returning `TaskId`;
   - a richer `User` aggregate.
 - **API hardening:**
   - CORS;
@@ -476,5 +489,4 @@ These improvements are still open; `REVIEW.md` has the full checklist.
   - a stateless firewall;
   - protected docs in production;
   - a `/health` check that also checks the database.
-- **Production image:** drop the PHP extensions that are not used, and share a base image with dev.
 - **Authentication:** JWT, for example.

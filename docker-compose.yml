@@ -1,3 +1,6 @@
+# Production (Dokploy). It runs the image CI built, tested and pushed to GHCR (see the `image` job in
+# .github/workflows/ci.yml): nothing is compiled on the server. IMAGE_TAG picks the version (a git
+# SHA); rolling back is deploying an older tag. docker-compose.override.yml builds the dev image.
 networks:
   default:
     name: ${EXTERNAL_NET}
@@ -5,9 +8,8 @@ networks:
 
 services:
   app-tickets:
-    build:
-      context: .
-      dockerfile: etc/app/prod/Dockerfile
+    image: ${IMAGE:-ghcr.io/ivandmn/tickets-api}:${IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: app-tickets
     env_file: .env
     restart: unless-stopped

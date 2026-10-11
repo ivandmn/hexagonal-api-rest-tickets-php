@@ -1,5 +1,7 @@
 parameters:
     level: 10
+    # Inside var/: ignored by git and Docker, and kept between runs by the mounted volume.
+    tmpDir: var/cache/phpstan
     paths:
         - bin/
         - config/

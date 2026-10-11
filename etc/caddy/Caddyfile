@@ -1,8 +1,13 @@
 {
 	skip_install_trust
 
+	# Explicit: local only, never reachable from the network.
+	admin localhost:2019
+
 	servers {
+		# Traefik sits in front: log the client's IP from X-Forwarded-For, not Traefik's.
 		trusted_proxies static private_ranges
+		client_ip_headers X-Forwarded-For
 	}
 
 	{$CADDY_GLOBAL_OPTIONS}
@@ -12,6 +17,8 @@
 
 		worker {
 			file /web/public/index.php
+			# Each worker holds a full app in memory: workers × memory_limit must fit the container.
+			num {$FRANKENPHP_NUM_WORKERS:4}
 			{$FRANKENPHP_WORKER_CONFIG}
 		}
 	}
@@ -28,33 +35,41 @@
 				replace authorization REDACTED
 			}
 			request>headers>Authorization delete
-            request>headers>Cookie delete
-            resp_headers>Set-Cookie delete
+			request>headers>Cookie delete
+			resp_headers>Set-Cookie delete
 		}
 	}
+	# The Docker healthcheck calls it every 30 s: it would be most of the access log.
+	log_skip /health
 
 	root /web/public
 	encode zstd br gzip
 
+	# A JSON API: cut oversized bodies here, before they reach PHP.
+	request_body {
+		max_size 2MB
+	}
+
 	{$CADDY_SERVER_EXTRA_DIRECTIVES}
 
-    @hidden {
-        path */.*
-        not path /.well-known/*
-    }
-    respond @hidden 404
+	@hidden {
+		path */.*
+		not path /.well-known/*
+	}
+	respond @hidden 404
 
-    header {
-        ?Permissions-Policy "browsing-topics=()"
-        ?X-Content-Type-Options "nosniff"
-        ?Referrer-Policy "strict-origin-when-cross-origin"
-        ?X-Frame-Options "SAMEORIGIN"
-        -X-Powered-By
-        -Server
-    }
+	# Forced (no `?`): the app never needs to relax them. HSTS goes in Traefik, which terminates TLS.
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		?Permissions-Policy "browsing-topics=()"
+		-X-Powered-By
+		-Server
+	}
 
-    @immutableAssets path /build/* /assets/*
-    header @immutableAssets Cache-Control "public, max-age=31536000, immutable"
+	@immutableAssets path /build/* /assets/*
+	header @immutableAssets Cache-Control "public, max-age=31536000, immutable"
 
 	@phpRoute {
 		not file {path}

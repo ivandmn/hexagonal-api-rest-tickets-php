@@ -8,7 +8,11 @@
          failOnDeprecation="true"
          failOnNotice="true"
          failOnWarning="true"
-         cacheDirectory="var/phpunit/.phpunit.result.cache">
+         executionOrder="random"
+         failOnRisky="true"
+         beStrictAboutOutputDuringTests="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         cacheDirectory="var/cache/phpunit">
     <php>
         <ini name="display_errors" value="1"/>
         <ini name="error_reporting" value="-1"/>
@@ -36,10 +40,6 @@
         <include>
             <directory suffix=".php">src</directory>
         </include>
-
-        <exclude>
-            <file>src/autoload.php</file>
-        </exclude>
 
         <deprecationTrigger>
             <method>Doctrine\Deprecations\Deprecation::trigger</method>

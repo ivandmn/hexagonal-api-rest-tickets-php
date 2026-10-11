@@ -17,7 +17,7 @@ deptrac:
   paths:
     - ./src
 
-  cache_file: ./var/.deptrac.cache
+  cache_file: ./var/cache/deptrac.cache
 
   layers:
     -
