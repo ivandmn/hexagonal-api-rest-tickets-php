@@ -40,12 +40,42 @@ $finder = (new PhpCsFixer\Finder())
     ]);
 
 return (new PhpCsFixer\Config())
+    // Allow "risky" rules (the ones that may change behaviour).
     ->setRiskyAllowed(true)
+
+    // Run the fixer on all CPU cores. Much faster on big projects.
     ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
+
+    // Store the cache inside var/ instead of the project root, so it's
+    // already ignored by Git and Docker (var/ is excluded everywhere).
     ->setCacheFile(__DIR__ . '/var/.php-cs-fixer.cache')
+
     ->setRules([
+
+        // =====================================================================
+        // RULE SETS (presets)
+        // =====================================================================
+
+        // Official PSR-12 coding style: 4-space indentation, class and method
+        // braces on a new line, one statement per line, etc.
+        //   Before: class Foo{ public function bar(){ return 1; } }
+        //   After:  class Foo
+        //           {
+        //               public function bar()
+        //               {
+        //                   return 1;
+        //               }
+        //           }
+        // [NOTE] @Symfony already includes this standard, so this line is
+        // redundant. Keeping it does no harm.
         '@PSR12' => true,
+
+        // Symfony coding style. Includes PSR-12 plus many more rules (single
+        // quotes, operator spacing, import order, phpdoc...).
         '@Symfony' => true,
+
+        // Risky rules from the Symfony style. For example, prefixing native
+        // functions with "\" or modernizing old calls.
         '@Symfony:risky' => true,
 
         // Reads the PHP version from composer.json ("php": ">=8.5") and applies
@@ -78,31 +108,31 @@ return (new PhpCsFixer\Config())
         //   After:  [$id, $name] = $row;
         'list_syntax' => ['syntax' => 'short'],
 
-        // [NEW] Always use "?Type" instead of "null|Type" for single nullable types.
+        // Always use "?Type" instead of "null|Type" for single nullable types.
         //   Before: public function find(string $id): null|Task
         //   After:  public function find(string $id): ?Task
         'nullable_type_declaration' => ['syntax' => 'question_mark'],
 
-        // [NEW] Sort union and intersection types, with null always last.
+        // Sort union and intersection types, with null always last.
         // Same criteria as phpdoc_types_order, so native types and phpdoc match.
         //   Before: public function parse(string|int|null $value)
         //   After:  public function parse(int|string|null $value)
         'ordered_types' => ['null_adjustment' => 'always_last', 'sort_algorithm' => 'alpha'],
 
-        // [NEW] Remove empty parentheses from attributes without arguments.
+        // Remove empty parentheses from attributes without arguments.
         // You use attributes everywhere (routes, OpenAPI, Doctrine, validation).
         //   Before: #[ORM\Entity()]
         //   After:  #[ORM\Entity]
         'attribute_empty_parentheses' => ['use_parentheses' => false],
 
-        // [NEW] Closures that don't use $this become static. They don't capture
+        // Closures that don't use $this become static. They don't capture
         // the object, so they use less memory and can't leak it. Risky: breaks
         // closures that are later bound to an object with Closure::bind().
         //   Before: $ids = array_map(fn (Task $t) => $t->id(), $tasks);
         //   After:  $ids = array_map(static fn (Task $t) => $t->id(), $tasks);
         'static_lambda' => true,
 
-        // [NEW] Replace mutable DateTime with DateTimeImmutable. Immutable dates
+        // Replace mutable DateTime with DateTimeImmutable. Immutable dates
         // avoid bugs where modifying a date changes it everywhere it's shared,
         // which fits well with value objects and entities. Risky: code that
         // relies on modifying the date in place ($date->modify(...) without
@@ -113,7 +143,7 @@ return (new PhpCsFixer\Config())
         // datetime_immutable type automatically, so entities keep working.
         'date_time_immutable' => true,
 
-        // [NEW] Return the expression directly instead of assigning it to a
+        // Return the expression directly instead of assigning it to a
         // variable that is only returned.
         //   Before: $task = $this->repository->find($id);
         //
@@ -405,7 +435,7 @@ return (new PhpCsFixer\Config())
         //               ->where('t.id = :id');
         'method_chaining_indentation' => true,
 
-        // [NEW] In multi-line chained calls, put the closing ";" on its own line.
+        // In multi-line chained calls, put the closing ";" on its own line.
         // It's the style this very file already uses, and adding a new call at
         // the end of the chain only changes one line in the diff.
         //   Before: $qb->select('t')
@@ -415,7 +445,7 @@ return (new PhpCsFixer\Config())
         //           ;
         'multiline_whitespace_before_semicolons' => ['strategy' => 'new_line_for_chained_calls'],
 
-        // [NEW] Trailing comma on the last element of every multi-line list.
+        // Trailing comma on the last element of every multi-line list.
         // Adds "arguments" to what @Symfony already does (arrays, parameters,
         // match, destructuring). Adding an element then only changes one line.
         //   Before: new AssignTaskToUserCommand(
@@ -535,7 +565,7 @@ return (new PhpCsFixer\Config())
         //            */
         'phpdoc_order' => true,
 
-        // [NEW] Order @param tags to match the order of the function's parameters.
+        // Order @param tags to match the order of the function's parameters.
         //   Before: /**
         //            * @param string $userId
         //            * @param string $taskId
@@ -584,14 +614,14 @@ return (new PhpCsFixer\Config())
         //   @param string|null|int $value  ->  @param int|string|null $value
         'phpdoc_types_order' => ['null_adjustment' => 'always_last', 'sort_algorithm' => 'alpha'],
 
-        // [NEW] Use the generic array syntax that PHPStan understands best.
+        // Use the generic array syntax that PHPStan understands best.
         // Risky only because it changes how the type is written; PHPStan reads
         // both, but array<int, Task> lets you specify the key type too.
         //   Before: @return Task[]
         //   After:  @return array<Task>
         'phpdoc_array_type' => true,
 
-        // [NEW] Single-line docblocks for properties and constants when they fit.
+        // Single-line docblocks for properties and constants when they fit.
         //   Before: /**
         //            * @var array<Task>
         //            */
@@ -698,7 +728,7 @@ return (new PhpCsFixer\Config())
         // annotations, so this rule does nothing in your project.
         'php_unit_fqcn_annotation' => true,
 
-        // [NEW] Convert PHPUnit annotations into attributes. PHPUnit 12+ no
+        // Convert PHPUnit annotations into attributes. PHPUnit 12+ no
         // longer reads annotations at all: a @dataProvider in a docblock is
         // silently ignored and the test runs without data. This rule fixes
         // any leftover (old code, copied snippets, generated tests).
@@ -710,18 +740,18 @@ return (new PhpCsFixer\Config())
         //           public function test_it_rejects_invalid_ids(string $id): void
         'php_unit_attributes' => true,
 
-        // [NEW] Data providers must be static since PHPUnit 10. Makes them
+        // Data providers must be static since PHPUnit 10. Makes them
         // static when they don't use $this.
         //   Before: public function provideInvalidIds(): iterable
         //   After:  public static function provideInvalidIds(): iterable
         'php_unit_data_provider_static' => true,
 
-        // [NEW] Data providers always declare an iterable return type.
+        // Data providers always declare an iterable return type.
         //   Before: public static function provideInvalidIds()
         //   After:  public static function provideInvalidIds(): iterable
         'php_unit_data_provider_return_type' => true,
 
-        // [NEW] Call assertions the same way in every test. PHPUnit assertions
+        // Call assertions the same way in every test. PHPUnit assertions
         // are static methods, so "self::" is the most accurate form.
         // Options: 'self' (self::assertSame), 'this' ($this->assertSame),
         // 'static' (static::assertSame).

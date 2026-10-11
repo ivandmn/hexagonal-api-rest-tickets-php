@@ -37,7 +37,8 @@ RUN install-php-extensions \
 COPY etc/caddy/Caddyfile /etc/frankenphp/Caddyfile
 COPY --chmod=755 etc/app/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 
-HEALTHCHECK --start-period=60s CMD curl -f http://localhost:2019/metrics || exit 1
+# Hits the app itself (Caddy + worker + Symfony), not just the Caddy admin API.
+HEALTHCHECK --start-period=60s --interval=30s --timeout=5s CMD curl -fsS -o /dev/null http://localhost/health || exit 1
 
 ENTRYPOINT ["docker-entrypoint"]
 CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
@@ -45,6 +46,10 @@ CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
 ENV APP_ENV=prod
 ENV APP_DEBUG=0
 ENV FRANKENPHP_WORKER_CONFIG="num 4"
+# Behind Traefik (Dokploy): plain HTTP on :80 for any Host (TLS ends at Traefik), and trust its
+# X-Forwarded-* headers. Both can be overridden from the Dokploy environment.
+ENV SERVER_NAME=:80
+ENV TRUSTED_PROXIES=private_ranges
 
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 

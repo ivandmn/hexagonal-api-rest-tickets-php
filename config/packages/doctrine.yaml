@@ -8,6 +8,9 @@ doctrine:
 
         profiling_collect_backtrace: '%kernel.debug%'
 
+        # The app owns the "tickets" schema only: ignore anything else (public, other apps).
+        schema_filter: ~^tickets\.~
+
         # Map columns straight to domain value objects
         types:
             # Task

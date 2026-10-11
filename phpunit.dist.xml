@@ -8,7 +8,7 @@
          failOnDeprecation="true"
          failOnNotice="true"
          failOnWarning="true"
-         cacheDirectory=".phpunit.result.cache">
+         cacheDirectory="var/phpunit/.phpunit.result.cache">
     <php>
         <ini name="display_errors" value="1"/>
         <ini name="error_reporting" value="-1"/>

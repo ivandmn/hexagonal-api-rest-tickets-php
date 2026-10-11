@@ -51,6 +51,8 @@ db-diff: ## Generate database migration diff
 	bin/console doctrine:migrations:diff
 
 db-migrate: ## Run database migrations
+	@# The migrations table lives in the "tickets" schema, so it must exist before migrating.
+	bin/console dbal:run-sql -q 'CREATE SCHEMA IF NOT EXISTS tickets'
 	bin/console doctrine:migrations:migrate
 
 ## ———— Quality ————

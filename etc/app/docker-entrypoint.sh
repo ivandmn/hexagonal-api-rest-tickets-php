@@ -24,6 +24,9 @@ if [ "$1" = 'frankenphp' ]; then
             sleep 2
         done
 
+        # The migrations table lives in the "tickets" schema, so it has to exist before migrating.
+        bin/console dbal:run-sql -q "CREATE SCHEMA IF NOT EXISTS tickets"
+
         log "Running migrations..."
         bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
     fi
