@@ -33,7 +33,7 @@ jobs:
       # Composer's auto-scripts (cache:clear) boot the kernel, so .env must exist first. Only the
       # variable names matter: nothing here connects to the app database.
       - name: Environment file
-        run: cp .env.example .env
+        run: cp .env.example .env && cp .env.test.example .env.test
 
       - uses: ramsey/composer-install@v3
 
@@ -79,7 +79,7 @@ jobs:
           tools: composer:v2
 
       - name: Environment file
-        run: cp .env.example .env
+        run: cp .env.example .env && cp .env.test.example .env.test
 
       - uses: ramsey/composer-install@v3
 

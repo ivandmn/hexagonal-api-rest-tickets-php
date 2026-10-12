@@ -44,7 +44,7 @@ final class AssignTaskController extends ApiController
     ])]
     #[MalformedBodyResponse]
     #[InternalErrorResponse]
-    #[Route('/api/tasks/{id}/assign', name: 'api_task_assign', requirements: ['id' => Requirement::UUID], methods: ['PATCH'])]
+    #[Route('/tasks/{id}/assign', name: 'api_task_assign', requirements: ['id' => Requirement::UUID], methods: ['PATCH'])]
     public function __invoke(string $id, Request $request, ApiResponder $responder): JsonResponse
     {
         $payload = Payload::fromJsonBody($request, ['user_id']);

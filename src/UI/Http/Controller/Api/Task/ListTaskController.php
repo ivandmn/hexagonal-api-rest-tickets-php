@@ -42,7 +42,7 @@ final class ListTaskController extends ApiController
         ['field' => 'limit', 'code' => 'VALUE_OUT_OF_RANGE', 'message' => 'This value must be between 1 and 100.', 'params' => ['min' => 1, 'max' => 100]],
     ])]
     #[InternalErrorResponse]
-    #[Route('/api/tasks', name: 'api_task_list', methods: ['GET'])]
+    #[Route('/tasks', name: 'api_task_list', methods: ['GET'])]
     public function __invoke(Request $request, ApiResponder $responder): JsonResponse
     {
         $query = Payload::fromQuery($request, ['status', 'priority', 'assigned_to', 'due_from', 'due_to', 'page', 'limit']);

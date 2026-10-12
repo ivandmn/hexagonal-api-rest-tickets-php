@@ -29,9 +29,9 @@ final class CreateTaskCommandHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tasks   = new InMemoryTaskRepository();
+        $this->tasks      = new InMemoryTaskRepository();
         $this->appLogger  = new SpyLogger();
-        $this->handler = new CreateTaskCommandHandler($this->tasks, new MockClock(self::NOW), $this->appLogger);
+        $this->handler    = new CreateTaskCommandHandler($this->tasks, new MockClock(self::NOW), $this->appLogger);
     }
 
     public function test_creates_a_pending_unassigned_task_with_the_given_id(): void

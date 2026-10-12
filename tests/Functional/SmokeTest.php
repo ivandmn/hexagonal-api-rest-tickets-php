@@ -57,18 +57,18 @@ final class SmokeTest extends WebTestCase
         }
 
         $this->assertEqualsCanonicalizing([
-            'GET /api/tasks',
-            'POST /api/tasks',
-            'GET /api/tasks/{id}',
-            'PATCH /api/tasks/{id}',
-            'DELETE /api/tasks/{id}',
-            'PATCH /api/tasks/{id}/assign',
-            'DELETE /api/tasks/{id}/assign',
-            'GET /api/users',
-            'POST /api/users',
-            'GET /api/users/{id}',
-            'PATCH /api/users/{id}',
-            'DELETE /api/users/{id}',
+            'GET /api/v1/tasks',
+            'POST /api/v1/tasks',
+            'GET /api/v1/tasks/{id}',
+            'PATCH /api/v1/tasks/{id}',
+            'DELETE /api/v1/tasks/{id}',
+            'PATCH /api/v1/tasks/{id}/assign',
+            'DELETE /api/v1/tasks/{id}/assign',
+            'GET /api/v1/users',
+            'POST /api/v1/users',
+            'GET /api/v1/users/{id}',
+            'PATCH /api/v1/users/{id}',
+            'DELETE /api/v1/users/{id}',
         ], $operations);
     }
 
@@ -81,10 +81,10 @@ final class SmokeTest extends WebTestCase
         $this->assertIsArray($doc);
 
         $bodies = [
-            ['/api/tasks', 'post', ['title', 'description', 'priority', 'due_date']],
-            ['/api/tasks/{id}', 'patch', ['title', 'description', 'status', 'priority', 'due_date']],
-            ['/api/tasks/{id}/assign', 'patch', ['user_id']],
-            ['/api/users', 'post', ['email', 'name']],
+            ['/api/v1/tasks', 'post', ['title', 'description', 'priority', 'due_date']],
+            ['/api/v1/tasks/{id}', 'patch', ['title', 'description', 'status', 'priority', 'due_date']],
+            ['/api/v1/tasks/{id}/assign', 'patch', ['user_id']],
+            ['/api/v1/users', 'post', ['email', 'name']],
         ];
 
         foreach ($bodies as [$path, $method, $fields]) {

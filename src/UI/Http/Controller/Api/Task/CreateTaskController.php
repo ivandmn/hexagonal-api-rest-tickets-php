@@ -49,7 +49,7 @@ final class CreateTaskController extends ApiController
     )]
     #[MalformedBodyResponse]
     #[InternalErrorResponse]
-    #[Route('/api/tasks', name: 'api_task_create', methods: ['POST'])]
+    #[Route('/tasks', name: 'api_task_create', methods: ['POST'])]
     public function __invoke(Request $request, ApiResponder $responder): JsonResponse
     {
         $payload = Payload::fromJsonBody($request, ['title', 'description', 'priority', 'due_date']);

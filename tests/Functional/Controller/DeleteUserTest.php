@@ -41,7 +41,7 @@ final class DeleteUserTest extends WebTestCase
     {
         $user = $this->user('lonely@example.com');
 
-        $this->client->request('DELETE', '/api/users/' . $user->getId()->value());
+        $this->client->request('DELETE', '/api/v1/users/' . $user->getId()->value());
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
         $this->assertSame('', $this->client->getResponse()->getContent());
@@ -55,7 +55,7 @@ final class DeleteUserTest extends WebTestCase
         $mine  = [$this->task($user, TaskStatus::COMPLETED), $this->task($user, TaskStatus::COMPLETED)];
         $their = $this->task($other, TaskStatus::PENDING);
 
-        $this->client->request('DELETE', '/api/users/' . $user->getId()->value());
+        $this->client->request('DELETE', '/api/v1/users/' . $user->getId()->value());
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
         $this->assertNull($this->users()->findById($user->getId()));
@@ -88,7 +88,7 @@ final class DeleteUserTest extends WebTestCase
             $this->task($user, $status);
         }
 
-        $this->client->request('DELETE', '/api/users/' . $user->getId()->value());
+        $this->client->request('DELETE', '/api/v1/users/' . $user->getId()->value());
 
         $problem = $this->assertProblem($this->client, Response::HTTP_CONFLICT, UserDeletionNotAllowedException::ERROR_CODE);
         $this->assertSame(['user_id' => $user->getId()->value(), 'unfinished_tasks' => $unfinished], $problem['params']);
@@ -102,7 +102,7 @@ final class DeleteUserTest extends WebTestCase
     {
         $userId = UserId::new()->value();
 
-        $this->client->request('DELETE', '/api/users/' . $userId);
+        $this->client->request('DELETE', '/api/v1/users/' . $userId);
 
         $problem = $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, UserNotFoundException::ERROR_CODE);
         $this->assertSame(['user_id' => $userId], $problem['params']);
@@ -111,7 +111,7 @@ final class DeleteUserTest extends WebTestCase
 
     public function test_id_that_is_not_a_uuid(): void
     {
-        $this->client->request('DELETE', '/api/users/not-a-uuid');
+        $this->client->request('DELETE', '/api/v1/users/not-a-uuid');
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND');
     }

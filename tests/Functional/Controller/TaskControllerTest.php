@@ -51,7 +51,7 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_list_returns_200_with_an_empty_list(): void
     {
-        $this->client->request('GET', '/api/tasks');
+        $this->client->request('GET', '/api/v1/tasks');
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame([], $json['data']);
@@ -63,7 +63,7 @@ final class TaskControllerTest extends WebTestCase
         $this->givenTask('Task One', createdAt: new \DateTimeImmutable('-2 hours'));
         $this->givenTask('Task Two', createdAt: new \DateTimeImmutable('-1 hour'));
 
-        $this->client->request('GET', '/api/tasks');
+        $this->client->request('GET', '/api/v1/tasks');
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame(['Task Two', 'Task One'], \array_column($json['data'], 'title'));
@@ -77,7 +77,7 @@ final class TaskControllerTest extends WebTestCase
         $this->givenTask('High P2', TaskPriority::HIGH);
         $this->givenTask('Low P1', TaskPriority::LOW);
 
-        $this->client->request('GET', '/api/tasks?status=pending&priority=high&page=1&limit=1');
+        $this->client->request('GET', '/api/v1/tasks?status=pending&priority=high&page=1&limit=1');
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertCount(1, $json['data']);
@@ -94,7 +94,7 @@ final class TaskControllerTest extends WebTestCase
         $this->givenTask('Jane no due date', assignee: $jane);
         $this->givenTask('John in range', due: FutureDate::on(3, 10), assignee: $john);
 
-        $this->client->request('GET', '/api/tasks?' . \http_build_query([
+        $this->client->request('GET', '/api/v1/tasks?' . \http_build_query([
             'assigned_to' => $jane->getId()->value(),
             'due_from'    => FutureDate::on(3, 1)->format(\DATE_ATOM),
             'due_to'      => FutureDate::on(3, 31, '23:59:59')->format(\DATE_ATOM),
@@ -111,7 +111,7 @@ final class TaskControllerTest extends WebTestCase
         $this->givenTask('Jane no due date', assignee: $jane);
         $this->givenTask('Unassigned');
 
-        $this->client->request('GET', '/api/tasks?assigned_to=' . $jane->getId()->value());
+        $this->client->request('GET', '/api/v1/tasks?assigned_to=' . $jane->getId()->value());
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame(['Jane no due date'], \array_column($json['data'], 'title'));
@@ -119,16 +119,16 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_list_rejects_invalid_assignee_and_due_dates(): void
     {
-        $this->client->request('GET', '/api/tasks?assigned_to=nope');
+        $this->client->request('GET', '/api/v1/tasks?assigned_to=nope');
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['assigned_to' => InvalidValueException::INVALID_FORMAT]);
 
-        $this->client->request('GET', '/api/tasks?due_from=2030-01-01');
+        $this->client->request('GET', '/api/v1/tasks?due_from=2030-01-01');
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['due_from' => InvalidValueException::INVALID_FORMAT]);
     }
 
     public function test_list_rejects_a_due_to_before_due_from(): void
     {
-        $this->client->request('GET', '/api/tasks?due_from=2030-01-02T00:00:00Z&due_to=2030-01-01T00:00:00Z');
+        $this->client->request('GET', '/api/v1/tasks?due_from=2030-01-02T00:00:00Z&due_to=2030-01-01T00:00:00Z');
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['due_to' => InvalidValueException::INVALID]);
     }
@@ -137,7 +137,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $this->givenTask('Only task');
 
-        $this->client->request('GET', '/api/tasks?page=5');
+        $this->client->request('GET', '/api/v1/tasks?page=5');
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame([], $json['data']);
@@ -150,7 +150,7 @@ final class TaskControllerTest extends WebTestCase
         $this->givenTask('Paged Task Two');
         $this->givenTask('Paged Task Three');
 
-        $this->client->request('GET', '/api/tasks?limit=2');
+        $this->client->request('GET', '/api/v1/tasks?limit=2');
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertCount(2, $json['data']);
@@ -159,28 +159,28 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_list_returns_422_on_invalid_param_type(): void
     {
-        $this->client->request('GET', '/api/tasks?page=abc');
+        $this->client->request('GET', '/api/v1/tasks?page=abc');
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['page' => ApiErrorCode::INVALID_TYPE]);
     }
 
     public function test_list_returns_422_on_unsupported_priority_value(): void
     {
-        $this->client->request('GET', '/api/tasks?priority=test');
+        $this->client->request('GET', '/api/v1/tasks?priority=test');
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['priority' => InvalidValueException::INVALID_CHOICE]);
     }
 
     public function test_list_returns_422_on_unsupported_status_value(): void
     {
-        $this->client->request('GET', '/api/tasks?status=unknown');
+        $this->client->request('GET', '/api/v1/tasks?status=unknown');
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['status' => InvalidValueException::INVALID_CHOICE]);
     }
 
     public function test_list_returns_422_when_limit_exceeds_the_maximum(): void
     {
-        $this->client->request('GET', '/api/tasks?limit=101');
+        $this->client->request('GET', '/api/v1/tasks?limit=101');
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['limit' => InvalidValueException::OUT_OF_RANGE]);
     }
@@ -191,7 +191,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $dueDate = FutureDate::on(time: '10:00:00')->format(\DATE_ATOM);
 
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Test Task', 'description' => 'This is a valid task.', 'priority' => 'high', 'due_date' => $dueDate]);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Test Task', 'description' => 'This is a valid task.', 'priority' => 'high', 'due_date' => $dueDate]);
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_CREATED);
         $task = $json['data'];
@@ -205,7 +205,7 @@ final class TaskControllerTest extends WebTestCase
         $this->assertNull($task['updated_at']);
 
         $location = $this->client->getResponse()->headers->get('Location');
-        $this->assertSame('http://localhost/api/tasks/' . $task['id'], $location);
+        $this->assertSame('http://localhost/api/v1/tasks/' . $task['id'], $location);
 
         // The Location points to the same resource.
         $this->client->request('GET', (string) $location);
@@ -214,77 +214,77 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_create_without_due_date(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'No due date', 'description' => 'Optional field omitted', 'priority' => 'low']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'No due date', 'description' => 'Optional field omitted', 'priority' => 'low']);
 
         $this->assertNull($this->assertJsonSuccess($this->client, Response::HTTP_CREATED)['data']['due_date']);
     }
 
     public function test_create_returns_dates_in_utc(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Madrid time', 'description' => 'D', 'priority' => 'low', 'due_date' => FutureDate::on(time: '12:00:00')->format('Y-m-d') . 'T12:00:00+02:00']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Madrid time', 'description' => 'D', 'priority' => 'low', 'due_date' => FutureDate::on(time: '12:00:00')->format('Y-m-d') . 'T12:00:00+02:00']);
 
         $this->assertSame(FutureDate::on(time: '10:00:00')->format(\DATE_ATOM), $this->assertJsonSuccess($this->client, Response::HTTP_CREATED)['data']['due_date']);
     }
 
     public function test_create_returns_422_on_the_first_missing_field(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['description' => 'Missing Title.']);
+        $this->sendJson('POST', '/api/v1/tasks', ['description' => 'Missing Title.']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['title' => InvalidValueException::REQUIRED]);
     }
 
     public function test_create_returns_422_on_a_null_required_field(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => null, 'description' => 'Null title', 'priority' => 'low']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => null, 'description' => 'Null title', 'priority' => 'low']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['title' => ApiErrorCode::INVALID_TYPE]);
     }
 
     public function test_create_returns_422_on_extra_parameter_not_allowed(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Test Task', 'description' => 'Has extra', 'priority' => 'low', 'unexpected' => 'value']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Test Task', 'description' => 'Has extra', 'priority' => 'low', 'unexpected' => 'value']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['unexpected' => ApiErrorCode::UNKNOWN_FIELD]);
     }
 
     public function test_create_rejects_camel_case_keys(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Test Task', 'description' => 'D', 'priority' => 'low', 'dueDate' => FutureDate::on()->format(\DATE_ATOM)]);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Test Task', 'description' => 'D', 'priority' => 'low', 'dueDate' => FutureDate::on()->format(\DATE_ATOM)]);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['dueDate' => ApiErrorCode::UNKNOWN_FIELD]);
     }
 
     public function test_create_returns_422_on_invalid_parameter_type(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 12345, 'description' => 'x', 'priority' => 'low']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 12345, 'description' => 'x', 'priority' => 'low']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['title' => ApiErrorCode::INVALID_TYPE]);
     }
 
     public function test_create_returns_422_on_invalid_priority_enum(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Test Task', 'description' => 'Priority must be low, medium or high.', 'priority' => 'urgent']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Test Task', 'description' => 'Priority must be low, medium or high.', 'priority' => 'urgent']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['priority' => InvalidValueException::INVALID_CHOICE]);
     }
 
     public function test_create_returns_422_on_invalid_due_date_format(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Test Task', 'description' => 'Invalid Due Date Format.', 'priority' => 'high', 'due_date' => '2030-01-01 10:00:00']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Test Task', 'description' => 'Invalid Due Date Format.', 'priority' => 'high', 'due_date' => '2030-01-01 10:00:00']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['due_date' => InvalidValueException::INVALID_FORMAT]);
     }
 
     public function test_create_rejects_an_overflowing_due_date_instead_of_rolling_it_over(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Test Task', 'description' => 'February 30th', 'priority' => 'high', 'due_date' => '2030-02-30T10:00:00+00:00']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Test Task', 'description' => 'February 30th', 'priority' => 'high', 'due_date' => '2030-02-30T10:00:00+00:00']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['due_date' => InvalidValueException::INVALID_FORMAT]);
     }
 
     public function test_create_returns_422_on_due_date_in_past(): void
     {
-        $this->sendJson('POST', '/api/tasks', ['title' => 'Test Task', 'description' => 'Due date cannot be in the past.', 'priority' => 'medium', 'due_date' => '2020-01-01T10:00:00+00:00']);
+        $this->sendJson('POST', '/api/v1/tasks', ['title' => 'Test Task', 'description' => 'Due date cannot be in the past.', 'priority' => 'medium', 'due_date' => '2020-01-01T10:00:00+00:00']);
 
         $problem = $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, TaskDueDateInPastException::ERROR_CODE, ['due_date' => TaskDueDateInPastException::ERROR_CODE]);
         $this->assertSame(['due_date' => '2020-01-01T10:00:00+00:00'], $problem['params']);
@@ -296,7 +296,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask('Details Task', TaskPriority::MEDIUM, FutureDate::on());
 
-        $this->client->request('GET', '/api/tasks/' . $task->getId()->value());
+        $this->client->request('GET', '/api/v1/tasks/' . $task->getId()->value());
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame($task->getId()->value(), $json['data']['id']);
@@ -306,14 +306,14 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_get_details_returns_404_on_invalid_id_format(): void
     {
-        $this->client->request('GET', '/api/tasks/12345');
+        $this->client->request('GET', '/api/v1/tasks/12345');
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND');
     }
 
     public function test_get_details_returns_404_on_not_found(): void
     {
-        $this->client->request('GET', '/api/tasks/' . self::UNKNOWN_ID);
+        $this->client->request('GET', '/api/v1/tasks/' . self::UNKNOWN_ID);
 
         $problem = $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, TaskNotFoundException::ERROR_CODE);
         $this->assertSame(['task_id' => self::UNKNOWN_ID], $problem['params']);
@@ -326,7 +326,7 @@ final class TaskControllerTest extends WebTestCase
         $task    = $this->givenTask('Updatable Task', due: FutureDate::on(day: 4));
         $dueDate = FutureDate::on(time: '10:00:00')->format(\DATE_ATOM);
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), [
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), [
             'title'       => 'Updated Task Title',
             'description' => 'This is an updated task.',
             'status'      => 'in_progress',
@@ -347,7 +347,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask('Partial Task', TaskPriority::MEDIUM, FutureDate::on());
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['title' => 'Only Update Title']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['title' => 'Only Update Title']);
 
         $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
         $this->assertSame('Only Update Title', $data['title']);
@@ -359,7 +359,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask('Has a due date', due: FutureDate::on());
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['due_date' => null]);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['due_date' => null]);
 
         $this->assertNull($this->assertJsonSuccess($this->client, Response::HTTP_OK)['data']['due_date']);
     }
@@ -368,7 +368,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask('Same title');
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['title' => 'Same title']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['title' => 'Same title']);
 
         $this->assertNull($this->assertJsonSuccess($this->client, Response::HTTP_OK)['data']['updated_at']);
     }
@@ -377,7 +377,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PUT', '/api/tasks/' . $task->getId()->value(), ['title' => 'Whatever title']);
+        $this->sendJson('PUT', '/api/v1/tasks/' . $task->getId()->value(), ['title' => 'Whatever title']);
 
         $this->assertProblem($this->client, Response::HTTP_METHOD_NOT_ALLOWED, 'METHOD_NOT_ALLOWED');
     }
@@ -386,7 +386,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['title' => 'Updated Task Title', 'unexpected' => 'value']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['title' => 'Updated Task Title', 'unexpected' => 'value']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['unexpected' => ApiErrorCode::UNKNOWN_FIELD]);
     }
@@ -395,21 +395,21 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['title' => 12345]);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['title' => 12345]);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['title' => ApiErrorCode::INVALID_TYPE]);
     }
 
     public function test_update_returns_404_on_invalid_id_format(): void
     {
-        $this->sendJson('PATCH', '/api/tasks/invalid-id', ['title' => 'Updated Task Title']);
+        $this->sendJson('PATCH', '/api/v1/tasks/invalid-id', ['title' => 'Updated Task Title']);
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND');
     }
 
     public function test_update_returns_404_on_not_found(): void
     {
-        $this->sendJson('PATCH', '/api/tasks/' . self::UNKNOWN_ID, ['title' => 'Updated Task Title']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . self::UNKNOWN_ID, ['title' => 'Updated Task Title']);
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, TaskNotFoundException::ERROR_CODE);
     }
@@ -418,7 +418,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['status' => 'unknown_status']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['status' => 'unknown_status']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['status' => InvalidValueException::INVALID_CHOICE]);
     }
@@ -427,7 +427,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['priority' => 'urgent']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['priority' => 'urgent']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['priority' => InvalidValueException::INVALID_CHOICE]);
     }
@@ -436,7 +436,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['due_date' => '2030-01-01 10:00:00']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['due_date' => '2030-01-01 10:00:00']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['due_date' => InvalidValueException::INVALID_FORMAT]);
     }
@@ -445,7 +445,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask(due: FutureDate::on(day: 4));
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['due_date' => '2020-01-01T10:00:00+00:00']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['due_date' => '2020-01-01T10:00:00+00:00']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, TaskDueDateInPastException::ERROR_CODE, ['due_date' => TaskDueDateInPastException::ERROR_CODE]);
     }
@@ -454,7 +454,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value(), ['status' => 'completed']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value(), ['status' => 'completed']);
 
         $problem = $this->assertProblem($this->client, Response::HTTP_CONFLICT, InvalidTaskStatusTransitionException::ERROR_CODE, ['status' => InvalidTaskStatusTransitionException::ERROR_CODE]);
         $this->assertSame(['from' => 'pending', 'to' => 'completed'], $problem['params']);
@@ -467,7 +467,7 @@ final class TaskControllerTest extends WebTestCase
         $task = $this->givenTask('Assignable Task');
         $user = $this->givenUser('assign@example.com', 'Assign Target');
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value() . '/assign', ['user_id' => $user->getId()->value()]);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value() . '/assign', ['user_id' => $user->getId()->value()]);
 
         $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
         $this->assertSame($task->getId()->value(), $data['id']);
@@ -479,7 +479,7 @@ final class TaskControllerTest extends WebTestCase
         $user = $this->givenUser('unassign@example.com', 'Unassign Target');
         $task = $this->givenTask('Assigned task', assignee: $user);
 
-        $this->client->request('DELETE', '/api/tasks/' . $task->getId()->value() . '/assign');
+        $this->client->request('DELETE', '/api/v1/tasks/' . $task->getId()->value() . '/assign');
 
         $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
         $this->assertNull($data['assigned_to']);
@@ -490,7 +490,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask('Nobody\'s task');
 
-        $this->client->request('DELETE', '/api/tasks/' . $task->getId()->value() . '/assign');
+        $this->client->request('DELETE', '/api/v1/tasks/' . $task->getId()->value() . '/assign');
 
         $data = $this->assertJsonSuccess($this->client, Response::HTTP_OK)['data'];
         $this->assertNull($data['assigned_to']);
@@ -499,7 +499,7 @@ final class TaskControllerTest extends WebTestCase
 
     public function test_unassign_returns_404_on_task_not_found(): void
     {
-        $this->client->request('DELETE', '/api/tasks/' . self::UNKNOWN_ID . '/assign');
+        $this->client->request('DELETE', '/api/v1/tasks/' . self::UNKNOWN_ID . '/assign');
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, TaskNotFoundException::ERROR_CODE);
     }
@@ -508,7 +508,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value() . '/assign', []);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value() . '/assign', []);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['user_id' => InvalidValueException::REQUIRED]);
     }
@@ -518,7 +518,7 @@ final class TaskControllerTest extends WebTestCase
         $task = $this->givenTask();
         $user = $this->givenUser('extra@example.com', 'Extra User');
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value() . '/assign', ['user_id' => $user->getId()->value(), 'extra' => 'x']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value() . '/assign', ['user_id' => $user->getId()->value(), 'extra' => 'x']);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['extra' => ApiErrorCode::UNKNOWN_FIELD]);
     }
@@ -527,7 +527,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value() . '/assign', ['user_id' => 12345]);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value() . '/assign', ['user_id' => 12345]);
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['user_id' => ApiErrorCode::INVALID_TYPE]);
     }
@@ -536,7 +536,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask();
 
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value() . '/assign', ['user_id' => self::UNKNOWN_ID]);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value() . '/assign', ['user_id' => self::UNKNOWN_ID]);
 
         $problem = $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, UserNotFoundException::ERROR_CODE);
         $this->assertSame(['user_id' => self::UNKNOWN_ID], $problem['params']);
@@ -546,7 +546,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $user = $this->givenUser('assign2@example.com', 'Assign Target 2');
 
-        $this->sendJson('PATCH', '/api/tasks/' . self::UNKNOWN_ID . '/assign', ['user_id' => $user->getId()->value()]);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . self::UNKNOWN_ID . '/assign', ['user_id' => $user->getId()->value()]);
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, TaskNotFoundException::ERROR_CODE);
     }
@@ -555,11 +555,11 @@ final class TaskControllerTest extends WebTestCase
     {
         $user = $this->givenUser('assign3@example.com', 'Assign Target 3');
 
-        $this->sendJson('PATCH', '/api/tasks/12345/assign', ['user_id' => $user->getId()->value()]);
+        $this->sendJson('PATCH', '/api/v1/tasks/12345/assign', ['user_id' => $user->getId()->value()]);
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND');
 
         $task = $this->givenTask();
-        $this->sendJson('PATCH', '/api/tasks/' . $task->getId()->value() . '/assign', ['user_id' => 'invalid-uuid']);
+        $this->sendJson('PATCH', '/api/v1/tasks/' . $task->getId()->value() . '/assign', ['user_id' => 'invalid-uuid']);
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['user_id' => InvalidValueException::INVALID_FORMAT]);
     }
 
@@ -569,25 +569,25 @@ final class TaskControllerTest extends WebTestCase
     {
         $pending = $this->givenTask('Deletable Task');
 
-        $this->client->request('DELETE', '/api/tasks/' . $pending->getId()->value());
+        $this->client->request('DELETE', '/api/v1/tasks/' . $pending->getId()->value());
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
         $this->assertSame('', $this->client->getResponse()->getContent());
 
-        $this->client->request('GET', '/api/tasks/' . $pending->getId()->value());
+        $this->client->request('GET', '/api/v1/tasks/' . $pending->getId()->value());
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, TaskNotFoundException::ERROR_CODE);
     }
 
     public function test_delete_returns_404_on_invalid_id_format(): void
     {
-        $this->client->request('DELETE', '/api/tasks/invalid-id');
+        $this->client->request('DELETE', '/api/v1/tasks/invalid-id');
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND');
     }
 
     public function test_delete_returns_404_on_not_found(): void
     {
-        $this->client->request('DELETE', '/api/tasks/' . self::UNKNOWN_ID);
+        $this->client->request('DELETE', '/api/v1/tasks/' . self::UNKNOWN_ID);
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, TaskNotFoundException::ERROR_CODE);
     }
@@ -596,7 +596,7 @@ final class TaskControllerTest extends WebTestCase
     {
         $task = $this->givenTask(status: TaskStatus::IN_PROGRESS);
 
-        $this->client->request('DELETE', '/api/tasks/' . $task->getId()->value());
+        $this->client->request('DELETE', '/api/v1/tasks/' . $task->getId()->value());
 
         $problem = $this->assertProblem($this->client, Response::HTTP_CONFLICT, TaskDeletionNotAllowedException::ERROR_CODE);
         $this->assertSame(['task_id' => $task->getId()->value(), 'status' => 'in_progress'], $problem['params']);

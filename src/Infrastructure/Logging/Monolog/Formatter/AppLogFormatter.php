@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Logging\Monolog\Formatter;
 
 use Monolog\Formatter\LineFormatter;
@@ -17,7 +19,7 @@ final class AppLogFormatter extends LineFormatter
             dateFormat: self::DATE_FORMAT,
             allowInlineLineBreaks: false,
             ignoreEmptyContextAndExtra: true,
-            includeStacktraces: false
+            includeStacktraces: false,
         );
     }
 }

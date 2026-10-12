@@ -99,7 +99,7 @@ final class PayloadTest extends TestCase
 
     public function test_only_json_is_accepted(): void
     {
-        $request = Request::create('/api/tasks', 'POST', server: ['CONTENT_TYPE' => 'application/xml'], content: '<task/>');
+        $request = Request::create('/api/v1/tasks', 'POST', server: ['CONTENT_TYPE' => 'application/xml'], content: '<task/>');
 
         $this->expectException(UnsupportedMediaTypeHttpException::class);
         Payload::fromJsonBody($request, []);
@@ -107,7 +107,7 @@ final class PayloadTest extends TestCase
 
     public function test_the_query_string_is_untyped_so_values_are_parsed(): void
     {
-        $query = Payload::fromQuery(Request::create('/api/tasks?page=2&limit=abc&ratio=0.5&mine=true&status=done'), ['page', 'limit', 'ratio', 'mine', 'status', 'other']);
+        $query = Payload::fromQuery(Request::create('/api/v1/tasks?page=2&limit=abc&ratio=0.5&mine=true&status=done'), ['page', 'limit', 'ratio', 'mine', 'status', 'other']);
 
         $this->assertSame(2, $query->int('page'));
         $this->assertSame(0.5, $query->float('ratio'));
@@ -122,7 +122,7 @@ final class PayloadTest extends TestCase
      */
     private function json(string $body, array $allowed): Payload
     {
-        return Payload::fromJsonBody(Request::create('/api/tasks', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: $body), $allowed);
+        return Payload::fromJsonBody(Request::create('/api/v1/tasks', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: $body), $allowed);
     }
 
     /**

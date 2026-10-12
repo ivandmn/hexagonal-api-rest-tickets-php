@@ -52,7 +52,7 @@ final class UpdateUserController extends ApiController
     ])]
     #[MalformedBodyResponse]
     #[InternalErrorResponse]
-    #[Route('/api/users/{id}', name: 'api_user_update', requirements: ['id' => Requirement::UUID], methods: ['PATCH'])]
+    #[Route('/users/{id}', name: 'api_user_update', requirements: ['id' => Requirement::UUID], methods: ['PATCH'])]
     public function __invoke(string $id, Request $request, ApiResponder $responder): JsonResponse
     {
         $payload = Payload::fromJsonBody($request, ['email', 'name']);

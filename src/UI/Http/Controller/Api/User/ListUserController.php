@@ -22,7 +22,7 @@ final class ListUserController extends ApiController
     #[OA\Get(summary: 'List users', description: 'No users is a 200 with an empty `data`.')]
     #[CollectionResponse(User::class, UserListMeta::class, 'Every user')]
     #[InternalErrorResponse]
-    #[Route('/api/users', name: 'api_user_list', methods: ['GET'])]
+    #[Route('/users', name: 'api_user_list', methods: ['GET'])]
     public function __invoke(ApiResponder $responder): JsonResponse
     {
         /** @var UserListView $users */

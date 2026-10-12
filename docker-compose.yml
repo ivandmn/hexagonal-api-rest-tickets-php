@@ -14,13 +14,13 @@ services:
     env_file: .env
     restart: unless-stopped
     volumes:
-      - caddy_data:/data
-      - caddy_config:/config
+      - app_tickets_caddy_data:/data
+      - app_tickets_caddy_config:/config
     deploy:
       resources:
         limits:
           memory: 2g
 
 volumes:
-  caddy_data:
-  caddy_config:
+  app_tickets_caddy_data:
+  app_tickets_caddy_config:

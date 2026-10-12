@@ -163,7 +163,7 @@ final class ApiExceptionListenerTest extends TestCase
         $this->assertSame('req-123', $event->getResponse()?->headers->get('X-Request-Id'));
     }
 
-    private function dispatch(\Throwable $exception, string $path = '/api/tasks', bool $debug = false, ?string $requestId = null): ExceptionEvent
+    private function dispatch(\Throwable $exception, string $path = '/api/v1/tasks', bool $debug = false, ?string $requestId = null): ExceptionEvent
     {
         $this->appLogger = new SpyLogger();
 

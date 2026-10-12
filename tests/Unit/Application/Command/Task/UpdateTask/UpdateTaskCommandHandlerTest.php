@@ -34,9 +34,9 @@ final class UpdateTaskCommandHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tasks    = new InMemoryTaskRepository();
+        $this->tasks       = new InMemoryTaskRepository();
         $this->appLogger   = new SpyLogger();
-        $this->eventBus = new SpyEventBus();
+        $this->eventBus    = new SpyEventBus();
     }
 
     public function test_updates_the_given_fields_persists_and_logs(): void

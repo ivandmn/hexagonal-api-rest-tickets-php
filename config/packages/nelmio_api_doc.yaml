@@ -13,7 +13,7 @@ nelmio_api_doc:
       version: 1.0.0
   areas: # which routes are documented
     path_patterns:
-      - ^/api(?!/docs$) # every route under /api except the docs page itself
+      - ^/api/v1/ # the current API version (the docs pages themselves stay out)
   html_config:
     assets_mode: bundle
     scalar_config:

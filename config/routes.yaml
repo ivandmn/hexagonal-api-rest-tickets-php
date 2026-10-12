@@ -7,8 +7,17 @@
 # To list all registered routes, run the following command:
 #   bin/console debug:router
 
-controllers:
+# Versioned REST API: controllers declare paths relative to the version (/tasks, /users...).
+# A breaking change goes into a new namespace (Controller\Api\V2) imported with its own prefix.
+api_v1:
   resource:
-    path: ../src/UI/Http/Controller
-    namespace: App\UI\Http\Controller
+    path: ../src/UI/Http/Controller/Api
+    namespace: App\UI\Http\Controller\Api
   type: attribute
+  prefix: /api/v1
+
+# Unversioned endpoints: status, health and info.
+controllers:
+  resource: ../src/UI/Http/Controller/
+  type: attribute
+  exclude: ../src/UI/Http/Controller/Api/

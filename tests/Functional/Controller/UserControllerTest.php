@@ -34,7 +34,7 @@ final class UserControllerTest extends WebTestCase
 
     public function test_list_returns_200_with_an_empty_list(): void
     {
-        $this->client->request('GET', '/api/users');
+        $this->client->request('GET', '/api/v1/users');
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame([], $json['data']);
@@ -46,7 +46,7 @@ final class UserControllerTest extends WebTestCase
         $this->givenUser('u1@example.com', 'User One');
         $this->givenUser('u2@example.com', 'User Two');
 
-        $this->client->request('GET', '/api/users');
+        $this->client->request('GET', '/api/v1/users');
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame(['total' => 2], $json['meta']);
@@ -58,7 +58,7 @@ final class UserControllerTest extends WebTestCase
     {
         $user = $this->givenUser('jane@example.com', 'Jane Doe');
 
-        $this->client->request('GET', '/api/users/' . $user->getId()->value());
+        $this->client->request('GET', '/api/v1/users/' . $user->getId()->value());
 
         $json = $this->assertJsonSuccess($this->client, Response::HTTP_OK);
         $this->assertSame([
@@ -74,7 +74,7 @@ final class UserControllerTest extends WebTestCase
     {
         $userId = UserId::new()->value();
 
-        $this->client->request('GET', '/api/users/' . $userId);
+        $this->client->request('GET', '/api/v1/users/' . $userId);
 
         $problem = $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, UserNotFoundException::ERROR_CODE);
         $this->assertSame(['user_id' => $userId], $problem['params']);
@@ -82,7 +82,7 @@ final class UserControllerTest extends WebTestCase
 
     public function test_get_returns_404_for_an_id_that_is_not_a_uuid(): void
     {
-        $this->client->request('GET', '/api/users/not-a-uuid');
+        $this->client->request('GET', '/api/v1/users/not-a-uuid');
 
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND');
     }
@@ -98,7 +98,7 @@ final class UserControllerTest extends WebTestCase
         $this->assertSnakeCaseKeys($json);
 
         $location = $this->client->getResponse()->headers->get('Location');
-        $this->assertSame('http://localhost/api/users/' . $json['data']['id'], $location);
+        $this->assertSame('http://localhost/api/v1/users/' . $json['data']['id'], $location);
 
         // The Location points to a real resource.
         $this->client->request('GET', (string) $location);
@@ -230,7 +230,7 @@ final class UserControllerTest extends WebTestCase
     {
         $this->client->request(
             'PATCH',
-            '/api/users/' . $id,
+            '/api/v1/users/' . $id,
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
             content: \json_encode($payload, \JSON_THROW_ON_ERROR),
         );
@@ -243,7 +243,7 @@ final class UserControllerTest extends WebTestCase
     {
         $this->client->request(
             'POST',
-            '/api/users',
+            '/api/v1/users',
             server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'],
             content: \json_encode($payload, \JSON_THROW_ON_ERROR),
         );

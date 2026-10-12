@@ -41,7 +41,7 @@ final class ApiErrorHandlingTest extends WebTestCase
     #[DataProvider('malformedBodies')]
     public function test_malformed_bodies(string $body, int $status, string $type): void
     {
-        $this->client->request('POST', '/api/users', server: ['CONTENT_TYPE' => 'application/json'], content: $body);
+        $this->client->request('POST', '/api/v1/users', server: ['CONTENT_TYPE' => 'application/json'], content: $body);
 
         $problem = $this->assertProblem($this->client, $status, $type);
         $this->assertArrayNotHasKey('errors', $problem);
@@ -49,7 +49,7 @@ final class ApiErrorHandlingTest extends WebTestCase
 
     public function test_reports_the_first_invalid_field(): void
     {
-        $this->client->request('POST', '/api/tasks', server: ['CONTENT_TYPE' => 'application/json'], content: \json_encode([
+        $this->client->request('POST', '/api/v1/tasks', server: ['CONTENT_TYPE' => 'application/json'], content: \json_encode([
             'title'        => 'abc',
             'priority'     => 'urgent',
             'due_date'     => 'tomorrow',
@@ -59,7 +59,7 @@ final class ApiErrorHandlingTest extends WebTestCase
         // Unknown fields are rejected before validation runs.
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['unknown' => ApiErrorCode::UNKNOWN_FIELD]);
 
-        $this->client->request('POST', '/api/tasks', server: ['CONTENT_TYPE' => 'application/json'], content: \json_encode([
+        $this->client->request('POST', '/api/v1/tasks', server: ['CONTENT_TYPE' => 'application/json'], content: \json_encode([
             'title'       => 'abc',
             'description' => 'Present, so the domain gets to judge the values',
             'priority'    => 'urgent',
@@ -77,31 +77,31 @@ final class ApiErrorHandlingTest extends WebTestCase
 
     public function test_query_string_errors(): void
     {
-        $this->client->request('GET', '/api/tasks?page=0&limit=abc&status=done');
+        $this->client->request('GET', '/api/v1/tasks?page=0&limit=abc&status=done');
 
         $this->assertProblem($this->client, Response::HTTP_UNPROCESSABLE_ENTITY, ApiErrorCode::VALIDATION_ERROR, ['limit' => ApiErrorCode::INVALID_TYPE]);
     }
 
     public function test_only_json_is_accepted(): void
     {
-        $this->client->request('POST', '/api/users', server: ['CONTENT_TYPE' => 'text/plain'], content: 'email=x');
+        $this->client->request('POST', '/api/v1/users', server: ['CONTENT_TYPE' => 'text/plain'], content: 'email=x');
 
         $this->assertProblem($this->client, Response::HTTP_UNSUPPORTED_MEDIA_TYPE, 'UNSUPPORTED_MEDIA_TYPE');
     }
 
     public function test_unknown_api_routes_and_methods(): void
     {
-        $this->client->request('GET', '/api/does-not-exist');
+        $this->client->request('GET', '/api/v1/does-not-exist');
         $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND');
 
-        $this->client->request('POST', '/api/tasks/3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63');
+        $this->client->request('POST', '/api/v1/tasks/3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63');
         $this->assertProblem($this->client, Response::HTTP_METHOD_NOT_ALLOWED, 'METHOD_NOT_ALLOWED');
         $this->assertNotNull($this->client->getResponse()->headers->get('Allow'));
     }
 
     public function test_request_id_is_echoed_as_trace_id(): void
     {
-        $this->client->request('GET', '/api/does-not-exist', server: ['HTTP_X_REQUEST_ID' => 'trace-me-42']);
+        $this->client->request('GET', '/api/v1/does-not-exist', server: ['HTTP_X_REQUEST_ID' => 'trace-me-42']);
 
         $this->assertSame('trace-me-42', $this->assertProblem($this->client, Response::HTTP_NOT_FOUND, 'NOT_FOUND')['trace_id']);
     }

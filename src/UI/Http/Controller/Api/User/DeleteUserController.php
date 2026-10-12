@@ -32,7 +32,7 @@ final class DeleteUserController extends ApiController
         ['user_id' => 'b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e', 'unfinished_tasks' => 2],
     )]
     #[InternalErrorResponse]
-    #[Route('/api/users/{id}', name: 'api_user_delete', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
+    #[Route('/users/{id}', name: 'api_user_delete', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
     public function __invoke(string $id, ApiResponder $responder): Response
     {
         $this->dispatch(new DeleteUserCommand($id));

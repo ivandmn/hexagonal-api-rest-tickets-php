@@ -32,7 +32,7 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->appLogger   = new SpyLogger();
-        $this->eventBus = new SpyEventBus();
+        $this->eventBus    = new SpyEventBus();
     }
 
     public function test_assigns_the_task_persists_and_dispatches_task_assigned(): void

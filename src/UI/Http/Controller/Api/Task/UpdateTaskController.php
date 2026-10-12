@@ -61,7 +61,7 @@ final class UpdateTaskController extends ApiController
     ])]
     #[MalformedBodyResponse]
     #[InternalErrorResponse]
-    #[Route('/api/tasks/{id}', name: 'api_task_update', requirements: ['id' => Requirement::UUID], methods: ['PATCH'])]
+    #[Route('/tasks/{id}', name: 'api_task_update', requirements: ['id' => Requirement::UUID], methods: ['PATCH'])]
     public function __invoke(string $id, Request $request, ApiResponder $responder): JsonResponse
     {
         $payload = Payload::fromJsonBody($request, ['title', 'description', 'status', 'priority', 'due_date']);

@@ -50,7 +50,7 @@ final class CreateUserController extends ApiController
     ])]
     #[MalformedBodyResponse]
     #[InternalErrorResponse]
-    #[Route('/api/users', name: 'api_user_create', methods: ['POST'])]
+    #[Route('/users', name: 'api_user_create', methods: ['POST'])]
     public function __invoke(Request $request, ApiResponder $responder): JsonResponse
     {
         $payload = Payload::fromJsonBody($request, ['email', 'name']);

@@ -26,7 +26,7 @@ final class GetByIdTaskController extends ApiController
     #[SuccessResponse(Task::class, 'Task details')]
     #[ProblemResponse(Response::HTTP_NOT_FOUND, 'Task not found (also for an id that is not a UUID)', 'TASK_NOT_FOUND', 'Task 3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63 does not exist.', ['task_id' => '3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63'])]
     #[InternalErrorResponse]
-    #[Route('/api/tasks/{id}', name: 'api_task_detail', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
+    #[Route('/tasks/{id}', name: 'api_task_detail', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
     public function __invoke(string $id, ApiResponder $responder): JsonResponse
     {
         /** @var TaskView $task */

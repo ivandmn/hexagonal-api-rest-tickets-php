@@ -74,7 +74,7 @@ make db-migrate             # create the "tickets" schema and run the migrations
 
 | What | URL |
 |------|-----|
-| API | <http://localhost:8080/api> |
+| API | <http://localhost:8080/api/v1> |
 | API docs (Scalar UI) | <http://localhost:8080/api/docs> |
 | OpenAPI spec (JSON) | <http://localhost:8080/api/docs.json> |
 | Health check | <http://localhost:8080/health> |
@@ -90,6 +90,7 @@ The port comes from `HTTP_WEB_PORT` in `.env.local` (default `8080`).
 
 | Topic | Rule |
 |-------|------|
+| Versioning | Every endpoint lives under `/api/v1`. The prefix is set once in `config/routes.yaml` (controllers declare `/tasks`, `/users`...); a breaking change goes into a new version with its own prefix. |
 | Naming | Every JSON key is `snake_case`, in requests, responses and error fields. Unknown keys (including camelCase ones like `dueDate`) are rejected with a 422. |
 | Requests | Bodies are JSON objects (`Content-Type: application/json`). |
 | Success | `{"status": "success", "data": {...}}`. Collections are `{"status": "success", "data": [...], "meta": {...}}`, and an empty list is still `200` with `"data": []`. |
@@ -104,18 +105,18 @@ The port comes from `HTTP_WEB_PORT` in `.env.local` (default `8080`).
 
 | Method | Path | Description | Success |
 |--------|------|-------------|---------|
-| `GET` | `/api/tasks` | List tasks, newest first. Filters: `status`, `priority`, `assigned_to` (user id), `due_from` / `due_to` (RFC 3339, inclusive; tasks without a due date are left out). Pagination: `page` (default 1), `limit` (1–100, default 50). | 200 |
-| `POST` | `/api/tasks` | Create a task. | 201 |
-| `GET` | `/api/tasks/{id}` | Task details. | 200 |
-| `PATCH` | `/api/tasks/{id}` | Partial update: `title`, `description`, `status`, `priority`, `due_date`. | 200 |
-| `PATCH` | `/api/tasks/{id}/assign` | Assign the task to a user (`user_id`). Returns the task. | 200 |
-| `DELETE` | `/api/tasks/{id}/assign` | Unassign the task (a no-op if nobody has it). Returns the task. | 200 |
-| `DELETE` | `/api/tasks/{id}` | Delete a task (pending tasks only). | 204 |
-| `GET` | `/api/users` | List users, oldest first. | 200 |
-| `POST` | `/api/users` | Create a user. | 201 |
-| `GET` | `/api/users/{id}` | User details. | 200 |
-| `PATCH` | `/api/users/{id}` | Partial update: `email`, `name`. | 200 |
-| `DELETE` | `/api/users/{id}` | Delete a user (none of their tasks may be unfinished). | 204 |
+| `GET` | `/api/v1/tasks` | List tasks, newest first. Filters: `status`, `priority`, `assigned_to` (user id), `due_from` / `due_to` (RFC 3339, inclusive; tasks without a due date are left out). Pagination: `page` (default 1), `limit` (1–100, default 50). | 200 |
+| `POST` | `/api/v1/tasks` | Create a task. | 201 |
+| `GET` | `/api/v1/tasks/{id}` | Task details. | 200 |
+| `PATCH` | `/api/v1/tasks/{id}` | Partial update: `title`, `description`, `status`, `priority`, `due_date`. | 200 |
+| `PATCH` | `/api/v1/tasks/{id}/assign` | Assign the task to a user (`user_id`). Returns the task. | 200 |
+| `DELETE` | `/api/v1/tasks/{id}/assign` | Unassign the task (a no-op if nobody has it). Returns the task. | 200 |
+| `DELETE` | `/api/v1/tasks/{id}` | Delete a task (pending tasks only). | 204 |
+| `GET` | `/api/v1/users` | List users, oldest first. | 200 |
+| `POST` | `/api/v1/users` | Create a user. | 201 |
+| `GET` | `/api/v1/users/{id}` | User details. | 200 |
+| `PATCH` | `/api/v1/users/{id}` | Partial update: `email`, `name`. | 200 |
+| `DELETE` | `/api/v1/users/{id}` | Delete a user (none of their tasks may be unfinished). | 204 |
 
 The documentation at `/api/docs` lists every request and response schema, constraint and error example.
 
@@ -124,7 +125,7 @@ The documentation at `/api/docs` lists every request and response schema, constr
 **Create a task**
 
 ```http
-POST /api/tasks
+POST /api/v1/tasks
 Content-Type: application/json
 
 {
@@ -137,7 +138,7 @@ Content-Type: application/json
 
 ```http
 HTTP/1.1 201 Created
-Location: http://localhost:8080/api/tasks/3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63
+Location: http://localhost:8080/api/v1/tasks/3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63
 Content-Type: application/json
 
 {
@@ -159,7 +160,7 @@ Content-Type: application/json
 **List tasks**
 
 ```http
-GET /api/tasks?status=pending&priority=high&page=1&limit=20
+GET /api/v1/tasks?status=pending&priority=high&page=1&limit=20
 ```
 
 ```json

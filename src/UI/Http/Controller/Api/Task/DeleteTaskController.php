@@ -23,7 +23,7 @@ final class DeleteTaskController extends ApiController
     #[ProblemResponse(Response::HTTP_NOT_FOUND, 'Task not found (also for an id that is not a UUID)', 'TASK_NOT_FOUND', 'Task 3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63 does not exist.', ['task_id' => '3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63'])]
     #[ProblemResponse(Response::HTTP_CONFLICT, 'Task is not pending', 'TASK_DELETION_NOT_ALLOWED', 'Only pending tasks can be deleted; this one is "in_progress".', ['task_id' => '3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63', 'status' => 'in_progress'])]
     #[InternalErrorResponse]
-    #[Route('/api/tasks/{id}', name: 'api_task_delete', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
+    #[Route('/tasks/{id}', name: 'api_task_delete', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
     public function __invoke(string $id, ApiResponder $responder): Response
     {
         $this->dispatch(new DeleteTaskCommand($id));

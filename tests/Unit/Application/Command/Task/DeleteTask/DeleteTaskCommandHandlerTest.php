@@ -22,8 +22,8 @@ final class DeleteTaskCommandHandlerTest extends TestCase
 
     public function test_deletes_a_pending_task_and_logs(): void
     {
-        $task   = Mother::task(title: 'Deletable Task');
-        $tasks  = new InMemoryTaskRepository($task);
+        $task      = Mother::task(title: 'Deletable Task');
+        $tasks     = new InMemoryTaskRepository($task);
         $appLogger = new SpyLogger();
 
         new DeleteTaskCommandHandler($tasks, $appLogger)(new DeleteTaskCommand($task->getId()->value()));

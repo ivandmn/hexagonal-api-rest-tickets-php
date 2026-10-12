@@ -26,7 +26,7 @@ final class UnassignTaskController extends ApiController
     #[SuccessResponse(Task::class, 'Task unassigned')]
     #[ProblemResponse(Response::HTTP_NOT_FOUND, 'Task not found (also for an id that is not a UUID)', 'TASK_NOT_FOUND', 'Task 3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63 does not exist.', ['task_id' => '3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63'])]
     #[InternalErrorResponse]
-    #[Route('/api/tasks/{id}/assign', name: 'api_task_unassign', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
+    #[Route('/tasks/{id}/assign', name: 'api_task_unassign', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
     public function __invoke(string $id, ApiResponder $responder): JsonResponse
     {
         /** @var TaskView $task */

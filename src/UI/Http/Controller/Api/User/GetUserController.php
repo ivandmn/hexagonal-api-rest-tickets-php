@@ -26,7 +26,7 @@ final class GetUserController extends ApiController
     #[SuccessResponse(User::class, 'User details')]
     #[ProblemResponse(Response::HTTP_NOT_FOUND, 'User not found (also for an id that is not a UUID)', 'USER_NOT_FOUND', 'User b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e does not exist.', ['user_id' => 'b7e4d2c1-5a3f-4e8b-8c9d-6f1a2b3c4d5e'])]
     #[InternalErrorResponse]
-    #[Route('/api/users/{id}', name: 'api_user_detail', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
+    #[Route('/users/{id}', name: 'api_user_detail', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
     public function __invoke(string $id, ApiResponder $responder): JsonResponse
     {
         /** @var UserView $user */
