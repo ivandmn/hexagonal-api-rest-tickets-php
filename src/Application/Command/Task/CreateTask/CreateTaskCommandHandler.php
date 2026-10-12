@@ -16,7 +16,7 @@ final readonly class CreateTaskCommandHandler implements CommandHandlerInterface
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
         private ClockInterface $clock,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
@@ -33,7 +33,7 @@ final readonly class CreateTaskCommandHandler implements CommandHandlerInterface
 
         $this->taskRepository->create($task);
 
-        $this->logger->info('Task created', ['task_id' => $task->getId()->value(), 'task_title' => $task->getTitle()->value()]);
+        $this->appLogger->info('Task created', ['task_id' => $task->getId()->value(), 'task_title' => $task->getTitle()->value()]);
 
         return TaskView::fromTask($task);
     }

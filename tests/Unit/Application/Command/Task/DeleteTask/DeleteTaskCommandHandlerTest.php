@@ -24,12 +24,12 @@ final class DeleteTaskCommandHandlerTest extends TestCase
     {
         $task   = Mother::task(title: 'Deletable Task');
         $tasks  = new InMemoryTaskRepository($task);
-        $logger = new SpyLogger();
+        $appLogger = new SpyLogger();
 
-        new DeleteTaskCommandHandler($tasks, $logger)(new DeleteTaskCommand($task->getId()->value()));
+        new DeleteTaskCommandHandler($tasks, $appLogger)(new DeleteTaskCommand($task->getId()->value()));
 
         $this->assertSame([], $tasks->all());
-        $this->assertTrue($logger->has('info', 'Task deleted', ['task_id' => $task->getId()->value(), 'task_title' => 'Deletable Task']));
+        $this->assertTrue($appLogger->has('info', 'Task deleted', ['task_id' => $task->getId()->value(), 'task_title' => 'Deletable Task']));
     }
 
     public function test_fails_when_the_task_does_not_exist(): void

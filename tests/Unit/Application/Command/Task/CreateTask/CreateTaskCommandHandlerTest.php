@@ -24,14 +24,14 @@ final class CreateTaskCommandHandlerTest extends TestCase
     private const string NOW = '2026-06-01T12:00:00+00:00';
 
     private InMemoryTaskRepository $tasks;
-    private SpyLogger $logger;
+    private SpyLogger $appLogger;
     private CreateTaskCommandHandler $handler;
 
     protected function setUp(): void
     {
         $this->tasks   = new InMemoryTaskRepository();
-        $this->logger  = new SpyLogger();
-        $this->handler = new CreateTaskCommandHandler($this->tasks, new MockClock(self::NOW), $this->logger);
+        $this->appLogger  = new SpyLogger();
+        $this->handler = new CreateTaskCommandHandler($this->tasks, new MockClock(self::NOW), $this->appLogger);
     }
 
     public function test_creates_a_pending_unassigned_task_with_the_given_id(): void
@@ -61,7 +61,7 @@ final class CreateTaskCommandHandlerTest extends TestCase
     {
         ($this->handler)(new CreateTaskCommand(self::ID, 'Test Title', 'Test Description', 'low', null));
 
-        $this->assertTrue($this->logger->has('info', 'Task created', ['task_id' => self::ID, 'task_title' => 'Test Title']));
+        $this->assertTrue($this->appLogger->has('info', 'Task created', ['task_id' => self::ID, 'task_title' => 'Test Title']));
     }
 
     public function test_rejects_a_due_date_before_now_and_persists_nothing(): void

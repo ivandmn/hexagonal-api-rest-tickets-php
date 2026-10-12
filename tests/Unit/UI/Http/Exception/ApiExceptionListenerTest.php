@@ -30,7 +30,7 @@ final class ApiExceptionListenerTest extends TestCase
     /** @var array<array-key, mixed> */
     private static array $codes;
 
-    private SpyLogger $logger;
+    private SpyLogger $appLogger;
 
     public static function setUpBeforeClass(): void
     {
@@ -83,8 +83,8 @@ final class ApiExceptionListenerTest extends TestCase
         $problem = $this->problem($this->dispatch($exception), Response::HTTP_INTERNAL_SERVER_ERROR);
 
         $this->assertSame(ApiErrorCode::INTERNAL_ERROR, $problem['type']);
-        $this->assertSame('warning', $this->logger->records[0]['level'] ?? null);
-        $this->assertSame('NOT_IN_THE_MAPPING', $this->logger->records[0]['context']['errorCode']);
+        $this->assertSame('warning', $this->appLogger->records[0]['level'] ?? null);
+        $this->assertSame('NOT_IN_THE_MAPPING', $this->appLogger->records[0]['context']['errorCode']);
     }
 
     public function test_unexpected_errors_hide_details_without_debug(): void
@@ -165,7 +165,7 @@ final class ApiExceptionListenerTest extends TestCase
 
     private function dispatch(\Throwable $exception, string $path = '/api/tasks', bool $debug = false, ?string $requestId = null): ExceptionEvent
     {
-        $this->logger = new SpyLogger();
+        $this->appLogger = new SpyLogger();
 
         $request = Request::create($path);
         if (null !== $requestId) {
@@ -173,7 +173,7 @@ final class ApiExceptionListenerTest extends TestCase
         }
 
         $event    = new ExceptionEvent($this->createStub(HttpKernelInterface::class), $request, HttpKernelInterface::MAIN_REQUEST, $exception);
-        $listener = new ApiExceptionListener(new ErrorCodeMapper(self::$codes), $this->logger, new CamelCaseToSnakeCaseNameConverter(), $debug, '/api');
+        $listener = new ApiExceptionListener(new ErrorCodeMapper(self::$codes), $this->appLogger, new CamelCaseToSnakeCaseNameConverter(), $debug, '/api');
         $listener($event);
 
         return $event;

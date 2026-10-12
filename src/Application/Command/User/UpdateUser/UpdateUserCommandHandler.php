@@ -17,7 +17,7 @@ final readonly class UpdateUserCommandHandler implements CommandHandlerInterface
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private ClockInterface $clock,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
@@ -47,7 +47,7 @@ final readonly class UpdateUserCommandHandler implements CommandHandlerInterface
         // request taking the same email after the check above.
         $this->userRepository->save($user);
 
-        $this->logger->info('User updated', ['user_id' => $user->getId()->value()]);
+        $this->appLogger->info('User updated', ['user_id' => $user->getId()->value()]);
 
         return UserView::fromUser($user);
     }

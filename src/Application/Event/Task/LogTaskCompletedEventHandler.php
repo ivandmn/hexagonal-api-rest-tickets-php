@@ -14,13 +14,13 @@ use Psr\Log\LoggerInterface;
 final readonly class LogTaskCompletedEventHandler implements EventHandlerInterface
 {
     public function __construct(
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
     public function __invoke(TaskCompleted $event): void
     {
-        $this->logger->info('Task completed', [
+        $this->appLogger->info('Task completed', [
             'event'       => $event->eventName(),
             'occurred_on' => (string) $event->occurredOn(),
             ...$event->payload(),

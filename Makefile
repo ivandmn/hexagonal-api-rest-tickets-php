@@ -77,19 +77,19 @@ db-migrate: ## Run database migrations
 
 ## ———— Tests ————
 
-test: ## Run every test suite (needs `make test-db` once per `make up`)
+test: ## Run every test suite (creates and migrates the test database first)
 	$(EXEC) bin/phpunit --testdox
 
 test-unit: ## Run unit tests (no database needed)
 	$(EXEC) bin/phpunit --testsuite unit --testdox
 
-test-integration: ## Run integration tests: repositories, DBAL types and migrations against Postgres (needs `make test-db`)
+test-integration: ## Run integration tests: repositories, DBAL types and migrations against Postgres
 	$(EXEC) bin/phpunit --testsuite integration --testdox
 
-test-functional: ## Run functional tests: HTTP end to end (needs `make test-db`)
+test-functional: ## Run functional tests: HTTP end to end
 	$(EXEC) bin/phpunit --testsuite functional --testdox
 
-test-db: ## Create the schema of the test database (TEST_DATABASE_URL in .env.test)
+test-db: ## Migrate the test database by hand (the test runs already do it; TEST_DATABASE_URL in .env.test)
 	$(CONSOLE) --env=test dbal:run-sql -q 'CREATE SCHEMA IF NOT EXISTS tickets'
 	$(CONSOLE) --env=test doctrine:migrations:migrate --no-interaction --allow-no-migration
 
@@ -116,4 +116,4 @@ deptrac: ## Check architectural dependencies
 
 code-check: cs deptrac phpstan test-unit ## Fast checks, no database: style, architecture, types, unit tests
 
-ci: cs deptrac phpstan test-db test ## Everything CI runs, against the test database
+ci: cs deptrac phpstan test ## Everything CI runs, against the test database

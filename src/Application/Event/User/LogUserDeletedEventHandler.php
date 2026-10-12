@@ -14,13 +14,13 @@ use Psr\Log\LoggerInterface;
 final readonly class LogUserDeletedEventHandler implements EventHandlerInterface
 {
     public function __construct(
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
     public function __invoke(UserDeleted $event): void
     {
-        $this->logger->info('User deleted', [
+        $this->appLogger->info('User deleted', [
             'event'       => $event->eventName(),
             'occurred_on' => (string) $event->occurredOn(),
             ...$event->payload(),

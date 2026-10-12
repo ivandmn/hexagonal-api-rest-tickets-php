@@ -44,7 +44,7 @@ final readonly class ApiExceptionListener
 
     public function __construct(
         private ErrorCodeMapper $mapper,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
         // Same converter as the serializer, so errors[].field matches the payload keys (snake_case).
         #[Autowire(service: 'serializer.name_converter.camel_case_to_snake_case')]
         private NameConverterInterface $nameConverter,
@@ -168,7 +168,7 @@ final readonly class ApiExceptionListener
      */
     private function unmapped(DomainException $exception): array
     {
-        $this->logger->warning('Unmapped domain error code "{errorCode}": add it to config/packages/error_mapping.yaml', [
+        $this->appLogger->warning('Unmapped domain error code "{errorCode}": add it to config/packages/error_mapping.yaml', [
             'errorCode' => $exception->errorCode(),
             'exception' => $exception,
         ]);

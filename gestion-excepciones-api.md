@@ -498,7 +498,7 @@ final class ApiExceptionListener
 
     public function __construct(
         private readonly ErrorCodeMapper $mapper,
-        private readonly LoggerInterface $logger,
+        private readonly LoggerInterface $appLogger,
         #[Autowire('%kernel.debug%')] private readonly bool $debug,
     ) {}
 
@@ -576,7 +576,7 @@ final class ApiExceptionListener
         $mapping = $this->mapper->find($e->errorCode());
 
         if ($mapping === null) {
-            $this->logger->warning('Unmapped domain error code', [
+            $this->appLogger->warning('Unmapped domain error code', [
                 'errorCode' => $e->errorCode(),
                 'exception' => $e,
             ]);

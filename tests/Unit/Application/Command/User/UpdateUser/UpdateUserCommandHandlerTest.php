@@ -22,11 +22,11 @@ final class UpdateUserCommandHandlerTest extends TestCase
 
     private const string NOW = '2030-01-01T10:00:00+00:00';
 
-    private SpyLogger $logger;
+    private SpyLogger $appLogger;
 
     protected function setUp(): void
     {
-        $this->logger = new SpyLogger();
+        $this->appLogger = new SpyLogger();
     }
 
     public function test_updates_the_given_fields_and_logs(): void
@@ -41,7 +41,7 @@ final class UpdateUserCommandHandlerTest extends TestCase
         $this->assertSame(self::NOW, (string) $user->getUpdatedAt());
         $this->assertSame('jane.smith@example.com', $view->email);
         $this->assertSame($user, $users->findByEmail($user->getEmail()));
-        $this->assertTrue($this->logger->has('info', 'User updated', ['user_id' => $user->getId()->value()]));
+        $this->assertTrue($this->appLogger->has('info', 'User updated', ['user_id' => $user->getId()->value()]));
     }
 
     public function test_null_fields_are_left_unchanged(): void
@@ -76,7 +76,7 @@ final class UpdateUserCommandHandlerTest extends TestCase
             ['email' => 'john@example.com'],
         );
         $this->assertSame('jane@example.com', $user->getEmail()->value());
-        $this->assertSame([], $this->logger->records);
+        $this->assertSame([], $this->appLogger->records);
     }
 
     public function test_fails_when_the_user_does_not_exist(): void
@@ -89,6 +89,6 @@ final class UpdateUserCommandHandlerTest extends TestCase
 
     private function handler(InMemoryUserRepository $users): UpdateUserCommandHandler
     {
-        return new UpdateUserCommandHandler($users, new MockClock(self::NOW), $this->logger);
+        return new UpdateUserCommandHandler($users, new MockClock(self::NOW), $this->appLogger);
     }
 }

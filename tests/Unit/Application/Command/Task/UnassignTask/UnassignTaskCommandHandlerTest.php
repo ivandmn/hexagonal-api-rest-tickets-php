@@ -22,11 +22,11 @@ final class UnassignTaskCommandHandlerTest extends TestCase
 
     private const string NOW = '2030-01-01T10:00:00+00:00';
 
-    private SpyLogger $logger;
+    private SpyLogger $appLogger;
 
     protected function setUp(): void
     {
-        $this->logger = new SpyLogger();
+        $this->appLogger = new SpyLogger();
     }
 
     public function test_unassigns_the_task_persists_and_logs(): void
@@ -41,7 +41,7 @@ final class UnassignTaskCommandHandlerTest extends TestCase
         $this->assertNull($view->assignedTo);
         $this->assertSame(self::NOW, (string) $task->getUpdatedAt());
         $this->assertSame(1, $tasks->updates);
-        $this->assertTrue($this->logger->has('info', 'Task unassigned', ['task_id' => $task->getId()->value(), 'previous_user_id' => $user->getId()->value()]));
+        $this->assertTrue($this->appLogger->has('info', 'Task unassigned', ['task_id' => $task->getId()->value(), 'previous_user_id' => $user->getId()->value()]));
     }
 
     public function test_an_unassigned_task_is_left_as_it_is(): void
@@ -53,7 +53,7 @@ final class UnassignTaskCommandHandlerTest extends TestCase
 
         $this->assertFalse($task->isUpdated());
         $this->assertSame(0, $tasks->updates);
-        $this->assertTrue($this->logger->has('info', 'Task already unassigned'));
+        $this->assertTrue($this->appLogger->has('info', 'Task already unassigned'));
     }
 
     public function test_fails_when_the_task_does_not_exist(): void
@@ -71,6 +71,6 @@ final class UnassignTaskCommandHandlerTest extends TestCase
 
     private function handler(InMemoryTaskRepository $tasks): UnassignTaskCommandHandler
     {
-        return new UnassignTaskCommandHandler($tasks, new MockClock(self::NOW), $this->logger);
+        return new UnassignTaskCommandHandler($tasks, new MockClock(self::NOW), $this->appLogger);
     }
 }

@@ -29,13 +29,13 @@ final class UpdateTaskCommandHandlerTest extends TestCase
     private const string NOW = '2026-06-01T12:00:00+00:00';
 
     private InMemoryTaskRepository $tasks;
-    private SpyLogger $logger;
+    private SpyLogger $appLogger;
     private SpyEventBus $eventBus;
 
     protected function setUp(): void
     {
         $this->tasks    = new InMemoryTaskRepository();
-        $this->logger   = new SpyLogger();
+        $this->appLogger   = new SpyLogger();
         $this->eventBus = new SpyEventBus();
     }
 
@@ -52,7 +52,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
         $this->assertSame('2026-06-02T10:00:00+00:00', (string) $task->getDueDate());
         $this->assertSame(1, $this->tasks->updates);
         $this->assertSame(self::NOW, (string) $task->getUpdatedAt(), 'updatedAt comes from the clock');
-        $this->assertTrue($this->logger->has('info', 'Task updated', ['task_id' => $task->getId()->value()]));
+        $this->assertTrue($this->appLogger->has('info', 'Task updated', ['task_id' => $task->getId()->value()]));
         $this->assertSame([], $this->eventBus->events, 'Moving to in_progress is not an event');
     }
 
@@ -87,7 +87,7 @@ final class UpdateTaskCommandHandlerTest extends TestCase
         $this->update($task, title: 'Keep Title', status: 'pending', priority: 'low');
 
         $this->assertSame(0, $this->tasks->updates);
-        $this->assertTrue($this->logger->has('info', 'Task not updated (no changes detected)'));
+        $this->assertTrue($this->appLogger->has('info', 'Task not updated (no changes detected)'));
     }
 
     public function test_fails_when_the_task_does_not_exist(): void
@@ -142,6 +142,6 @@ final class UpdateTaskCommandHandlerTest extends TestCase
 
     private function handler(): UpdateTaskCommandHandler
     {
-        return new UpdateTaskCommandHandler($this->tasks, $this->eventBus, new MockClock(self::NOW), $this->logger);
+        return new UpdateTaskCommandHandler($this->tasks, $this->eventBus, new MockClock(self::NOW), $this->appLogger);
     }
 }

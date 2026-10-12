@@ -14,7 +14,7 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
 {
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
@@ -29,6 +29,6 @@ final readonly class DeleteTaskCommandHandler implements CommandHandlerInterface
 
         $this->taskRepository->delete($task);
 
-        $this->logger->info('Task deleted', ['task_id' => $taskId->value(), 'task_title' => $task->getTitle()->value()]);
+        $this->appLogger->info('Task deleted', ['task_id' => $taskId->value(), 'task_title' => $task->getTitle()->value()]);
     }
 }

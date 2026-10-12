@@ -18,7 +18,7 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
         private TaskRepositoryInterface $taskRepository,
         private EventBusInterface $eventBus,
         private ClockInterface $clock,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
@@ -50,14 +50,14 @@ final readonly class UpdateTaskCommandHandler implements CommandHandlerInterface
         }
 
         if (!$task->isUpdated()) {
-            $this->logger->info('Task not updated (no changes detected)', ['task_id' => $task->getId()->value()]);
+            $this->appLogger->info('Task not updated (no changes detected)', ['task_id' => $task->getId()->value()]);
 
             return TaskView::fromTask($task);
         }
 
         $this->taskRepository->update($task);
 
-        $this->logger->info('Task updated', ['task_id' => $task->getId()->value()]);
+        $this->appLogger->info('Task updated', ['task_id' => $task->getId()->value()]);
 
         $this->eventBus->dispatch(...$task->pullDomainEvents());
 

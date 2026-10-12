@@ -23,43 +23,43 @@ final class LogEventHandlersTest extends TestCase
     private const string PREV_ID = '3f1c2a9e-8b4d-4c6e-9a7f-2d5b8e1c4a63';
     private const string AT      = '2030-01-01T10:00:00+00:00';
 
-    private SpyLogger $logger;
+    private SpyLogger $appLogger;
 
     protected function setUp(): void
     {
-        $this->logger = new SpyLogger();
+        $this->appLogger = new SpyLogger();
     }
 
     public function test_logs_task_assigned(): void
     {
-        new LogTaskAssignedEventHandler($this->logger)(new TaskAssigned(TaskId::fromString(self::TASK_ID), UserId::fromString(self::USER_ID), UserId::fromString(self::PREV_ID), DateTime::fromString(self::AT)));
+        new LogTaskAssignedEventHandler($this->appLogger)(new TaskAssigned(TaskId::fromString(self::TASK_ID), UserId::fromString(self::USER_ID), UserId::fromString(self::PREV_ID), DateTime::fromString(self::AT)));
 
         $this->assertSame([[
             'level'   => 'info',
             'message' => 'Task assigned to user',
             'context' => ['event' => 'task.assigned', 'occurred_on' => self::AT, 'task_id' => self::TASK_ID, 'user_id' => self::USER_ID, 'previous_user_id' => self::PREV_ID],
-        ]], $this->logger->records);
+        ]], $this->appLogger->records);
     }
 
     public function test_logs_task_completed(): void
     {
-        new LogTaskCompletedEventHandler($this->logger)(new TaskCompleted(TaskId::fromString(self::TASK_ID), null, DateTime::fromString(self::AT)));
+        new LogTaskCompletedEventHandler($this->appLogger)(new TaskCompleted(TaskId::fromString(self::TASK_ID), null, DateTime::fromString(self::AT)));
 
         $this->assertSame([[
             'level'   => 'info',
             'message' => 'Task completed',
             'context' => ['event' => 'task.completed', 'occurred_on' => self::AT, 'task_id' => self::TASK_ID, 'assigned_user_id' => null],
-        ]], $this->logger->records);
+        ]], $this->appLogger->records);
     }
 
     public function test_logs_user_deleted(): void
     {
-        new LogUserDeletedEventHandler($this->logger)(new UserDeleted(UserId::fromString(self::USER_ID), 2, DateTime::fromString(self::AT)));
+        new LogUserDeletedEventHandler($this->appLogger)(new UserDeleted(UserId::fromString(self::USER_ID), 2, DateTime::fromString(self::AT)));
 
         $this->assertSame([[
             'level'   => 'info',
             'message' => 'User deleted',
             'context' => ['event' => 'user.deleted', 'occurred_on' => self::AT, 'user_id' => self::USER_ID, 'deleted_tasks' => 2],
-        ]], $this->logger->records);
+        ]], $this->appLogger->records);
     }
 }

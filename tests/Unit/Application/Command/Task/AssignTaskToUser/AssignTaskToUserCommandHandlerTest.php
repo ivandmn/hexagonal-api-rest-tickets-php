@@ -26,12 +26,12 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
 
     private const NOW = '2030-01-01T10:00:00+00:00';
 
-    private SpyLogger $logger;
+    private SpyLogger $appLogger;
     private SpyEventBus $eventBus;
 
     protected function setUp(): void
     {
-        $this->logger   = new SpyLogger();
+        $this->appLogger   = new SpyLogger();
         $this->eventBus = new SpyEventBus();
     }
 
@@ -77,7 +77,7 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
 
         $this->assertFalse($task->isUpdated());
         $this->assertSame(0, $tasks->updates);
-        $this->assertTrue($this->logger->has('info', 'Task already assigned to this user'));
+        $this->assertTrue($this->appLogger->has('info', 'Task already assigned to this user'));
         $this->assertSame([], $this->eventBus->events);
     }
 
@@ -87,7 +87,7 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
         $handler = $this->handler(new InMemoryTaskRepository(), new InMemoryUserRepository(Mother::user()));
 
         $this->assertDomainError(TaskNotFoundException::ERROR_CODE, static fn () => $handler(new AssignTaskToUserCommand($taskId, UserId::new()->value())), ['task_id' => $taskId]);
-        $this->assertSame([], $this->logger->records);
+        $this->assertSame([], $this->appLogger->records);
     }
 
     public function test_fails_when_the_user_does_not_exist(): void
@@ -105,6 +105,6 @@ final class AssignTaskToUserCommandHandlerTest extends TestCase
 
     private function handler(InMemoryTaskRepository $tasks, InMemoryUserRepository $users): AssignTaskToUserCommandHandler
     {
-        return new AssignTaskToUserCommandHandler($tasks, $users, $this->eventBus, new MockClock(self::NOW), $this->logger);
+        return new AssignTaskToUserCommandHandler($tasks, $users, $this->eventBus, new MockClock(self::NOW), $this->appLogger);
     }
 }

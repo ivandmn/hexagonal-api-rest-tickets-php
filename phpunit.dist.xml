@@ -49,12 +49,13 @@
     </source>
 
     <coverage includeUncoveredFiles="true"
-              pathCoverage="true"
+              pathCoverage="false"
               ignoreDeprecatedCodeUnits="true"
               disableCodeCoverageIgnore="true">
     </coverage>
 
     <extensions>
+        <bootstrap class="App\Tests\Support\PHPUnit\MigrateTestDatabaseExtension" />
         <bootstrap class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
     </extensions>
 </phpunit>

@@ -2,6 +2,7 @@
 /.env.local
 /.env.local.php
 /.env.*.local
+/.env.test
 
 bin/*
 !bin/console

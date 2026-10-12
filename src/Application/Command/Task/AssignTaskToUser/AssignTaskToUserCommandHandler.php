@@ -21,7 +21,7 @@ final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInt
         private UserRepositoryInterface $userRepository,
         private EventBusInterface $eventBus,
         private ClockInterface $clock,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
@@ -33,7 +33,7 @@ final readonly class AssignTaskToUserCommandHandler implements CommandHandlerInt
         $task->assignTo($user, $this->clock->now());
 
         if (!$task->isUpdated()) {
-            $this->logger->info('Task already assigned to this user', ['task_id' => $task->getId()->value(), 'user_id' => $user->getId()->value()]);
+            $this->appLogger->info('Task already assigned to this user', ['task_id' => $task->getId()->value(), 'user_id' => $user->getId()->value()]);
 
             return TaskView::fromTask($task);
         }

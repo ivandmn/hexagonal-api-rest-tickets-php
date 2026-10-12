@@ -17,7 +17,7 @@ final readonly class CreateUserCommandHandler implements CommandHandlerInterface
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private ClockInterface $clock,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
@@ -31,7 +31,7 @@ final readonly class CreateUserCommandHandler implements CommandHandlerInterface
 
         $this->userRepository->save($user);
 
-        $this->logger->info('User created', ['user_id' => $user->getId()->value(), 'user_email' => $user->getEmail()->value()]);
+        $this->appLogger->info('User created', ['user_id' => $user->getId()->value(), 'user_email' => $user->getEmail()->value()]);
 
         return UserView::fromUser($user);
     }

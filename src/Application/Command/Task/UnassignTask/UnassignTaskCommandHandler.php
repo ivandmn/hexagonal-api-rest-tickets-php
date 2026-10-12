@@ -19,7 +19,7 @@ final readonly class UnassignTaskCommandHandler implements CommandHandlerInterfa
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
         private ClockInterface $clock,
-        private LoggerInterface $logger,
+        private LoggerInterface $appLogger,
     ) {
     }
 
@@ -31,14 +31,14 @@ final readonly class UnassignTaskCommandHandler implements CommandHandlerInterfa
         $task->unassign($this->clock->now());
 
         if (!$task->isUpdated()) {
-            $this->logger->info('Task already unassigned', ['task_id' => $task->getId()->value()]);
+            $this->appLogger->info('Task already unassigned', ['task_id' => $task->getId()->value()]);
 
             return TaskView::fromTask($task);
         }
 
         $this->taskRepository->update($task);
 
-        $this->logger->info('Task unassigned', ['task_id' => $task->getId()->value(), 'previous_user_id' => $previousUser?->getId()->value()]);
+        $this->appLogger->info('Task unassigned', ['task_id' => $task->getId()->value(), 'previous_user_id' => $previousUser?->getId()->value()]);
 
         return TaskView::fromTask($task);
     }

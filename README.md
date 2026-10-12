@@ -352,7 +352,6 @@ tests/
 | `functional` | Every endpoint end to end, plus `/health` and `/api/docs.json` | Yes |
 
 ```bash
-make test-db          # once per `make up`: create the schema in the test database
 make test             # every suite
 make test-unit        # unit only (no database needed)
 make test-integration # integration only
@@ -360,7 +359,7 @@ make test-functional  # functional only
 make test-coverage    # HTML/XML/text report in var/phpunit/coverage
 ```
 
-**The test database is isolated.** The test environment reads `TEST_DATABASE_URL` (defined in `.env.test`), never `DATABASE_URL`, so the app database cannot be touched by mistake. It points to `app-postgres-test` from the infrastructure repo. Tests use an in-memory cache, never Redis. Each test runs inside a transaction that is rolled back (`dama/doctrine-test-bundle`).
+**The test database is isolated.** The test environment reads `TEST_DATABASE_URL` (defined in `.env.test`), never `DATABASE_URL`, so the app database cannot be touched by mistake. It points to `app-postgres-test` from the infrastructure repo. Tests use an in-memory cache, never Redis. Before any integration or functional test runs, PHPUnit creates the test database if needed and runs the pending migrations (`tests/Support/PHPUnit/MigrateTestDatabaseExtension.php`); unit-only runs never touch it. Each test runs inside a transaction that is rolled back (`dama/doctrine-test-bundle`).
 
 PHPUnit reads `phpunit.dist.xml`. Copy it to `phpunit.xml` (ignored by git) for local tweaks.
 
@@ -476,7 +475,7 @@ Run `make` (or `make help`) for the full list. PHP commands run inside the app c
 | `make db-migrate` / `make db-diff` | Run the migrations / generate a migration from the mapping |
 | `make cache-clear` / `make purge` | Clear the Symfony cache / delete cache and logs |
 | `make fix-perms` | Give your user and group write access to `var/` |
-| `make test-db` | Create the schema in the test database |
+| `make test-db` | Migrate the test database by hand (test runs already do it) |
 | `make test` / `make test-unit` / `make test-integration` / `make test-functional` | Run the test suites |
 | `make test-coverage` | Coverage report |
 | `make cs` / `make cs-fix` | Check / fix code style |
